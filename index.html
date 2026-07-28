@@ -85,6 +85,21 @@
       opacity: 0.12;
     }
 
+    /* === SOUNDTRACK MINI PLAYER === */
+    #soundtrack-mini {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 999;
+      pointer-events: auto;
+    }
+    #soundtrack-mini iframe {
+      width: 200px;
+      height: 60px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
     /* === 8-BIT DOODLES === */
     .doodles {
       position: fixed;
@@ -1056,13 +1071,10 @@
         </div>
       </section>
 
-      <!-- Soundtrack -->
-      <section class="section reveal">
-        <h2 class="section-title">Soundtrack Oficial</h2>
-        <div style="display: flex; justify-content: center;">
-          <iframe src="https://suno.com/embed/9d4d71bd-d202-463e-8856-5bc973196992?autoplay=1" width="760" height="240" frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"><a href="https://suno.com/song/9d4d71bd-d202-463e-8856-5bc973196992">Listen on Suno</a></iframe>
-        </div>
-      </section>
+      <!-- Soundtrack Mini Player -->
+      <div id="soundtrack-mini">
+        <iframe src="https://suno.com/embed/9d4d71bd-d202-463e-8856-5bc973196992?autoplay=1" width="200" height="60" frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen loading="eager" referrerpolicy="no-referrer-when-downgrade" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></iframe>
+      </div>
 
       <!-- Prizes -->
       <section class="section reveal">

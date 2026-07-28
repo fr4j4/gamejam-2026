@@ -68,7 +68,7 @@ gamejam-2026/
 
 ## 📅 Timeline
 
-- **Inicio:** 27 jul 2026, 23:00 (Chile) — ¡arrancó!
-- **Fase 1 (Desarrollo):** 27 jul 23:00 → 28 jul 23:00
-- **Fase 2 (Mejora cruzada):** 28 jul 23:00 → 29 jul 23:00
-- **Fin:** 29 jul 2026, 23:00
+- **Inicio:** viernes 31 jul 2026, 23:00 (Chile)
+- **Fase 1 (Desarrollo):** vie 31 jul 23:00 → sáb 1 ago 23:00
+- **Fase 2 (Mejora cruzada):** sáb 1 ago 23:00 → dom 2 ago 23:00
+- **Fin:** domingo 2 ago 2026, 23:00

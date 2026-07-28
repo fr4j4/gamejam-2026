@@ -525,67 +525,90 @@ Prohibido contenido erótico. Violencia: permitida.</p>
 (function () {
   'use strict';
 
+  // ---- BGM (Suno) + kick-reactive glow (transient-only) -----------------
   var bgm = document.getElementById('bgm');
   var bgmBtn = document.getElementById('bgm-btn');
-  var audioCtx = null, analyser = null, source = null, dataArray = null;
-  var beatRaf = null, beatEnergy = 0, beatActive = false;
+  var audioCtx = null, analyser = null, dataArray = null;
+  var beatRaf = null;
+  var beatFlash = 0;           // 0..1 kick transient, decays fast
+  var bassHistory = [];        // last N bass samples for transient detection
+  var BASS_HISTORY_LEN = 10;
+  var framesSinceStart = 0;    // skip first frames to let history fill
 
-  function initBeatDetection() {
+  function initAudioAnalyser() {
     if (audioCtx) return;
     try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
-      source = audioCtx.createMediaElementSource(bgm);
-      source.connect(analyser);
+      analyser.fftSize = 1024;  // 1024 → 512 bins, ~43 Hz per bin @ 44.1kHz
+      var src = audioCtx.createMediaElementSource(bgm);
+      src.connect(analyser);
       analyser.connect(audioCtx.destination);
       dataArray = new Uint8Array(analyser.frequencyBinCount);
-    } catch (e) {}
+      startBeatLoop();
+    } catch(e) { /* audio analyser not available */ }
   }
 
-  function beatLoop() {
-    if (!analyser) { beatRaf = requestAnimationFrame(beatLoop); return; }
-    if (bgm.paused) {
-      if (beatEnergy > 0.01) {
-        beatEnergy *= 0.9;
-        applyBeat(beatEnergy);
-      } else if (beatActive) {
-        beatActive = false;
-        paint(accentLive, cycleIdx);
+  function startBeatLoop() {
+    if (beatRaf) return;
+    function loop() {
+      if (!analyser || bgm.paused) { beatRaf = requestAnimationFrame(loop); return; }
+      analyser.getByteFrequencyData(dataArray);
+      framesSinceStart++;
+      // Kick lives in bins 1-3 (~43-172 Hz), not bin 0 (sub-bass rumble)
+      var kick = (dataArray[1] + dataArray[2] + dataArray[3]) / (3 * 255);
+      // Pre-fill history on first frame to avoid initial spike
+      if (framesSinceStart === 1) {
+        for (var i = 0; i < BASS_HISTORY_LEN; i++) bassHistory.push(kick);
       }
-      beatRaf = requestAnimationFrame(beatLoop);
-      return;
-    }
-    analyser.getByteFrequencyData(dataArray);
-    var sum = 0;
-    for (var i = 0; i < 6; i++) sum += dataArray[i];
-    var raw = sum / 6 / 256;
-    beatEnergy = beatEnergy + (raw - beatEnergy) * 0.25;
-    beatActive = true;
-    applyBeat(beatEnergy);
-    beatRaf = requestAnimationFrame(beatLoop);
-  }
+      // Track recent average for transient detection
+      bassHistory.push(kick);
+      if (bassHistory.length > BASS_HISTORY_LEN) bassHistory.shift();
+      var avg = bassHistory.reduce(function(a, b) { return a + b; }, 0) / bassHistory.length;
+      // Transient: sharp spike well above the recent average
+      // Skip first 5 frames to let the history stabilize
+      if (framesSinceStart > 5 && kick > 0.35 && kick > avg * 2.0) {
+        beatFlash = Math.min(1, kick * 1.5);
+      }
+      // Fast decay — snap back quickly
+      beatFlash *= 0.82;
+      if (beatFlash < 0.01) beatFlash = 0;
 
-  function applyBeat(energy) {
-    var g = Math.min(0.95, 0.55 + energy * 0.4);
-    var h = Math.min(0.7, 0.28 + energy * 0.35);
-    root.setProperty('--accent-glow', rgba(accentLive, g));
-    root.setProperty('--accent-haze', rgba(accentLive, h));
-    var glowIntensity = 0.16 + energy * 0.2;
-    var glow = [
-      'radial-gradient(900px 560px at 8% 4%, ' + rgba(accentLive, glowIntensity) + ', transparent 66%)',
-      'radial-gradient(820px 620px at 100% 52%, rgba(122,92,255,0.18), transparent 68%)'
-    ];
-    var img = glow.concat(cycleIdx % 2 ? SCANLINES : GRID);
-    var size = glow.map(function () { return '100% 100%'; })
-      .concat(cycleIdx % 2 ? ['auto'] : ['32px 32px', '32px 32px']);
-    root.setProperty('--backdrop-image', img.join(', '));
-    root.setProperty('--backdrop-size', size.join(', '));
+      // Apply to backdrop aura (only on kick transient)
+      var accent = accentLive;
+      var auraIntensity = 0.08 + beatFlash * 0.5;
+      var aura = 'radial-gradient(1100px 620px at 50% -6%, ' + rgba(accent, auraIntensity) + ', transparent 68%)';
+      var img, size;
+      if (cycleIdx % 2) {
+        img = [aura].concat(SCANLINES); size = ['100% 100%', 'auto'];
+      } else {
+        img = [aura].concat(GRID); size = ['100% 100%', '32px 32px', '32px 32px'];
+      }
+      root.setProperty('--backdrop-image', img.join(', '));
+      root.setProperty('--backdrop-size', size.join(', '));
+
+      // Pulse the accent brightness hard on kick
+      var kickMul = 1 + beatFlash * 0.6;
+      var r = Math.min(255, Math.round(rgb(accent)[0] * kickMul));
+      var g = Math.min(255, Math.round(rgb(accent)[1] * kickMul));
+      var b = Math.min(255, Math.round(rgb(accent)[2] * kickMul));
+      var pulsed = 'rgb(' + r + ',' + g + ',' + b + ')';
+      root.setProperty('--accent', pulsed);
+      root.setProperty('--cta-shadow', '6px 6px 0 ' + shade(pulsed, 0.35));
+
+      // Big hero sprite glow on kick
+      if (!star && beatFlash > 0.05) {
+        sprite.style.setProperty('--sprite-glow', 'drop-shadow(0 0 ' + (8 + beatFlash * 40) + 'px ' + pulsed + ') brightness(' + (1 + beatFlash * 0.5) + ')');
+      }
+
+      beatRaf = requestAnimationFrame(loop);
+    }
+    beatRaf = requestAnimationFrame(loop);
   }
 
   window.toggleBGM = function () {
     if (bgm.paused) {
-      initBeatDetection();
+      initAudioAnalyser();
       bgm.play();
       bgmBtn.textContent = '⏸';
     } else {
@@ -593,8 +616,6 @@ Prohibido contenido erótico. Violencia: permitida.</p>
       bgmBtn.textContent = '▶';
     }
   };
-
-  beatRaf = requestAnimationFrame(beatLoop);
   'use strict';
 
   var PALETTE = ['#d8ff3e', '#b44dff', '#ff8a3d', '#4de2ff'];
@@ -808,102 +829,6 @@ Prohibido contenido erótico. Violencia: permitida.</p>
     });
   }, { passive: true });
 
-  // ---- BGM (Suno) + kick-reactive glow (transient-only) -----------------
-  var bgm = document.getElementById('bgm');
-  var bgmBtn = document.getElementById('bgm-btn');
-  var audioCtx = null, analyser = null, dataArray = null;
-  var beatRaf = null;
-  var beatFlash = 0;           // 0..1 kick transient, decays fast
-  var bassHistory = [];        // last N bass samples for transient detection
-  var BASS_HISTORY_LEN = 10;
-
-  function initAudioAnalyser() {
-    if (audioCtx) return;
-    try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 1024;  // 1024 → 512 bins, ~43 Hz per bin @ 44.1kHz
-      var src = audioCtx.createMediaElementSource(bgm);
-      src.connect(analyser);
-      analyser.connect(audioCtx.destination);
-      dataArray = new Uint8Array(analyser.frequencyBinCount);
-      startBeatLoop();
-    } catch(e) { /* audio analyser not available */ }
-  }
-
-  function startBeatLoop() {
-    if (beatRaf) return;
-    function loop() {
-      if (!analyser || bgm.paused) { beatRaf = requestAnimationFrame(loop); return; }
-      analyser.getByteFrequencyData(dataArray);
-      // Sub-bass only: first bin = 0-43 Hz (pure kick drum territory)
-      var bass = dataArray[0] / 255;
-      // Track recent average for transient detection
-      bassHistory.push(bass);
-      if (bassHistory.length > BASS_HISTORY_LEN) bassHistory.shift();
-      var avg = bassHistory.reduce(function(a, b) { return a + b; }, 0) / bassHistory.length;
-      // Transient: sharp spike well above the recent average
-      if (bass > 0.4 && bass > avg * 2.2) {
-        beatFlash = Math.min(1, bass * 1.5);
-      }
-      // Fast decay — snap back quickly
-      beatFlash *= 0.82;
-      if (beatFlash < 0.01) beatFlash = 0;
-
-      // Apply to backdrop aura (only on kick transient)
-      var accent = accentLive;
-      var auraIntensity = 0.08 + beatFlash * 0.5;
-      var aura = 'radial-gradient(1100px 620px at 50% -6%, ' + rgba(accent, auraIntensity) + ', transparent 68%)';
-      var img, size;
-      if (cycleIdx % 2) {
-        img = [aura].concat(SCANLINES); size = ['100% 100%', 'auto'];
-      } else {
-        img = [aura].concat(GRID); size = ['100% 100%', '32px 32px', '32px 32px'];
-      }
-      root.setProperty('--backdrop-image', img.join(', '));
-      root.setProperty('--backdrop-size', size.join(', '));
-
-      // Pulse the accent brightness hard on kick
-      var kick = 1 + beatFlash * 0.6;
-      var r = Math.min(255, Math.round(rgb(accent)[0] * kick));
-      var g = Math.min(255, Math.round(rgb(accent)[1] * kick));
-      var b = Math.min(255, Math.round(rgb(accent)[2] * kick));
-      var pulsed = 'rgb(' + r + ',' + g + ',' + b + ')';
-      root.setProperty('--accent', pulsed);
-      root.setProperty('--cta-shadow', '6px 6px 0 ' + shade(pulsed, 0.35));
-
-      // Big hero sprite glow on kick
-      if (!star && beatFlash > 0.05) {
-        sprite.style.setProperty('--sprite-glow', 'drop-shadow(0 0 ' + (8 + beatFlash * 40) + 'px ' + pulsed + ') brightness(' + (1 + beatFlash * 0.5) + ')');
-      }
-
-      beatRaf = requestAnimationFrame(loop);
-    }
-    beatRaf = requestAnimationFrame(loop);
-  }
-
-  function toggleBGM() {
-    if (bgm.paused) {
-      bgm.play();
-      bgmBtn.textContent = '⏸';
-    } else {
-      bgm.pause();
-      bgmBtn.textContent = '▶';
-    }
-  }
-  // Autoplay on first real user interaction
-  var startBGM = function() {
-    initAudioAnalyser();
-    bgm.play().then(function() {
-      bgmBtn.textContent = '⏸';
-    }).catch(function() {});
-    document.removeEventListener('click', startBGM);
-    document.removeEventListener('touchstart', startBGM);
-    document.removeEventListener('keydown', startBGM);
-  };
-  document.addEventListener('click', startBGM, { once: true });
-  document.addEventListener('touchstart', startBGM, { once: true });
-  document.addEventListener('keydown', startBGM, { once: true });
   // ---- copy prompt -------------------------------------------------------
   var promptText = document.getElementById('prompt-text').textContent;
   // One shared `copied` flag drives both buttons, as in the original — a

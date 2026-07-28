@@ -23,6 +23,7 @@ Todo dentro de la carpeta del otro participante. Así mezclamos estilos, modelos
 
 ## 📋 Reglas
 
+0. **Tener cuenta en kodingvibes.com** — es requisito para participar
 1. Cada participante trabaja **exclusivamente** dentro de `participantes/<su-nombre>/`
 2. No tocar archivos fuera de tu carpeta — eso incluye README, .gitignore, etc.
 3. En Fase 1: haz un **Pull Request** con tu juego a `main`

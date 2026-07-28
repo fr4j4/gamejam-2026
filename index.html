@@ -89,7 +89,7 @@
     #soundtrack-mini {
       position: fixed;
       top: 10px;
-      right: 10px;
+      left: 10px;
       z-index: 999;
       pointer-events: auto;
     }
@@ -1220,10 +1220,12 @@
         bgmBtn.textContent = '🎵 PLAY';
       }
     }
-    // Autoplay on first user interaction
-    document.addEventListener('click', () => {
-      if (bgm.paused) { bgm.play(); bgmBtn.textContent = '🎵 PAUSE'; }
-    }, { once: true });
+    // Autoplay on page load (browser may block it)
+    bgm.play().then(() => {
+      bgmBtn.textContent = '🎵 PAUSE';
+    }).catch(() => {
+      // Browser blocked autoplay — button stays as PLAY for manual start
+    });
   </script>
 
   <!-- Matrix Rain -->

@@ -583,18 +583,7 @@ Prohibido contenido erótico. Violencia: permitida.</p>
       bgmBtn.textContent = '▶';
     }
   }
-  // Autoplay on first real user interaction
-  var startBGM = function() {
-    bgm.play().then(function() {
-      bgmBtn.textContent = '⏸';
-    }).catch(function() {});
-    document.removeEventListener('click', startBGM);
-    document.removeEventListener('touchstart', startBGM);
-    document.removeEventListener('keydown', startBGM);
-  };
-  document.addEventListener('click', startBGM, { once: true });
-  document.addEventListener('touchstart', startBGM, { once: true });
-  document.addEventListener('keydown', startBGM, { once: true });
+  // No autoplay — user clicks the button to start/stop
 
   // ---- copy prompt -------------------------------------------------------
   var promptText = document.getElementById('prompt-text').textContent;

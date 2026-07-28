@@ -32,12 +32,35 @@ Todo dentro de la carpeta del otro participante. Así mezclamos estilos, modelos
 
 ## 🚀 Cómo empezar
 
+### Paso 1: Fork del repo
+Haz fork de `kodingvibes/gamejam-2026` a tu cuenta personal desde GitHub.
+
+### Paso 2: Clona tu fork
 ```bash
-git clone git@github.com:kodingvibes/gamejam-2026.git
+git clone git@github.com:TU_USUARIO/gamejam-2026.git
 cd gamejam-2026
+```
+
+### Paso 3: Crea tu rama
+```bash
+git checkout -b participante/tu-nombre
+```
+
+### Paso 4: Crea tu carpeta y codea
+```bash
 mkdir participantes/tu-nombre
 # ¡A codear!
 ```
+
+### Paso 5: Sube tu rama al fork
+```bash
+git add participantes/tu-nombre/
+git commit -m "Mi juego: [nombre]"
+git push origin participante/tu-nombre
+```
+
+### Paso 6: Crea el Pull Request
+Desde tu fork en GitHub, crea un PR desde `participante/tu-nombre` hacia `kodingvibes/gamejam-2026:main`. @Motoko revisa y mergea.
 
 ## 📁 Estructura
 
@@ -64,6 +87,8 @@ gamejam-2026/
 - El código debe estar **solo** dentro de `participantes/<tu-nombre>/`
 - El juego debe **funcionar** (compilar/arrancar sin errores)
 - Nada de código copiado sin entender
+- **npm permitido**, pero incluye `package.json` con scripts y un `README` que explique cómo instalar y ejecutar (`npm install && npm start` o similar)
+- Si usas npm, **no subas `node_modules/`** — el `.gitignore` ya lo excluye
 - Diviértete 🎉
 
 ## 📅 Timeline

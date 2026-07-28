@@ -109,6 +109,95 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important }
   }
+
+  /* ===== MOBILE-FIRST RESPONSIVE ===== */
+
+  /* ≤600px — tablets pequeñas y móviles grandes */
+  @media (max-width: 600px) {
+    section:first-of-type h1 {
+      padding-right: 0 !important;
+    }
+    #hero-sprite {
+      position: relative !important;
+      top: auto !important;
+      right: auto !important;
+      margin: 16px auto 0 !important;
+    }
+    #doodles { display: none !important; }
+  }
+
+  /* ≤480px — móviles */
+  @media (max-width: 480px) {
+    section:has(#cd-d) > div:last-child {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 6px !important;
+    }
+    #soundtrack-mini {
+      top: auto !important;
+      bottom: 16px !important;
+      right: 12px !important;
+      font-size: 9px !important;
+    }
+    #soundtrack-mini button {
+      width: 28px !important;
+      height: 28px !important;
+      font-size: 12px !important;
+    }
+    #soundtrack-label {
+      max-width: 80px !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+    }
+    div:has(> a[href*="prensa"]) {
+      top: auto !important;
+      bottom: 16px !important;
+      left: 12px !important;
+    }
+    #prompt-text {
+      font-size: 12px !important;
+      padding: 14px !important;
+      max-height: 240px !important;
+    }
+    section#timeline [style*="border-left"] {
+      padding: 14px !important;
+    }
+    section#reglas [style*="grid-template-columns: 34px 1fr"] {
+      padding: 14px 16px !important;
+      gap: 10px !important;
+      font-size: 14px !important;
+    }
+    section#evaluacion [style*="grid-template-columns: repeat(10"] {
+      gap: 2px !important;
+    }
+    section#evaluacion [style*="grid-template-columns: repeat(10"] span {
+      height: 10px !important;
+    }
+    footer > div {
+      justify-content: center !important;
+      text-align: center !important;
+      font-size: 11px !important;
+    }
+  }
+
+  /* ≤375px — móviles pequeños */
+  @media (max-width: 375px) {
+    header div:last-child {
+      font-size: 9px !important;
+      letter-spacing: 0.8px !important;
+    }
+    .cta-repo {
+      padding: 14px 20px !important;
+      font-size: 10px !important;
+    }
+  }
+
+  /* ≤340px — móviles extremos */
+  @media (max-width: 340px) {
+    header div:last-child {
+      display: none !important;
+    }
+  }
 </style>
 </head>
 <body>

@@ -12,7 +12,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -30,13 +30,38 @@
       --danger: #ff3366;
     }
 
+    /* Fade-in animation */
+    .page-wrapper {
+      opacity: 0;
+      animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Space Grotesk', system-ui, sans-serif;
-      line-height: 1.7;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
       min-height: 100vh;
       overflow-x: hidden;
+    }
+
+    /* Background glyphs */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image:
+        radial-gradient(circle at 15% 20%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 85% 30%, rgba(255, 107, 53, 0.02) 0%, transparent 50%),
+        radial-gradient(circle at 50% 80%, rgba(255, 209, 102, 0.02) 0%, transparent 50%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff6b35' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
     }
 
     .container {
@@ -44,6 +69,7 @@
       margin: 0 auto;
       padding: 0 24px;
       position: relative;
+      z-index: 1;
     }
 
     /* Pixel ghost — signature element */
@@ -88,13 +114,17 @@
     }
 
     .hero h1 {
-      font-family: 'Press Start 2P', monospace;
-      font-size: clamp(1.5rem, 5vw, 2.5rem);
-      line-height: 1.3;
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(2.5rem, 7vw, 4rem);
+      font-weight: 900;
+      line-height: 1.05;
       margin-bottom: 20px;
       color: var(--text);
-      text-shadow: 4px 4px 0 var(--accent);
-      letter-spacing: -0.5px;
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .hero p {
@@ -102,6 +132,7 @@
       color: var(--text-dim);
       max-width: 520px;
       margin: 0 auto 36px;
+      line-height: 1.6;
     }
 
     .hero-actions {
@@ -115,7 +146,7 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      font-family: 'Space Grotesk', sans-serif;
+      font-family: 'Inter', sans-serif;
       font-weight: 600;
       font-size: 0.9rem;
       padding: 12px 24px;
@@ -177,10 +208,12 @@
     }
 
     .countdown-number {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 1.8rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
       color: var(--accent);
       line-height: 1;
+      letter-spacing: -1px;
     }
 
     .countdown-label {
@@ -192,8 +225,9 @@
     }
 
     .countdown-sep {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 1.5rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 300;
       color: var(--border);
       padding-top: 4px;
     }
@@ -216,54 +250,109 @@
       letter-spacing: 1px;
     }
 
-    /* Timeline — visual, not numbered */
+    /* 48h explainer */
+    .explainer-48h {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .explainer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 28px 24px;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+
+    .explainer-card:hover {
+      border-color: var(--accent);
+    }
+
+    .explainer-card .big {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1;
+      letter-spacing: -2px;
+    }
+
+    .explainer-card .label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 8px;
+      font-weight: 500;
+    }
+
+    .explainer-card .sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .explainer-card .mode {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 12px;
+      border-radius: 2px;
+    }
+
+    .explainer-card .mode.solo {
+      background: rgba(255, 107, 53, 0.1);
+      color: var(--accent);
+    }
+
+    .explainer-card .mode.community {
+      background: rgba(255, 209, 102, 0.1);
+      color: var(--accent-secondary);
+    }
+
+    .explainer-plus {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: var(--text-muted);
+    }
+
+    /* Timeline — no vertical lines */
     .timeline {
       display: flex;
       flex-direction: column;
-      gap: 0;
-      position: relative;
-      padding-left: 28px;
-    }
-
-    .timeline::before {
-      content: '';
-      position: absolute;
-      left: 6px;
-      top: 8px;
-      bottom: 8px;
-      width: 2px;
-      background: var(--border);
+      gap: 10px;
     }
 
     .timeline-item {
-      position: relative;
-      padding: 20px 0 20px 24px;
-    }
-
-    .timeline-item::before {
-      content: '';
-      position: absolute;
-      left: -22px;
-      top: 26px;
-      width: 10px;
-      height: 10px;
-      border-radius: 0;
       background: var(--surface);
-      border: 2px solid var(--accent);
-      transform: rotate(45deg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 22px 24px;
+      transition: border-color 0.2s;
     }
 
-    .timeline-item.active::before {
-      background: var(--accent);
-      box-shadow: 0 0 12px var(--accent-glow);
+    .timeline-item:hover {
+      border-color: var(--accent);
+    }
+
+    .timeline-item.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
     }
 
     .timeline-item .phase {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.55rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      font-weight: 500;
       color: var(--accent);
       margin-bottom: 6px;
-      letter-spacing: 0.5px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
     }
 
     .timeline-item h3 {
@@ -299,7 +388,7 @@
       padding: 14px 18px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: 4px;
       font-size: 0.88rem;
       transition: border-color 0.15s;
     }
@@ -323,45 +412,42 @@
       border-color: var(--danger);
     }
 
-    /* Steps as visual flow */
-    .steps-flow {
+    /* Steps — no vertical lines */
+    .steps-grid {
       display: flex;
       flex-direction: column;
-      gap: 0;
-      position: relative;
-      padding-left: 40px;
-    }
-
-    .steps-flow::before {
-      content: '';
-      position: absolute;
-      left: 15px;
-      top: 8px;
-      bottom: 8px;
-      width: 2px;
-      background: var(--border);
+      gap: 8px;
     }
 
     .step-item {
-      position: relative;
-      padding: 16px 0 16px 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      transition: border-color 0.15s;
     }
 
-    .step-item::before {
-      content: attr(data-step);
-      position: absolute;
-      left: -33px;
-      top: 18px;
-      width: 28px;
-      height: 28px;
+    .step-item:hover {
+      border-color: var(--accent);
+    }
+
+    .step-item .num {
+      width: 30px;
+      height: 30px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      font-family: 'Press Start 2P', monospace;
-      font-size: 0.5rem;
+      background: rgba(255, 107, 53, 0.1);
+      border: 1px solid rgba(255, 107, 53, 0.2);
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
       color: var(--accent);
+      flex-shrink: 0;
+      border-radius: 4px;
     }
 
     .step-item h3 {
@@ -395,7 +481,7 @@
       padding: 12px 16px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: 4px;
       font-size: 0.82rem;
       display: flex;
       align-items: center;
@@ -408,6 +494,77 @@
 
     .criterion .cross {
       color: var(--danger);
+    }
+
+    /* Prizes */
+    .prizes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .prize-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 28px 20px;
+      text-align: center;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .prize-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .prize-card .trophy {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+
+    .prize-card .place {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .prize-card .prize-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent-secondary);
+    }
+
+    .prize-card .prize-sub {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+
+    .prize-card.gold {
+      border-color: rgba(255, 209, 102, 0.2);
+    }
+
+    .prize-card.gold:hover {
+      border-color: #ffd166;
+    }
+
+    .prize-card.silver {
+      border-color: rgba(136, 136, 160, 0.2);
+    }
+
+    .prize-card.silver:hover {
+      border-color: #8888a0;
+    }
+
+    .prize-card.bronze {
+      border-color: rgba(255, 107, 53, 0.2);
+    }
+
+    .prize-card.bronze:hover {
+      border-color: var(--accent);
     }
 
     /* Footer */
@@ -432,229 +589,294 @@
     @media (max-width: 600px) {
       .hero { padding: 60px 0 40px; }
       .countdown { gap: 8px; }
-      .countdown-number { font-size: 1.3rem; }
+      .countdown-number { font-size: 1.6rem; }
       .countdown-item { min-width: 44px; }
       .criteria-grid { grid-template-columns: 1fr; }
+      .explainer-48h { grid-template-columns: 1fr; }
+      .explainer-plus { display: none; }
+      .prizes-grid { grid-template-columns: 1fr; }
       #pixel-ghost { display: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
       #pixel-ghost { display: none; }
+      .page-wrapper { opacity: 1; animation: none; }
     }
   </style>
 </head>
 <body>
-  <!-- Pixel ghost — signature element -->
-  <svg id="pixel-ghost" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-    <rect x="8" y="4" width="16" height="2" fill="#ff6b35"/>
-    <rect x="6" y="6" width="20" height="2" fill="#ff6b35"/>
-    <rect x="4" y="8" width="24" height="2" fill="#ff6b35"/>
-    <rect x="4" y="10" width="24" height="2" fill="#ff6b35"/>
-    <rect x="4" y="12" width="24" height="2" fill="#ff6b35"/>
-    <rect x="4" y="14" width="24" height="2" fill="#ff6b35"/>
-    <rect x="4" y="16" width="24" height="2" fill="#ff6b35"/>
-    <rect x="4" y="18" width="24" height="2" fill="#ff6b35"/>
-    <rect x="4" y="20" width="24" height="2" fill="#ff6b35"/>
-    <rect x="4" y="22" width="24" height="2" fill="#ff6b35"/>
-    <rect x="6" y="24" width="4" height="2" fill="#ff6b35"/>
-    <rect x="14" y="24" width="4" height="2" fill="#ff6b35"/>
-    <rect x="22" y="24" width="4" height="2" fill="#ff6b35"/>
-    <rect x="8" y="26" width="2" height="2" fill="#ff6b35"/>
-    <rect x="16" y="26" width="2" height="2" fill="#ff6b35"/>
-    <rect x="22" y="26" width="2" height="2" fill="#ff6b35"/>
-    <!-- Eyes -->
-    <rect x="10" y="12" width="4" height="4" fill="#0f0f11"/>
-    <rect x="18" y="12" width="4" height="4" fill="#0f0f11"/>
-    <rect x="10" y="12" width="2" height="2" fill="#ffd166"/>
-    <rect x="20" y="12" width="2" height="2" fill="#ffd166"/>
-  </svg>
+  <div class="page-wrapper">
+    <!-- Pixel ghost — signature element -->
+    <svg id="pixel-ghost" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <rect x="8" y="4" width="16" height="2" fill="#ff6b35"/>
+      <rect x="6" y="6" width="20" height="2" fill="#ff6b35"/>
+      <rect x="4" y="8" width="24" height="2" fill="#ff6b35"/>
+      <rect x="4" y="10" width="24" height="2" fill="#ff6b35"/>
+      <rect x="4" y="12" width="24" height="2" fill="#ff6b35"/>
+      <rect x="4" y="14" width="24" height="2" fill="#ff6b35"/>
+      <rect x="4" y="16" width="24" height="2" fill="#ff6b35"/>
+      <rect x="4" y="18" width="24" height="2" fill="#ff6b35"/>
+      <rect x="4" y="20" width="24" height="2" fill="#ff6b35"/>
+      <rect x="4" y="22" width="24" height="2" fill="#ff6b35"/>
+      <rect x="6" y="24" width="4" height="2" fill="#ff6b35"/>
+      <rect x="14" y="24" width="4" height="2" fill="#ff6b35"/>
+      <rect x="22" y="24" width="4" height="2" fill="#ff6b35"/>
+      <rect x="8" y="26" width="2" height="2" fill="#ff6b35"/>
+      <rect x="16" y="26" width="2" height="2" fill="#ff6b35"/>
+      <rect x="22" y="26" width="2" height="2" fill="#ff6b35"/>
+      <!-- Eyes -->
+      <rect x="10" y="12" width="4" height="4" fill="#0f0f11"/>
+      <rect x="18" y="12" width="4" height="4" fill="#0f0f11"/>
+      <rect x="10" y="12" width="2" height="2" fill="#ffd166"/>
+      <rect x="20" y="12" width="2" height="2" fill="#ffd166"/>
+    </svg>
 
-  <div class="container">
-    <!-- Hero -->
-    <section class="hero">
-      <div class="hero-badge">
-        <span>kodingvibes gamejam</span>
-      </div>
-      <h1>GameJam 2026</h1>
-      <p>48 horas de puro código. 24h para crear tu juego, 24h para mejorar el de otro. Todos los niveles bienvenidos.</p>
-      <div class="hero-actions">
-        <a href="https://github.com/kodingvibes/gamejam-2026" class="btn btn-primary" target="_blank">
-          Participar
-        </a>
-        <a href="#como-participar" class="btn btn-secondary">
-          Cómo funciona
-        </a>
-      </div>
-    </section>
+    <div class="container">
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero-badge">
+          <span>kodingvibes gamejam</span>
+        </div>
+        <h1>GameJam 2026</h1>
+        <p>48 horas divididas en dos mitades: 24h de desarrollo en solitario + 24h de mejora comunitaria. Todos los niveles bienvenidos.</p>
+        <div class="hero-actions">
+          <a href="https://github.com/kodingvibes/gamejam-2026" class="btn btn-primary" target="_blank">
+            Participar
+          </a>
+          <a href="#como-participar" class="btn btn-secondary">
+            Cómo funciona
+          </a>
+        </div>
+      </section>
 
-    <!-- Countdown -->
-    <section class="countdown-section">
-      <h2>Próxima edición</h2>
-      <div class="countdown" id="countdown-display">
-        <div class="countdown-item">
-          <span class="countdown-number" id="days">--</span>
-          <span class="countdown-label">Días</span>
+      <!-- Countdown -->
+      <section class="countdown-section">
+        <h2>Próxima edición</h2>
+        <div class="countdown" id="countdown-display">
+          <div class="countdown-item">
+            <span class="countdown-number" id="days">--</span>
+            <span class="countdown-label">Días</span>
+          </div>
+          <span class="countdown-sep">:</span>
+          <div class="countdown-item">
+            <span class="countdown-number" id="hours">--</span>
+            <span class="countdown-label">Horas</span>
+          </div>
+          <span class="countdown-sep">:</span>
+          <div class="countdown-item">
+            <span class="countdown-number" id="minutes">--</span>
+            <span class="countdown-label">Min</span>
+          </div>
+          <span class="countdown-sep">:</span>
+          <div class="countdown-item">
+            <span class="countdown-number" id="seconds">--</span>
+            <span class="countdown-label">Seg</span>
+          </div>
         </div>
-        <span class="countdown-sep">:</span>
-        <div class="countdown-item">
-          <span class="countdown-number" id="hours">--</span>
-          <span class="countdown-label">Horas</span>
-        </div>
-        <span class="countdown-sep">:</span>
-        <div class="countdown-item">
-          <span class="countdown-number" id="minutes">--</span>
-          <span class="countdown-label">Min</span>
-        </div>
-        <span class="countdown-sep">:</span>
-        <div class="countdown-item">
-          <span class="countdown-number" id="seconds">--</span>
-          <span class="countdown-label">Seg</span>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Timeline -->
-    <section class="section">
-      <h2 class="section-title">Timeline</h2>
-      <div class="timeline">
-        <div class="timeline-item active">
-          <div class="phase">FASE 1</div>
-          <h3>Crea tu juego</h3>
-          <div class="date">Vie 31 jul 23:00 → Sáb 1 ago 23:00</div>
-          <div class="desc">24 horas para desarrollar tu juego completo. Cualquier stack, cualquier género. Solo dentro de tu carpeta.</div>
+      <!-- 48h Explainer -->
+      <section class="section">
+        <h2 class="section-title">48 horas en acción</h2>
+        <div class="explainer-48h">
+          <div class="explainer-card">
+            <div class="big">24h</div>
+            <div class="label">Desarrollo en solitario</div>
+            <div class="sub">Cada participante crea su juego desde cero</div>
+            <span class="mode solo">Solo</span>
+          </div>
+          <div class="explainer-card">
+            <div class="big">24h</div>
+            <div class="label">Mejora comunitaria</div>
+            <div class="sub">Los juegos se reparten y todos mejoran el de otro</div>
+            <span class="mode community">Comunidad</span>
+          </div>
         </div>
-        <div class="timeline-item">
-          <div class="phase">FASE 2</div>
-          <h3>Mejora el juego de otro</h3>
-          <div class="date">Sáb 1 ago 23:00 → Dom 2 ago 23:00</div>
-          <div class="desc">Te asignan el juego de otro participante. Agrega features, refactoriza, corrige bugs. Aprendizaje cruzado.</div>
-        </div>
-        <div class="timeline-item">
-          <div class="phase">FIN</div>
-          <h3>Entrega final</h3>
-          <div class="date">Dom 2 ago 23:00</div>
-          <div class="desc">Se cierran los PRs. @Motoko revisa todo y anuncia resultados.</div>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Rules -->
-    <section class="section">
-      <h2 class="section-title">Reglas</h2>
-      <div class="rules-grid">
-        <div class="rule-card">
-          <span class="icon">🔑</span>
-          <span>Tener cuenta en <strong>kodingvibes.com</strong> — requisito obligatorio</span>
+      <!-- Timeline -->
+      <section class="section">
+        <h2 class="section-title">Timeline</h2>
+        <div class="timeline">
+          <div class="timeline-item active">
+            <div class="phase">FASE 1</div>
+            <h3>Crea tu juego</h3>
+            <div class="date">Vie 31 jul 23:00 → Sáb 1 ago 23:00</div>
+            <div class="desc">24 horas para desarrollar tu juego completo. Cualquier stack, cualquier género. Solo dentro de tu carpeta.</div>
+          </div>
+          <div class="timeline-item">
+            <div class="phase">FASE 2</div>
+            <h3>Mejora el juego de otro</h3>
+            <div class="date">Sáb 1 ago 23:00 → Dom 2 ago 23:00</div>
+            <div class="desc">Te asignan el juego de otro participante. Agrega features, refactoriza, corrige bugs. Aprendizaje cruzado.</div>
+          </div>
+          <div class="timeline-item">
+            <div class="phase">FIN</div>
+            <h3>Entrega final</h3>
+            <div class="date">Dom 2 ago 23:00</div>
+            <div class="desc">Se cierran los PRs. @Motoko revisa todo y anuncia resultados.</div>
+          </div>
         </div>
-        <div class="rule-card">
-          <span class="icon">📁</span>
-          <span>Trabajar solo dentro de <code>participantes/tu-nombre/</code></span>
-        </div>
-        <div class="rule-card">
-          <span class="icon">🚫</span>
-          <span>No tocar archivos fuera de tu carpeta</span>
-        </div>
-        <div class="rule-card">
-          <span class="icon">🔀</span>
-          <span>Fase 1: PR con tu juego. Fase 2: PR con mejoras al juego de otro</span>
-        </div>
-        <div class="rule-card">
-          <span class="icon">🤖</span>
-          <span>@Motoko revisa y mergea todos los PRs</span>
-        </div>
-        <div class="rule-card danger">
-          <span class="icon">🚨</span>
-          <span>No juegos eróticos. Violencia extrema: bienvenida</span>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- How to participate -->
-    <section class="section" id="como-participar">
-      <h2 class="section-title">Cómo participar</h2>
-      <div class="steps-flow">
-        <div class="step-item" data-step="1">
-          <h3>Haz fork del repo</h3>
-          <p>Forkea <code>kodingvibes/gamejam-2026</code> a tu cuenta de GitHub.</p>
+      <!-- Rules -->
+      <section class="section">
+        <h2 class="section-title">Reglas</h2>
+        <div class="rules-grid">
+          <div class="rule-card">
+            <span class="icon">🔑</span>
+            <span>Tener cuenta en <strong>kodingvibes.com</strong> — requisito obligatorio</span>
+          </div>
+          <div class="rule-card">
+            <span class="icon">📁</span>
+            <span>Trabajar solo dentro de <code>participantes/tu-nombre/</code></span>
+          </div>
+          <div class="rule-card">
+            <span class="icon">🚫</span>
+            <span>No tocar archivos fuera de tu carpeta</span>
+          </div>
+          <div class="rule-card">
+            <span class="icon">🔀</span>
+            <span>Fase 1: PR con tu juego. Fase 2: PR con mejoras al juego de otro</span>
+          </div>
+          <div class="rule-card">
+            <span class="icon">🤖</span>
+            <span>@Motoko revisa y mergea todos los PRs</span>
+          </div>
+          <div class="rule-card danger">
+            <span class="icon">🚨</span>
+            <span>No juegos eróticos. Violencia extrema: bienvenida</span>
+          </div>
         </div>
-        <div class="step-item" data-step="2">
-          <h3>Clona y crea tu rama</h3>
-          <p><code>git clone</code> tu fork, luego <code>git checkout -b participante/tu-nombre</code></p>
+      </section>
+
+      <!-- How to participate -->
+      <section class="section" id="como-participar">
+        <h2 class="section-title">Cómo participar</h2>
+        <div class="steps-grid">
+          <div class="step-item">
+            <span class="num">1</span>
+            <div>
+              <h3>Haz fork del repo</h3>
+              <p>Forkea <code>kodingvibes/gamejam-2026</code> a tu cuenta de GitHub.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="num">2</span>
+            <div>
+              <h3>Clona y crea tu rama</h3>
+              <p><code>git clone</code> tu fork, luego <code>git checkout -b participante/tu-nombre</code></p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="num">3</span>
+            <div>
+              <h3>Codea tu juego</h3>
+              <p>Crea <code>participantes/tu-nombre/</code> y desarrolla todo ahí. HTML, Phaser, Python — lo que quieras.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="num">4</span>
+            <div>
+              <h3>Sube tu rama y haz PR</h3>
+              <p><code>git push origin participante/tu-nombre</code> y crea un PR hacia <code>kodingvibes/gamejam-2026:main</code></p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="num">5</span>
+            <div>
+              <h3>@Motoko revisa</h3>
+              <p>La IA del grupo revisa tu PR. Si pasa los filtros, se mergea automáticamente.</p>
+            </div>
+          </div>
         </div>
-        <div class="step-item" data-step="3">
-          <h3>Codea tu juego</h3>
-          <p>Crea <code>participantes/tu-nombre/</code> y desarrolla todo ahí. HTML, Phaser, Python — lo que quieras.</p>
+      </section>
+
+      <!-- Criteria -->
+      <section class="section">
+        <h2 class="section-title">Validación</h2>
+        <div class="criteria-grid">
+          <div class="criterion"><span class="check">✓</span> Código solo en tu carpeta</div>
+          <div class="criterion"><span class="check">✓</span> El juego debe funcionar</div>
+          <div class="criterion"><span class="check">✓</span> Nada de código copiado sin entender</div>
+          <div class="criterion"><span class="check">✓</span> npm permitido, sin <code>node_modules/</code></div>
+          <div class="criterion"><span class="cross">✗</span> No juegos eróticos</div>
+          <div class="criterion"><span class="check">✓</span> Violencia extrema: bienvenida</div>
         </div>
-        <div class="step-item" data-step="4">
-          <h3>Sube tu rama y haz PR</h3>
-          <p><code>git push origin participante/tu-nombre</code> y crea un PR hacia <code>kodingvibes/gamejam-2026:main</code></p>
+      </section>
+
+      <!-- Prizes -->
+      <section class="section">
+        <h2 class="section-title">Premios</h2>
+        <div class="prizes-grid">
+          <div class="prize-card gold">
+            <div class="trophy">🥇</div>
+            <div class="place">Primer lugar</div>
+            <div class="prize-name">???</div>
+            <div class="prize-sub">Por definir</div>
+          </div>
+          <div class="prize-card silver">
+            <div class="trophy">🥈</div>
+            <div class="place">Segundo lugar</div>
+            <div class="prize-name">???</div>
+            <div class="prize-sub">Por definir</div>
+          </div>
+          <div class="prize-card bronze">
+            <div class="trophy">🥉</div>
+            <div class="place">Tercer lugar</div>
+            <div class="prize-name">???</div>
+            <div class="prize-sub">Por definir</div>
+          </div>
         </div>
-        <div class="step-item" data-step="5">
-          <h3>@Motoko revisa</h3>
-          <p>La IA del grupo revisa tu PR. Si pasa los filtros, se mergea automáticamente.</p>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Criteria -->
-    <section class="section">
-      <h2 class="section-title">Validación</h2>
-      <div class="criteria-grid">
-        <div class="criterion"><span class="check">✓</span> Código solo en tu carpeta</div>
-        <div class="criterion"><span class="check">✓</span> El juego debe funcionar</div>
-        <div class="criterion"><span class="check">✓</span> Nada de código copiado sin entender</div>
-        <div class="criterion"><span class="check">✓</span> npm permitido, sin <code>node_modules/</code></div>
-        <div class="criterion"><span class="cross">✗</span> No juegos eróticos</div>
-        <div class="criterion"><span class="check">✓</span> Violencia extrema: bienvenida</div>
-      </div>
-    </section>
+      <!-- Footer -->
+      <footer class="footer">
+        <p>Organizado por <a href="https://github.com/kodingvibes" target="_blank">kodingvibes</a> · Repo: <a href="https://github.com/kodingvibes/gamejam-2026" target="_blank">gamejam-2026</a></p>
+        <p style="margin-top: 6px;">PRs revisados por <strong>@Motoko</strong></p>
+      </footer>
+    </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <p>Organizado por <a href="https://github.com/kodingvibes" target="_blank">kodingvibes</a> · Repo: <a href="https://github.com/kodingvibes/gamejam-2026" target="_blank">gamejam-2026</a></p>
-      <p style="margin-top: 6px;">PRs revisados por <strong>@Motoko</strong></p>
-    </footer>
-  </div>
+    <script>
+      const target = new Date('2026-07-31T23:00:00-04:00');
 
-  <script>
-    const target = new Date('2026-07-31T23:00:00-04:00');
+      function updateCountdown() {
+        const now = new Date();
+        const diff = target - now;
 
-    function updateCountdown() {
-      const now = new Date();
-      const diff = target - now;
+        if (diff <= 0) {
+          document.getElementById('days').textContent = '00';
+          document.getElementById('hours').textContent = '00';
+          document.getElementById('minutes').textContent = '00';
+          document.getElementById('seconds').textContent = '00';
+          return;
+        }
 
-      if (diff <= 0) {
-        document.getElementById('days').textContent = '00';
-        document.getElementById('hours').textContent = '00';
-        document.getElementById('minutes').textContent = '00';
-        document.getElementById('seconds').textContent = '00';
-        return;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+
+        document.getElementById('days').textContent = String(days).padStart(2, '0');
+        document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+        document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+        document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
       }
 
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      const seconds = Math.floor((diff / 1000) % 60);
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
 
-      document.getElementById('days').textContent = String(days).padStart(2, '0');
-      document.getElementById('hours').textContent = String(hours).padStart(2, '0');
-      document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
-      document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
-    }
+      // Pixel ghost bobbing animation
+      const ghost = document.getElementById('pixel-ghost');
+      let ghostY = 0;
+      let ghostDir = 1;
 
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
-
-    // Pixel ghost bobbing animation
-    const ghost = document.getElementById('pixel-ghost');
-    let ghostY = 0;
-    let ghostDir = 1;
-
-    setInterval(() => {
-      ghostY += ghostDir * 0.5;
-      if (Math.abs(ghostY) > 4) ghostDir *= -1;
-      ghost.style.transform = `translateY(${ghostY}px)`;
-    }, 50);
-  </script>
+      setInterval(() => {
+        ghostY += ghostDir * 0.5;
+        if (Math.abs(ghostY) > 4) ghostDir *= -1;
+        ghost.style.transform = `translateY(${ghostY}px)`;
+      }, 50);
+    </script>
+  </div>
 </body>
 </html>

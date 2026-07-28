@@ -74,12 +74,23 @@
       position: relative;
     }
 
+    /* === MATRIX RAIN === */
+    #matrix-rain {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.12;
+    }
+
     /* === 8-BIT DOODLES === */
     .doodles {
       position: fixed;
       inset: 0;
       pointer-events: none;
-      z-index: 0;
+      z-index: 1;
       overflow: hidden;
     }
 
@@ -814,6 +825,8 @@
   </style>
 </head>
 <body>
+  <!-- Matrix rain background -->
+  <canvas id="matrix-rain"></canvas>
   <!-- 8-bit doodles background -->
   <div class="doodles">
     <svg class="doodle" width="32" height="32" viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" fill="#ff6b35"/><rect x="8" y="8" width="16" height="16" fill="#ffd166"/><rect x="12" y="12" width="8" height="8" fill="#ff6b35"/></svg>
@@ -1164,6 +1177,47 @@
       ghost.style.transform = `translateY(${gy}px)`;
     }, 50);
   </script>
+
+  <!-- Matrix Rain -->
+  <script>
+    const canvas = document.getElementById('matrix-rain');
+    const ctx = canvas.getContext('2d');
+
+    function resizeMatrix() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeMatrix();
+    window.addEventListener('resize', resizeMatrix);
+
+    const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+    const fontSize = 14;
+    const cols = Math.floor(canvas.width / fontSize);
+    const drops = Array.from({ length: cols }, () => Math.floor(Math.random() * canvas.height / fontSize));
+
+    function drawMatrix() {
+      ctx.fillStyle = 'rgba(15, 15, 17, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.font = fontSize + 'px monospace';
+      for (let i = 0; i < drops.length; i++) {
+        const char = chars[Math.floor(Math.random() * chars.length)];
+        const x = i * fontSize;
+        const y = drops[i] * fontSize;
+
+        ctx.fillStyle = '#ff6b35';
+        ctx.fillText(char, x, y);
+
+        if (y > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+
+    setInterval(drawMatrix, 50);
+  </script>
+
 </body>
 </html>
       .eval-grid { grid-template-columns: 1fr; }

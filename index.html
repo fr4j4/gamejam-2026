@@ -386,6 +386,19 @@ Prohibido contenido erótico. Violencia: permitida.</p>
   </footer>
 </div>
 <script>
+// ---- BGM (Suno) -------------------------------------------------------
+var bgm = document.getElementById('bgm');
+var bgmBtn = document.getElementById('bgm-btn');
+function toggleBGM() {
+  if (bgm.paused) {
+    bgm.play();
+    bgmBtn.textContent = '⏸';
+  } else {
+    bgm.pause();
+    bgmBtn.textContent = '▶';
+  }
+}
+
 (function () {
   'use strict';
 
@@ -570,20 +583,6 @@ Prohibido contenido erótico. Violencia: permitida.</p>
       });
     });
   }, { passive: true });
-
-  // ---- BGM (Suno) -------------------------------------------------------
-  var bgm = document.getElementById('bgm');
-  var bgmBtn = document.getElementById('bgm-btn');
-  function toggleBGM() {
-    if (bgm.paused) {
-      bgm.play();
-      bgmBtn.textContent = '⏸';
-    } else {
-      bgm.pause();
-      bgmBtn.textContent = '▶';
-    }
-  }
-  // No autoplay — user clicks the button to start/stop
 
   // ---- copy prompt -------------------------------------------------------
   var promptText = document.getElementById('prompt-text').textContent;

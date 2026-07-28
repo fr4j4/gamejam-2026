@@ -93,11 +93,27 @@
       z-index: 999;
       pointer-events: auto;
     }
-    #soundtrack-mini iframe {
-      width: 200px;
-      height: 60px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    #soundtrack-mini button {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 8px 14px;
+      background: white;
+      color: var(--text);
+      border: 3px solid var(--border);
+      box-shadow: 4px 4px 0px var(--border);
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    #soundtrack-mini button:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px var(--border);
+    }
+    #soundtrack-mini button:active {
+      transform: translate(1px, 1px);
+      box-shadow: 2px 2px 0px var(--border);
     }
 
     /* === 8-BIT DOODLES === */
@@ -862,7 +878,7 @@
   </div>
 
   <!-- Soundtrack (autoplay, hidden) -->
-  <iframe src="https://suno.com/song/9d4d71bd-d202-463e-8856-5bc973196992" allow="autoplay" style="position:fixed;opacity:0;pointer-events:none;width:0;height:0" id="soundtrack"></iframe>
+  <audio id="bgm" src="https://cdn1.suno.ai/9d4d71bd-d202-463e-8856-5bc973196992.mp3" preload="auto" loop style="display:none"></audio>
 
   <!-- Loading screen -->
   <div id="loader">
@@ -1076,7 +1092,7 @@
 
       <!-- Soundtrack Mini Player -->
       <div id="soundtrack-mini">
-        <iframe src="https://suno.com/embed/9d4d71bd-d202-463e-8856-5bc973196992?autoplay=1" width="200" height="60" frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen loading="eager" referrerpolicy="no-referrer-when-downgrade" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></iframe>
+        <button id="bgm-btn" onclick="toggleBGM()">🎵 PLAY</button>
       </div>
 
       <!-- Prizes -->
@@ -1191,6 +1207,23 @@
       if (Math.abs(gy) > 5) gd *= -1;
       ghost.style.transform = `translateY(${gy}px)`;
     }, 50);
+
+    // === BGM (Suno) ===
+    const bgm = document.getElementById('bgm');
+    const bgmBtn = document.getElementById('bgm-btn');
+    function toggleBGM() {
+      if (bgm.paused) {
+        bgm.play();
+        bgmBtn.textContent = '🎵 PAUSE';
+      } else {
+        bgm.pause();
+        bgmBtn.textContent = '🎵 PLAY';
+      }
+    }
+    // Autoplay on first user interaction
+    document.addEventListener('click', () => {
+      if (bgm.paused) { bgm.play(); bgmBtn.textContent = '🎵 PAUSE'; }
+    }, { once: true });
   </script>
 
   <!-- Matrix Rain -->

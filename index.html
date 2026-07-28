@@ -572,8 +572,8 @@ Prohibido contenido erótico. Violencia: permitida.</p>
       var avg = rmsHistory.reduce(function(a, b) { return a + b; }, 0) / rmsHistory.length;
       // Transient: sharp energy spike above the recent average
       // Skip first 8 frames to let history stabilize
-      if (framesSinceStart > 8 && rms > 0.12 && rms > avg * 1.8) {
-        beatFlash = Math.min(1, (rms - avg) * 8);
+      if (framesSinceStart > 8 && rms > 0.08 && rms > avg * 1.6) {
+        beatFlash = Math.min(1, (rms - avg) * 10);
       }
       // Fast decay — snap back quickly
       beatFlash *= 0.78;

@@ -7,142 +7,142 @@
   <meta name="description" content="GameJam organizada por kodingvibes. 48 horas, 2 fases, puro código y buena onda.">
   <meta property="og:title" content="GameJam 2026 — kodingvibes">
   <meta property="og:description" content="48 horas de desarrollo + mejora cruzada. Todos los niveles bienvenidos.">
-  <meta property="og:image" content="https://kodingvibes.github.io/gamejam-2026/og-image.png">
   <meta property="og:url" content="https://kodingvibes.github.io/gamejam-2026/">
-  <meta name="theme-color" content="#0a0a0a">
+  <meta name="theme-color" content="#ff6b35">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg: #0a0a0a;
-      --surface: #111111;
-      --border: #1a1a2e;
-      --accent: #00ff88;
-      --accent-dim: #00aa55;
-      --text: #e0e0e0;
-      --text-dim: #666666;
-      --danger: #ff3355;
-      --warning: #ffaa33;
+      --bg: #0f0f11;
+      --surface: #1a1a24;
+      --surface-hover: #22223a;
+      --border: #2a2a3a;
+      --accent: #ff6b35;
+      --accent-glow: rgba(255, 107, 53, 0.25);
+      --accent-secondary: #ffd166;
+      --text: #e8e8f0;
+      --text-dim: #8888a0;
+      --text-muted: #555570;
+      --danger: #ff3366;
     }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      line-height: 1.6;
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      line-height: 1.7;
       min-height: 100vh;
-    }
-
-    /* Scanline overlay */
-    body::after {
-      content: '';
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0, 255, 136, 0.015) 2px,
-        rgba(0, 255, 136, 0.015) 4px
-      );
-      pointer-events: none;
-      z-index: 9999;
+      overflow-x: hidden;
     }
 
     .container {
-      max-width: 800px;
+      max-width: 720px;
       margin: 0 auto;
-      padding: 40px 20px;
+      padding: 0 24px;
       position: relative;
-      z-index: 1;
+    }
+
+    /* Pixel ghost — signature element */
+    #pixel-ghost {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 32px;
+      height: 32px;
+      image-rendering: pixelated;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0.6;
+      transition: opacity 0.3s;
+    }
+
+    #pixel-ghost:hover {
+      opacity: 1;
     }
 
     /* Hero */
     .hero {
       text-align: center;
-      padding: 80px 0 60px;
+      padding: 100px 0 60px;
       position: relative;
     }
 
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 50%;
-      transform: translateX(-50%);
-      width: 200px; height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    }
-
     .hero-badge {
-      display: inline-block;
-      background: rgba(0, 255, 136, 0.08);
-      border: 1px solid rgba(0, 255, 136, 0.2);
-      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--accent-secondary);
       font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      padding: 6px 16px;
-      border-radius: 20px;
-      margin-bottom: 24px;
-      letter-spacing: 1px;
+      font-size: 11px;
+      padding: 6px 14px;
+      border-radius: 4px;
+      margin-bottom: 32px;
+      letter-spacing: 0.5px;
       text-transform: uppercase;
     }
 
     .hero h1 {
-      font-size: clamp(2.5rem, 8vw, 4.5rem);
-      font-weight: 900;
-      letter-spacing: -2px;
-      line-height: 1.1;
-      margin-bottom: 16px;
-      background: linear-gradient(135deg, var(--accent) 0%, #00ccff 50%, var(--accent) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(1.5rem, 5vw, 2.5rem);
+      line-height: 1.3;
+      margin-bottom: 20px;
+      color: var(--text);
+      text-shadow: 4px 4px 0 var(--accent);
+      letter-spacing: -0.5px;
     }
 
     .hero p {
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       color: var(--text-dim);
-      max-width: 600px;
-      margin: 0 auto 32px;
+      max-width: 520px;
+      margin: 0 auto 36px;
     }
 
-    .hero-cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: var(--accent);
-      color: #0a0a0a;
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 14px 32px;
-      border-radius: 8px;
-      text-decoration: none;
-      transition: all 0.2s;
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
     }
 
-    .hero-cta:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(0, 255, 136, 0.25);
-    }
-
-    .hero-cta-secondary {
+    .btn {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
       font-size: 0.9rem;
-      margin-left: 12px;
-      text-decoration: none;
-      border: 1px solid var(--border);
       padding: 12px 24px;
-      border-radius: 8px;
-      transition: all 0.2s;
+      border-radius: 4px;
+      text-decoration: none;
+      transition: all 0.15s;
+      cursor: pointer;
+      border: none;
     }
 
-    .hero-cta-secondary:hover {
+    .btn-primary {
+      background: var(--accent);
+      color: #0f0f11;
+    }
+
+    .btn-primary:hover {
+      background: #ff8c5a;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
       border-color: var(--accent);
       color: var(--accent);
     }
@@ -150,48 +150,50 @@
     /* Countdown */
     .countdown-section {
       text-align: center;
-      padding: 40px 0;
+      padding: 40px 0 60px;
+      border-top: 1px solid var(--border);
     }
 
     .countdown-section h2 {
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 3px;
-      color: var(--text-dim);
-      margin-bottom: 20px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      font-weight: 500;
     }
 
     .countdown {
       display: flex;
       justify-content: center;
-      gap: 20px;
+      gap: 16px;
     }
 
     .countdown-item {
       display: flex;
       flex-direction: column;
       align-items: center;
+      min-width: 60px;
     }
 
     .countdown-number {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 2.5rem;
-      font-weight: 700;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 1.8rem;
       color: var(--accent);
       line-height: 1;
     }
 
     .countdown-label {
-      font-size: 0.75rem;
-      color: var(--text-dim);
+      font-size: 0.65rem;
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin-top: 6px;
+      margin-top: 8px;
     }
 
     .countdown-sep {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 2rem;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 1.5rem;
       color: var(--border);
       padding-top: 4px;
     }
@@ -203,200 +205,209 @@
     }
 
     .section-title {
-      font-size: 1.5rem;
-      font-weight: 800;
-      margin-bottom: 24px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 28px;
       display: flex;
       align-items: center;
       gap: 10px;
+      color: var(--accent-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
-    .section-title .icon {
-      font-size: 1.3rem;
-    }
-
-    /* Timeline */
+    /* Timeline — visual, not numbered */
     .timeline {
       display: flex;
       flex-direction: column;
       gap: 0;
       position: relative;
-      padding-left: 30px;
+      padding-left: 28px;
     }
 
     .timeline::before {
       content: '';
       position: absolute;
-      left: 8px;
-      top: 0;
-      bottom: 0;
+      left: 6px;
+      top: 8px;
+      bottom: 8px;
       width: 2px;
       background: var(--border);
     }
 
     .timeline-item {
       position: relative;
-      padding: 16px 0 16px 20px;
+      padding: 20px 0 20px 24px;
     }
 
     .timeline-item::before {
       content: '';
       position: absolute;
-      left: -26px;
-      top: 22px;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
+      left: -22px;
+      top: 26px;
+      width: 10px;
+      height: 10px;
+      border-radius: 0;
       background: var(--surface);
       border: 2px solid var(--accent);
+      transform: rotate(45deg);
     }
 
     .timeline-item.active::before {
       background: var(--accent);
-      box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);
+      box-shadow: 0 0 12px var(--accent-glow);
     }
 
     .timeline-item .phase {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.55rem;
       color: var(--accent);
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
     }
 
     .timeline-item h3 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .timeline-item .date {
-      font-size: 0.85rem;
-      color: var(--text-dim);
-    }
-
-    .timeline-item .desc {
-      font-size: 0.9rem;
-      color: var(--text-dim);
-      margin-top: 6px;
-    }
-
-    /* Rules */
-    .rules-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .rules-list li {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 14px 18px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.95rem;
-    }
-
-    .rules-list li .num {
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--accent);
-      font-weight: 700;
-      min-width: 24px;
-    }
-
-    .rules-list li.danger {
-      border-color: rgba(255, 51, 85, 0.3);
-      background: rgba(255, 51, 85, 0.05);
-    }
-
-    .rules-list li.danger .num {
-      color: var(--danger);
-    }
-
-    .rules-list li.warning {
-      border-color: rgba(255, 170, 51, 0.3);
-      background: rgba(255, 170, 51, 0.05);
-    }
-
-    .rules-list li.warning .num {
-      color: var(--warning);
-    }
-
-    /* Steps */
-    .steps {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .step {
-      display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      padding: 16px 20px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-    }
-
-    .step-num {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 1.2rem;
-      font-weight: 800;
-      color: var(--accent);
-      min-width: 32px;
-      line-height: 1.4;
-    }
-
-    .step-content {
-      flex: 1;
-    }
-
-    .step-content h3 {
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 600;
       margin-bottom: 4px;
     }
 
-    .step-content p {
+    .timeline-item .date {
+      font-size: 0.8rem;
+      color: var(--accent-secondary);
+      font-weight: 500;
+    }
+
+    .timeline-item .desc {
       font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    /* Rules as cards */
+    .rules-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .rule-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      font-size: 0.88rem;
+      transition: border-color 0.15s;
+    }
+
+    .rule-card:hover {
+      border-color: var(--accent);
+    }
+
+    .rule-card .icon {
+      font-size: 1rem;
+      min-width: 20px;
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    .rule-card.danger {
+      border-color: rgba(255, 51, 102, 0.2);
+    }
+
+    .rule-card.danger:hover {
+      border-color: var(--danger);
+    }
+
+    /* Steps as visual flow */
+    .steps-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+      padding-left: 40px;
+    }
+
+    .steps-flow::before {
+      content: '';
+      position: absolute;
+      left: 15px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .step-item {
+      position: relative;
+      padding: 16px 0 16px 20px;
+    }
+
+    .step-item::before {
+      content: attr(data-step);
+      position: absolute;
+      left: -33px;
+      top: 18px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.5rem;
+      color: var(--accent);
+    }
+
+    .step-item h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+
+    .step-item p {
+      font-size: 0.82rem;
       color: var(--text-dim);
     }
 
-    .step-content code {
+    .step-item code {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
-      background: rgba(0, 255, 136, 0.06);
-      padding: 2px 6px;
-      border-radius: 4px;
+      font-size: 0.75rem;
+      background: rgba(255, 107, 53, 0.08);
+      padding: 1px 5px;
+      border-radius: 2px;
       color: var(--accent);
     }
 
     /* Criteria */
-    .criteria {
+    .criteria-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 8px;
     }
 
     .criterion {
-      padding: 14px 18px;
+      padding: 12px 16px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.9rem;
+      border-radius: 2px;
+      font-size: 0.82rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .criterion .check {
       color: var(--accent);
-      margin-right: 8px;
     }
 
     .criterion .cross {
       color: var(--danger);
-      margin-right: 8px;
     }
 
     /* Footer */
@@ -404,8 +415,8 @@
       text-align: center;
       padding: 40px 0;
       border-top: 1px solid var(--border);
-      color: var(--text-dim);
-      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
     }
 
     .footer a {
@@ -419,91 +430,65 @@
 
     /* Responsive */
     @media (max-width: 600px) {
-      .hero { padding: 50px 0 40px; }
-      .countdown { gap: 12px; }
-      .countdown-number { font-size: 1.8rem; }
-      .criteria { grid-template-columns: 1fr; }
-      .hero-cta-secondary { margin-left: 0; margin-top: 12px; display: inline-block; }
+      .hero { padding: 60px 0 40px; }
+      .countdown { gap: 8px; }
+      .countdown-number { font-size: 1.3rem; }
+      .countdown-item { min-width: 44px; }
+      .criteria-grid { grid-template-columns: 1fr; }
+      #pixel-ghost { display: none; }
     }
 
-    /* Glitch text effect */
-    .glitch-text {
-      position: relative;
-      display: inline-block;
-    }
-
-    .glitch-text::before,
-    .glitch-text::after {
-      content: attr(data-text);
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      opacity: 0;
-    }
-
-    .glitch-text:hover::before {
-      opacity: 0.08;
-      color: #ff00ff;
-      transform: translate(-2px, 0);
-      animation: glitch1 0.3s infinite;
-    }
-
-    .glitch-text:hover::after {
-      opacity: 0.08;
-      color: #00ffff;
-      transform: translate(2px, 0);
-      animation: glitch2 0.3s infinite;
-    }
-
-    @keyframes glitch1 {
-      0% { transform: translate(-2px, 0); }
-      50% { transform: translate(1px, -1px); }
-      100% { transform: translate(-1px, 1px); }
-    }
-
-    @keyframes glitch2 {
-      0% { transform: translate(2px, 0); }
-      50% { transform: translate(-1px, 1px); }
-      100% { transform: translate(1px, -1px); }
-    }
-
-    /* Pulsing dot */
-    .live-dot {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      background: var(--accent);
-      border-radius: 50%;
-      animation: pulse 1.5s ease-in-out infinite;
-      margin-right: 6px;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(0, 255, 136, 0.4); }
-      50% { opacity: 0.3; box-shadow: 0 0 12px rgba(0, 255, 136, 0.1); }
+    @media (prefers-reduced-motion: reduce) {
+      #pixel-ghost { display: none; }
     }
   </style>
 </head>
 <body>
+  <!-- Pixel ghost — signature element -->
+  <svg id="pixel-ghost" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="4" width="16" height="2" fill="#ff6b35"/>
+    <rect x="6" y="6" width="20" height="2" fill="#ff6b35"/>
+    <rect x="4" y="8" width="24" height="2" fill="#ff6b35"/>
+    <rect x="4" y="10" width="24" height="2" fill="#ff6b35"/>
+    <rect x="4" y="12" width="24" height="2" fill="#ff6b35"/>
+    <rect x="4" y="14" width="24" height="2" fill="#ff6b35"/>
+    <rect x="4" y="16" width="24" height="2" fill="#ff6b35"/>
+    <rect x="4" y="18" width="24" height="2" fill="#ff6b35"/>
+    <rect x="4" y="20" width="24" height="2" fill="#ff6b35"/>
+    <rect x="4" y="22" width="24" height="2" fill="#ff6b35"/>
+    <rect x="6" y="24" width="4" height="2" fill="#ff6b35"/>
+    <rect x="14" y="24" width="4" height="2" fill="#ff6b35"/>
+    <rect x="22" y="24" width="4" height="2" fill="#ff6b35"/>
+    <rect x="8" y="26" width="2" height="2" fill="#ff6b35"/>
+    <rect x="16" y="26" width="2" height="2" fill="#ff6b35"/>
+    <rect x="22" y="26" width="2" height="2" fill="#ff6b35"/>
+    <!-- Eyes -->
+    <rect x="10" y="12" width="4" height="4" fill="#0f0f11"/>
+    <rect x="18" y="12" width="4" height="4" fill="#0f0f11"/>
+    <rect x="10" y="12" width="2" height="2" fill="#ffd166"/>
+    <rect x="20" y="12" width="2" height="2" fill="#ffd166"/>
+  </svg>
+
   <div class="container">
     <!-- Hero -->
     <section class="hero">
       <div class="hero-badge">
-        <span class="live-dot"></span> kodingvibes gamejam
+        <span>kodingvibes gamejam</span>
       </div>
-      <h1 class="glitch-text" data-text="GameJam 2026">GameJam 2026</h1>
+      <h1>GameJam 2026</h1>
       <p>48 horas de puro código. 24h para crear tu juego, 24h para mejorar el de otro. Todos los niveles bienvenidos.</p>
-      <a href="https://github.com/kodingvibes/gamejam-2026" class="hero-cta" target="_blank">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      <div class="hero-actions">
+        <a href="https://github.com/kodingvibes/gamejam-2026" class="btn btn-primary" target="_blank">
           Participar
-      </a>
-      <a href="#como-participar" class="hero-cta-secondary">
-        Cómo funciona ↓
-      </a>
+        </a>
+        <a href="#como-participar" class="btn btn-secondary">
+          Cómo funciona
+        </a>
+      </div>
     </section>
 
     <!-- Countdown -->
-    <section class="countdown-section" id="countdown">
+    <section class="countdown-section">
       <h2>Próxima edición</h2>
       <div class="countdown" id="countdown-display">
         <div class="countdown-item">
@@ -530,24 +515,24 @@
 
     <!-- Timeline -->
     <section class="section">
-      <h2 class="section-title"><span class="icon">⏱️</span> Timeline</h2>
+      <h2 class="section-title">Timeline</h2>
       <div class="timeline">
         <div class="timeline-item active">
-          <div class="phase">FASE 1 · DESARROLLO</div>
+          <div class="phase">FASE 1</div>
           <h3>Crea tu juego</h3>
-          <div class="date">Vie 31 jul · 23:00 → Sáb 1 ago · 23:00</div>
+          <div class="date">Vie 31 jul 23:00 → Sáb 1 ago 23:00</div>
           <div class="desc">24 horas para desarrollar tu juego completo. Cualquier stack, cualquier género. Solo dentro de tu carpeta.</div>
         </div>
         <div class="timeline-item">
-          <div class="phase">FASE 2 · MEJORA CRUZADA</div>
+          <div class="phase">FASE 2</div>
           <h3>Mejora el juego de otro</h3>
-          <div class="date">Sáb 1 ago · 23:00 → Dom 2 ago · 23:00</div>
+          <div class="date">Sáb 1 ago 23:00 → Dom 2 ago 23:00</div>
           <div class="desc">Te asignan el juego de otro participante. Agrega features, refactoriza, corrige bugs. Aprendizaje cruzado.</div>
         </div>
         <div class="timeline-item">
           <div class="phase">FIN</div>
           <h3>Entrega final</h3>
-          <div class="date">Dom 2 ago · 23:00</div>
+          <div class="date">Dom 2 ago 23:00</div>
           <div class="desc">Se cierran los PRs. @Motoko revisa todo y anuncia resultados.</div>
         </div>
       </div>
@@ -555,65 +540,67 @@
 
     <!-- Rules -->
     <section class="section">
-      <h2 class="section-title"><span class="icon">📋</span> Reglas</h2>
-      <ul class="rules-list">
-        <li><span class="num">00</span> Tener cuenta en <strong>kodingvibes.com</strong> — requisito obligatorio para participar</li>
-        <li><span class="num">01</span> Cada participante trabaja exclusivamente dentro de <code>participantes/tu-nombre/</code></li>
-        <li><span class="num">02</span> No tocar archivos fuera de tu carpeta — eso incluye README, .gitignore, etc.</li>
-        <li><span class="num">03</span> En Fase 1: haz un Pull Request con tu juego a <code>main</code></li>
-        <li><span class="num">04</span> En Fase 2: haz un Pull Request con las mejoras al juego que te tocó</li>
-        <li><span class="num">05</span> @Motoko revisa y mergea ambos PRs</li>
-        <li class="danger"><span class="num">06</span> No juegos eróticos. Violencia explícita y extrema sí, permitida. Sangre, gore, desmembramiento, todo bien. Pero nada de contenido erótico o sexual.</li>
-      </ul>
+      <h2 class="section-title">Reglas</h2>
+      <div class="rules-grid">
+        <div class="rule-card">
+          <span class="icon">🔑</span>
+          <span>Tener cuenta en <strong>kodingvibes.com</strong> — requisito obligatorio</span>
+        </div>
+        <div class="rule-card">
+          <span class="icon">📁</span>
+          <span>Trabajar solo dentro de <code>participantes/tu-nombre/</code></span>
+        </div>
+        <div class="rule-card">
+          <span class="icon">🚫</span>
+          <span>No tocar archivos fuera de tu carpeta</span>
+        </div>
+        <div class="rule-card">
+          <span class="icon">🔀</span>
+          <span>Fase 1: PR con tu juego. Fase 2: PR con mejoras al juego de otro</span>
+        </div>
+        <div class="rule-card">
+          <span class="icon">🤖</span>
+          <span>@Motoko revisa y mergea todos los PRs</span>
+        </div>
+        <div class="rule-card danger">
+          <span class="icon">🚨</span>
+          <span>No juegos eróticos. Violencia extrema: bienvenida</span>
+        </div>
+      </div>
     </section>
 
     <!-- How to participate -->
     <section class="section" id="como-participar">
-      <h2 class="section-title"><span class="icon">🚀</span> Cómo participar</h2>
-      <div class="steps">
-        <div class="step">
-          <span class="step-num">01</span>
-          <div class="step-content">
-            <h3>Haz fork del repo</h3>
-            <p>Forkea <code>kodingvibes/gamejam-2026</code> a tu cuenta de GitHub.</p>
-          </div>
+      <h2 class="section-title">Cómo participar</h2>
+      <div class="steps-flow">
+        <div class="step-item" data-step="1">
+          <h3>Haz fork del repo</h3>
+          <p>Forkea <code>kodingvibes/gamejam-2026</code> a tu cuenta de GitHub.</p>
         </div>
-        <div class="step">
-          <span class="step-num">02</span>
-          <div class="step-content">
-            <h3>Clona y crea tu rama</h3>
-            <p><code>git clone</code> tu fork, luego <code>git checkout -b participante/tu-nombre</code></p>
-          </div>
+        <div class="step-item" data-step="2">
+          <h3>Clona y crea tu rama</h3>
+          <p><code>git clone</code> tu fork, luego <code>git checkout -b participante/tu-nombre</code></p>
         </div>
-        <div class="step">
-          <span class="step-num">03</span>
-          <div class="step-content">
-            <h3>Codea tu juego</h3>
-            <p>Crea <code>participantes/tu-nombre/</code> y desarrolla todo ahí. HTML, Phaser, Python — lo que quieras.</p>
-          </div>
+        <div class="step-item" data-step="3">
+          <h3>Codea tu juego</h3>
+          <p>Crea <code>participantes/tu-nombre/</code> y desarrolla todo ahí. HTML, Phaser, Python — lo que quieras.</p>
         </div>
-        <div class="step">
-          <span class="step-num">04</span>
-          <div class="step-content">
-            <h3>Sube tu rama y haz PR</h3>
-            <p><code>git push origin participante/tu-nombre</code> y crea un PR hacia <code>kodingvibes/gamejam-2026:main</code></p>
-          </div>
+        <div class="step-item" data-step="4">
+          <h3>Sube tu rama y haz PR</h3>
+          <p><code>git push origin participante/tu-nombre</code> y crea un PR hacia <code>kodingvibes/gamejam-2026:main</code></p>
         </div>
-        <div class="step">
-          <span class="step-num">05</span>
-          <div class="step-content">
-            <h3>@Motoko revisa</h3>
-            <p>La IA del grupo revisa tu PR. Si pasa los filtros, se mergea automáticamente.</p>
-          </div>
+        <div class="step-item" data-step="5">
+          <h3>@Motoko revisa</h3>
+          <p>La IA del grupo revisa tu PR. Si pasa los filtros, se mergea automáticamente.</p>
         </div>
       </div>
     </section>
 
     <!-- Criteria -->
     <section class="section">
-      <h2 class="section-title"><span class="icon">✅</span> Criterios de validación</h2>
-      <div class="criteria">
-        <div class="criterion"><span class="check">✓</span> Código solo dentro de tu carpeta</div>
+      <h2 class="section-title">Validación</h2>
+      <div class="criteria-grid">
+        <div class="criterion"><span class="check">✓</span> Código solo en tu carpeta</div>
         <div class="criterion"><span class="check">✓</span> El juego debe funcionar</div>
         <div class="criterion"><span class="check">✓</span> Nada de código copiado sin entender</div>
         <div class="criterion"><span class="check">✓</span> npm permitido, sin <code>node_modules/</code></div>
@@ -625,12 +612,11 @@
     <!-- Footer -->
     <footer class="footer">
       <p>Organizado por <a href="https://github.com/kodingvibes" target="_blank">kodingvibes</a> · Repo: <a href="https://github.com/kodingvibes/gamejam-2026" target="_blank">gamejam-2026</a></p>
-      <p style="margin-top: 8px; font-size: 0.8rem;">PRs revisados por <strong>@Motoko</strong> 🐈‍⬛</p>
+      <p style="margin-top: 6px;">PRs revisados por <strong>@Motoko</strong></p>
     </footer>
   </div>
 
   <script>
-    // Countdown
     const target = new Date('2026-07-31T23:00:00-04:00');
 
     function updateCountdown() {
@@ -658,6 +644,17 @@
 
     updateCountdown();
     setInterval(updateCountdown, 1000);
+
+    // Pixel ghost bobbing animation
+    const ghost = document.getElementById('pixel-ghost');
+    let ghostY = 0;
+    let ghostDir = 1;
+
+    setInterval(() => {
+      ghostY += ghostDir * 0.5;
+      if (Math.abs(ghostY) > 4) ghostDir *= -1;
+      ghost.style.transform = `translateY(${ghostY}px)`;
+    }, 50);
   </script>
 </body>
 </html>

@@ -7,7 +7,7 @@ Repositorio oficial de la gamejam organizada por **kodingvibes**.
 1. Cada participante trabaja **exclusivamente** dentro de `participantes/<su-nombre>/`
 2. No tocar archivos fuera de tu carpeta — eso incluye README, .gitignore, etc.
 3. Al terminar, haz un **Pull Request** a `main`
-4. @238105084870697 revisa y mergea
+4. @Motoko revisa y mergea
 
 ## 🚀 Cómo empezar
 

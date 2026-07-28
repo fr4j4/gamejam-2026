@@ -654,6 +654,7 @@ Prohibido contenido erótico. Violencia: permitida.</p>
   var bgmBtn = document.getElementById('bgm-btn');
   function toggleBGM() {
     if (bgm.paused) {
+      initBeatDetection();
       bgm.play();
       bgmBtn.textContent = '⏸';
     } else {
@@ -663,6 +664,7 @@ Prohibido contenido erótico. Violencia: permitida.</p>
   }
   // Autoplay on first real user interaction
   var startBGM = function() {
+    initBeatDetection();
     bgm.play().then(function() {
       bgmBtn.textContent = '⏸';
     }).catch(function() {});
@@ -702,3 +704,4 @@ Prohibido contenido erótico. Violencia: permitida.</p>
 </script>
 </body>
 </html>
+  // ---- copy prompt -------------------------------------------------------

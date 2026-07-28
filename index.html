@@ -522,20 +522,79 @@ Prohibido contenido erótico. Violencia: permitida.</p>
   </footer>
 </div>
 <script>
-// ---- BGM (Suno) -------------------------------------------------------
-var bgm = document.getElementById('bgm');
-var bgmBtn = document.getElementById('bgm-btn');
-function toggleBGM() {
-  if (bgm.paused) {
-    bgm.play();
-    bgmBtn.textContent = '⏸';
-  } else {
-    bgm.pause();
-    bgmBtn.textContent = '▶';
-  }
-}
-
 (function () {
+  'use strict';
+
+  var bgm = document.getElementById('bgm');
+  var bgmBtn = document.getElementById('bgm-btn');
+  var audioCtx = null, analyser = null, source = null, dataArray = null;
+  var beatRaf = null, beatEnergy = 0, beatActive = false;
+
+  function initBeatDetection() {
+    if (audioCtx) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source = audioCtx.createMediaElementSource(bgm);
+      source.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
+    } catch (e) {}
+  }
+
+  function beatLoop() {
+    if (!analyser) { beatRaf = requestAnimationFrame(beatLoop); return; }
+    if (bgm.paused) {
+      if (beatEnergy > 0.01) {
+        beatEnergy *= 0.9;
+        applyBeat(beatEnergy);
+      } else if (beatActive) {
+        beatActive = false;
+        paint(accentLive, cycleIdx);
+      }
+      beatRaf = requestAnimationFrame(beatLoop);
+      return;
+    }
+    analyser.getByteFrequencyData(dataArray);
+    var sum = 0;
+    for (var i = 0; i < 6; i++) sum += dataArray[i];
+    var raw = sum / 6 / 256;
+    beatEnergy = beatEnergy + (raw - beatEnergy) * 0.25;
+    beatActive = true;
+    applyBeat(beatEnergy);
+    beatRaf = requestAnimationFrame(beatLoop);
+  }
+
+  function applyBeat(energy) {
+    var g = Math.min(0.95, 0.55 + energy * 0.4);
+    var h = Math.min(0.7, 0.28 + energy * 0.35);
+    root.setProperty('--accent-glow', rgba(accentLive, g));
+    root.setProperty('--accent-haze', rgba(accentLive, h));
+    var glowIntensity = 0.16 + energy * 0.2;
+    var glow = [
+      'radial-gradient(900px 560px at 8% 4%, ' + rgba(accentLive, glowIntensity) + ', transparent 66%)',
+      'radial-gradient(820px 620px at 100% 52%, rgba(122,92,255,0.18), transparent 68%)'
+    ];
+    var img = glow.concat(cycleIdx % 2 ? SCANLINES : GRID);
+    var size = glow.map(function () { return '100% 100%'; })
+      .concat(cycleIdx % 2 ? ['auto'] : ['32px 32px', '32px 32px']);
+    root.setProperty('--backdrop-image', img.join(', '));
+    root.setProperty('--backdrop-size', size.join(', '));
+  }
+
+  window.toggleBGM = function () {
+    if (bgm.paused) {
+      initBeatDetection();
+      bgm.play();
+      bgmBtn.textContent = '⏸';
+    } else {
+      bgm.pause();
+      bgmBtn.textContent = '▶';
+    }
+  };
+
+  beatRaf = requestAnimationFrame(beatLoop);
   'use strict';
 
   var PALETTE = ['#d8ff3e', '#b44dff', '#ff8a3d', '#4de2ff'];

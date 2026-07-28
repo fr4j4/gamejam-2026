@@ -1220,10 +1220,18 @@
         bgmBtn.textContent = '🎵 PLAY';
       }
     }
-    // Simulate click on the play button 5 seconds after page loads
-    window.addEventListener('load', () => {
-      setTimeout(() => bgmBtn.click(), 5000);
-    });
+    // Autoplay on first real user interaction (browsers block programmatic clicks)
+    const startBGM = () => {
+      bgm.play().then(() => {
+        bgmBtn.textContent = '🎵 PAUSE';
+      }).catch(() => {});
+      document.removeEventListener('click', startBGM);
+      document.removeEventListener('touchstart', startBGM);
+      document.removeEventListener('keydown', startBGM);
+    };
+    document.addEventListener('click', startBGM, { once: true });
+    document.addEventListener('touchstart', startBGM, { once: true });
+    document.addEventListener('keydown', startBGM, { once: true });
   </script>
 
   <!-- Matrix Rain -->

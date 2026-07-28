@@ -75,6 +75,10 @@
 </style>
 </head>
 <body>
+<div style="position: fixed; top: 10px; left: 20px; z-index: 60; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.5px;">
+  <a href="prensa/comunicado-prensa.pdf" target="_blank" style="color: #8f897c; text-decoration: none; border: 1px solid #2b2823; padding: 4px 10px; transition: color .15s, border-color .15s">📰 Prensa</a>
+</div>
+
 <div style="font-family: 'IBM Plex Mono', monospace; background: #0e0d0b; color: #f4f1e8; min-height: 100vh; overflow-x: hidden; background-image: var(--backdrop-image); background-size: var(--backdrop-size)">
 
   <div aria-hidden="true" style="position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden">
@@ -610,5 +614,7 @@ function toggleBGM() {
   document.getElementById('copy-2').addEventListener('click', copy);
 })();
 </script>
+
+  <audio id="bgm" src="https://cdn1.suno.ai/9d4d71bd-d202-463e-8856-5bc973196992.mp3" preload="auto" loop style="display:none"></audio>
 </body>
 </html>

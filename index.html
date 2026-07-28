@@ -599,6 +599,62 @@
       color: white;
     }
 
+    /* === EVALUATION === */
+    .eval-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .eval-card {
+      background: var(--surface);
+      border: var(--border-thick) solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .eval-phase {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .eval-pct {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    .eval-desc {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    .eval-rule {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      font-size: 0.85rem;
+    }
+
+    .eval-icon {
+      font-size: 1.3rem;
+      min-width: 28px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .eval-rule p {
+      color: var(--text);
+    }
+
     /* === PRIZES === */
     .prizes-grid {
       display: grid;
@@ -743,7 +799,7 @@
       .steps-grid { grid-template-columns: 1fr; }
       .criteria-grid { grid-template-columns: 1fr; }
       .explainer-grid { grid-template-columns: 1fr; }
-      .prizes-grid { grid-template-columns: 1fr; }
+      .eval-grid { grid-template-columns: 1fr; }
       .countdown { gap: 10px; }
       .countdown-number { font-size: 2rem; }
       .countdown-item { min-width: 44px; }
@@ -958,6 +1014,35 @@
         </div>
       </section>
 
+      <!-- Evaluation -->
+      <section class="section reveal">
+        <h2 class="section-title">Evaluación</h2>
+        <div class="eval-grid">
+          <div class="eval-card">
+            <div class="eval-phase">Fase 1 — Tu juego</div>
+            <div class="eval-pct">60%</div>
+            <p class="eval-desc">Se evalúa en 4 ejes (1-5 c/u): jugabilidad, código, creatividad, completitud. Nota = promedio simple.</p>
+          </div>
+          <div class="eval-card">
+            <div class="eval-phase">Fase 2 — Tu mejora</div>
+            <div class="eval-pct">40%</div>
+            <p class="eval-desc">La mejora que <strong>hiciste</strong> sobre el juego de otro. Mismos 4 ejes + respeto al original.</p>
+          </div>
+          <div class="eval-card eval-rule">
+            <div class="eval-icon">🔒</div>
+            <p>La mejora que <strong>recibes</strong> <em>no</em> afecta tu nota. No te castigan por lo que otro haga con tu código.</p>
+          </div>
+          <div class="eval-card eval-rule">
+            <div class="eval-icon">⭐</div>
+            <p><strong>Bonus:</strong> si la mejora que recibes obtiene 4+ en auditoría, el dueño original suma <strong>+0.5</strong> extra. Solo suma, nunca resta.</p>
+          </div>
+          <div class="eval-card eval-rule">
+            <div class="eval-icon">🤖</div>
+            <p>Revisión a cargo de <strong>@Motoko</strong> con auditoría automática anti-slope + code-auditor. El operador tiene la última palabra.</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Prizes -->
       <section class="section reveal">
         <h2 class="section-title">Premios</h2>
@@ -1073,3 +1158,4 @@
   </script>
 </body>
 </html>
+      .eval-grid { grid-template-columns: 1fr; }

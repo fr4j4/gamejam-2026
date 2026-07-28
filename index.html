@@ -405,14 +405,19 @@ Prohibido contenido erótico. Violencia: permitida.</p>
   var GRID = ['linear-gradient(#171612 1px, transparent 1px)', 'linear-gradient(90deg, #171612 1px, transparent 1px)'];
   var SCANLINES = ['repeating-linear-gradient(180deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 4px)'];
 
+  // glow prop: 'duo' — accent wash top-left, fixed violet bottom-right.
+  function glowLayers(accent) {
+    return [
+      'radial-gradient(900px 560px at 8% 4%, ' + rgba(accent, 0.16) + ', transparent 66%)',
+      'radial-gradient(820px 620px at 100% 52%, rgba(122,92,255,0.18), transparent 68%)'
+    ];
+  }
+
   function paint(accent, cycleIdx) {
-    var aura = 'radial-gradient(1100px 620px at 50% -6%, ' + rgba(accent, 0.17) + ', transparent 68%)';
-    var img, size;
-    if (cycleIdx % 2) {
-      img = [aura].concat(SCANLINES); size = ['100% 100%', 'auto'];
-    } else {
-      img = [aura].concat(GRID); size = ['100% 100%', '32px 32px', '32px 32px'];
-    }
+    var glow = glowLayers(accent);
+    var img = glow.concat(cycleIdx % 2 ? SCANLINES : GRID);
+    var size = glow.map(function () { return '100% 100%'; })
+      .concat(cycleIdx % 2 ? ['auto'] : ['32px 32px', '32px 32px']);
     root.setProperty('--accent', accent);
     root.setProperty('--backdrop-image', img.join(', '));
     root.setProperty('--backdrop-size', size.join(', '));

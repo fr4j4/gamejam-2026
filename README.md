@@ -2,12 +2,32 @@
 
 Repositorio oficial de la gamejam organizada por **kodingvibes**.
 
+## ⏱️ Dinámica — 48 horas
+
+La gamejam se divide en **2 fases de 24 horas**:
+
+### Fase 1: Desarrollo (primeras 24h)
+
+Cada participante desarrolla su juego completo dentro de `participantes/<su-nombre>/`. Al terminar, hace un **Pull Request** a `main`. @Motoko revisa y mergea.
+
+### Fase 2: Mejora cruzada (segundas 24h)
+
+Los juegos se reparten entre los participantes. Cada persona recibe el juego de **otro participante** y debe:
+
+- Hacerle mejoras
+- Refactorizar código
+- Agregar features
+- Corregir bugs
+
+Todo dentro de la carpeta del otro participante. Así mezclamos estilos, modelos de código y aprendemos buenas prácticas entre todos.
+
 ## 📋 Reglas
 
 1. Cada participante trabaja **exclusivamente** dentro de `participantes/<su-nombre>/`
 2. No tocar archivos fuera de tu carpeta — eso incluye README, .gitignore, etc.
-3. Al terminar, haz un **Pull Request** a `main`
-4. @Motoko revisa y mergea
+3. En Fase 1: haz un **Pull Request** con tu juego a `main`
+4. En Fase 2: haz un **Pull Request** con las mejoras al juego que te tocó
+5. @Motoko revisa y mergea ambos PRs
 
 ## 🚀 Cómo empezar
 

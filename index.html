@@ -4,135 +4,150 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GameJam 2026 — kodingvibes</title>
-  <meta name="description" content="GameJam organizada por kodingvibes. 48 horas, 2 fases, puro código y buena onda.">
+  <meta name="description" content="GameJam kodingvibes. 48h, Phaser, puro código.">
   <meta property="og:title" content="GameJam 2026 — kodingvibes">
-  <meta property="og:description" content="48 horas de desarrollo + mejora cruzada. Todos los niveles bienvenidos.">
+  <meta property="og:description" content="48h. Phaser. Tu juego + mejorar el de otro.">
   <meta property="og:url" content="https://kodingvibes.github.io/gamejam-2026/">
   <meta name="theme-color" content="#ff6b35">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg: #0f0f11;
-      --surface: #1a1a24;
-      --surface-hover: #22223a;
-      --border: #2a2a3a;
+      --bg: #f0ede8;
+      --surface: #ffffff;
+      --border: #1a1a1a;
+      --border-thick: 4px;
       --accent: #ff6b35;
-      --accent-glow: rgba(255, 107, 53, 0.25);
       --accent-secondary: #ffd166;
-      --text: #e8e8f0;
-      --text-dim: #8888a0;
-      --text-muted: #555570;
+      --text: #1a1a1a;
+      --text-dim: #555;
       --danger: #ff3366;
-    }
-
-    /* Fade-in animation */
-    .page-wrapper {
-      opacity: 0;
-      animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
+      --shadow: 8px 8px 0px #1a1a1a;
+      --shadow-hover: 12px 12px 0px #1a1a1a;
     }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      line-height: 1.6;
+      font-family: 'Inter', system-ui, sans-serif;
+      line-height: 1.5;
       min-height: 100vh;
-      overflow-x: hidden;
     }
 
-    /* Background glyphs */
-    body::before {
-      content: '';
+    /* === LOADING SCREEN === */
+    #loader {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-image:
-        radial-gradient(circle at 15% 20%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
-        radial-gradient(circle at 85% 30%, rgba(255, 107, 53, 0.02) 0%, transparent 50%),
-        radial-gradient(circle at 50% 80%, rgba(255, 209, 102, 0.02) 0%, transparent 50%),
-        url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff6b35' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
+      inset: 0;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.6s, visibility 0.6s;
+    }
+    #loader.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+    #loader .box {
+      background: white;
+      border: var(--border-thick) solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 40px 60px;
+      text-align: center;
+    }
+    #loader .box .big {
+      font-size: 4rem;
+      font-weight: 900;
+      letter-spacing: -3px;
+      line-height: 1;
+    }
+    #loader .box .sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      margin-top: 12px;
+      color: var(--text-dim);
+    }
+    #loader .box .bar-wrap {
+      margin-top: 20px;
+      height: 12px;
+      border: 3px solid var(--border);
+      background: var(--bg);
+    }
+    #loader .box .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.3s;
     }
 
-    .container {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 0 24px;
-      position: relative;
-      z-index: 1;
+    /* === PAGE WRAPPER === */
+    .page {
+      opacity: 0;
+      transition: opacity 0.8s;
     }
-
-    /* Pixel ghost — signature element */
-    #pixel-ghost {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      width: 32px;
-      height: 32px;
-      image-rendering: pixelated;
-      z-index: 100;
-      pointer-events: none;
-      opacity: 0.6;
-      transition: opacity 0.3s;
-    }
-
-    #pixel-ghost:hover {
+    .page.visible {
       opacity: 1;
     }
 
-    /* Hero */
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* === SCROLL REVEAL === */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* === HERO === */
     .hero {
+      padding: 80px 0 50px;
       text-align: center;
-      padding: 100px 0 60px;
-      position: relative;
     }
 
     .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--accent-secondary);
+      display: inline-block;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      padding: 6px 14px;
-      border-radius: 4px;
-      margin-bottom: 32px;
-      letter-spacing: 0.5px;
+      font-size: 0.7rem;
+      font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 2px;
+      padding: 6px 14px;
+      background: var(--accent);
+      color: white;
+      border: var(--border-thick) solid var(--border);
+      box-shadow: var(--shadow);
+      margin-bottom: 30px;
     }
 
     .hero h1 {
-      font-family: 'Inter', sans-serif;
-      font-size: clamp(2.5rem, 7vw, 4rem);
+      font-size: clamp(3.5rem, 10vw, 6rem);
       font-weight: 900;
-      line-height: 1.05;
-      margin-bottom: 20px;
+      line-height: 0.95;
+      letter-spacing: -4px;
       color: var(--text);
-      letter-spacing: -2px;
-      background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      margin-bottom: 16px;
+      text-transform: uppercase;
     }
 
     .hero p {
-      font-size: 1.05rem;
+      font-size: 1.1rem;
+      font-weight: 500;
       color: var(--text-dim);
-      max-width: 520px;
-      margin: 0 auto 36px;
-      line-height: 1.6;
+      max-width: 480px;
+      margin: 0 auto 30px;
     }
 
     .hero-actions {
@@ -147,57 +162,69 @@
       align-items: center;
       gap: 8px;
       font-family: 'Inter', sans-serif;
-      font-weight: 600;
+      font-weight: 700;
       font-size: 0.9rem;
-      padding: 12px 24px;
-      border-radius: 4px;
+      padding: 14px 28px;
       text-decoration: none;
-      transition: all 0.15s;
       cursor: pointer;
-      border: none;
+      border: var(--border-thick) solid var(--border);
+      transition: all 0.1s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .btn-primary {
       background: var(--accent);
-      color: #0f0f11;
+      color: white;
+      box-shadow: var(--shadow);
     }
-
     .btn-primary:hover {
-      background: #ff8c5a;
-      transform: translateY(-1px);
+      transform: translate(-3px, -3px);
+      box-shadow: var(--shadow-hover);
+    }
+    .btn-primary:active {
+      transform: translate(2px, 2px);
+      box-shadow: 4px 4px 0px var(--border);
     }
 
     .btn-secondary {
-      background: transparent;
+      background: white;
       color: var(--text);
-      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
     }
-
     .btn-secondary:hover {
-      border-color: var(--accent);
-      color: var(--accent);
+      transform: translate(-3px, -3px);
+      box-shadow: var(--shadow-hover);
+    }
+    .btn-secondary:active {
+      transform: translate(2px, 2px);
+      box-shadow: 4px 4px 0px var(--border);
     }
 
-    /* Countdown */
-    .countdown-section {
+    /* === COUNTDOWN === */
+    .countdown-wrap {
+      background: white;
+      border: var(--border-thick) solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 30px 20px;
+      margin-bottom: 50px;
       text-align: center;
-      padding: 40px 0 60px;
-      border-top: 1px solid var(--border);
     }
 
-    .countdown-section h2 {
-      font-size: 0.75rem;
+    .countdown-wrap .label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 3px;
-      color: var(--text-muted);
-      margin-bottom: 24px;
-      font-weight: 500;
+      color: var(--text-dim);
+      margin-bottom: 16px;
     }
 
     .countdown {
       display: flex;
       justify-content: center;
-      gap: 16px;
+      gap: 20px;
     }
 
     .countdown-item {
@@ -208,406 +235,407 @@
     }
 
     .countdown-number {
-      font-family: 'Inter', sans-serif;
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: var(--accent);
-      line-height: 1;
-      letter-spacing: -1px;
-    }
-
-    .countdown-label {
-      font-size: 0.65rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-top: 8px;
-    }
-
-    .countdown-sep {
-      font-family: 'Inter', sans-serif;
-      font-size: 1.8rem;
-      font-weight: 300;
-      color: var(--border);
-      padding-top: 4px;
-    }
-
-    /* Sections */
-    .section {
-      padding: 50px 0;
-      border-top: 1px solid var(--border);
-    }
-
-    .section-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 28px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--accent-secondary);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    /* 48h explainer */
-    .explainer-48h {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 40px;
-    }
-
-    .explainer-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 28px 24px;
-      text-align: center;
-      transition: border-color 0.2s;
-    }
-
-    .explainer-card:hover {
-      border-color: var(--accent);
-    }
-
-    .explainer-card .big {
-      font-size: 2.5rem;
+      font-size: 2.8rem;
       font-weight: 900;
       color: var(--accent);
       line-height: 1;
       letter-spacing: -2px;
     }
 
-    .explainer-card .label {
-      font-size: 0.8rem;
+    .countdown-label {
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
       color: var(--text-dim);
-      margin-top: 8px;
-      font-weight: 500;
+      margin-top: 6px;
+    }
+
+    .countdown-sep {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--border);
+      padding-top: 4px;
+    }
+
+    /* === SECTIONS === */
+    .section {
+      padding: 50px 0;
+    }
+
+    .section-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 24px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: var(--border-thick);
+      background: var(--border);
+    }
+
+    /* === 48H EXPLAINER === */
+    .explainer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .explainer-card {
+      background: white;
+      border: var(--border-thick) solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 32px 24px;
+      text-align: center;
+    }
+
+    .explainer-card .big {
+      font-size: 3rem;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1;
+      letter-spacing: -3px;
+    }
+
+    .explainer-card .label {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-top: 10px;
+      text-transform: uppercase;
     }
 
     .explainer-card .sub {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-top: 4px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 6px;
     }
 
     .explainer-card .mode {
       display: inline-block;
-      margin-top: 12px;
-      font-size: 0.7rem;
-      font-weight: 600;
+      margin-top: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      padding: 4px 12px;
-      border-radius: 2px;
+      letter-spacing: 2px;
+      padding: 6px 16px;
+      border: 3px solid var(--border);
     }
 
     .explainer-card .mode.solo {
-      background: rgba(255, 107, 53, 0.1);
-      color: var(--accent);
+      background: var(--accent);
+      color: white;
     }
 
     .explainer-card .mode.community {
-      background: rgba(255, 209, 102, 0.1);
-      color: var(--accent-secondary);
+      background: var(--accent-secondary);
+      color: var(--text);
     }
 
-    .explainer-plus {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      color: var(--text-muted);
-    }
-
-    /* Timeline — no vertical lines */
+    /* === TIMELINE === */
     .timeline {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
-    .timeline-item {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 22px 24px;
-      transition: border-color 0.2s;
+    .tl-item {
+      background: white;
+      border: var(--border-thick) solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      transition: all 0.1s;
     }
 
-    .timeline-item:hover {
+    .tl-item.active {
       border-color: var(--accent);
+      box-shadow: 8px 8px 0px var(--accent);
     }
 
-    .timeline-item.active {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent);
-    }
-
-    .timeline-item .phase {
+    .tl-item .phase {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.6rem;
-      font-weight: 500;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
       color: var(--accent);
       margin-bottom: 6px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
     }
 
-    .timeline-item h3 {
-      font-size: 1rem;
-      font-weight: 600;
+    .tl-item h3 {
+      font-size: 1.1rem;
+      font-weight: 800;
       margin-bottom: 4px;
     }
 
-    .timeline-item .date {
-      font-size: 0.8rem;
-      color: var(--accent-secondary);
+    .tl-item .date {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
       font-weight: 500;
+      color: var(--accent-secondary);
+      margin-bottom: 8px;
     }
 
-    .timeline-item .desc {
+    .tl-item .desc {
       font-size: 0.85rem;
       color: var(--text-dim);
-      margin-top: 6px;
-      line-height: 1.5;
     }
 
-    /* Rules as cards */
+    /* === RULES === */
     .rules-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
 
     .rule-card {
       display: flex;
       align-items: flex-start;
       gap: 14px;
-      padding: 14px 18px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      font-size: 0.88rem;
-      transition: border-color 0.15s;
-    }
-
-    .rule-card:hover {
-      border-color: var(--accent);
+      padding: 18px 20px;
+      background: white;
+      border: var(--border-thick) solid var(--border);
+      box-shadow: var(--shadow);
+      font-size: 0.85rem;
+      font-weight: 500;
     }
 
     .rule-card .icon {
-      font-size: 1rem;
-      min-width: 20px;
+      font-size: 1.2rem;
+      min-width: 24px;
       text-align: center;
-      margin-top: 2px;
+      flex-shrink: 0;
     }
 
     .rule-card.danger {
-      border-color: rgba(255, 51, 102, 0.2);
-    }
-
-    .rule-card.danger:hover {
       border-color: var(--danger);
+      box-shadow: 8px 8px 0px var(--danger);
     }
 
-    /* Steps — no vertical lines */
+    .rule-card code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: var(--bg);
+      padding: 1px 5px;
+      border: 2px solid var(--border);
+    }
+
+    /* === STEPS === */
     .steps-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
 
     .step-item {
       display: flex;
       align-items: flex-start;
       gap: 16px;
-      padding: 16px 20px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      transition: border-color 0.15s;
-    }
-
-    .step-item:hover {
-      border-color: var(--accent);
+      padding: 20px;
+      background: white;
+      border: var(--border-thick) solid var(--border);
+      box-shadow: var(--shadow);
     }
 
     .step-item .num {
-      width: 30px;
-      height: 30px;
+      width: 36px;
+      height: 36px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255, 107, 53, 0.1);
-      border: 1px solid rgba(255, 107, 53, 0.2);
-      font-family: 'Inter', sans-serif;
-      font-weight: 700;
-      font-size: 0.8rem;
-      color: var(--accent);
+      background: var(--accent);
+      color: white;
+      font-weight: 900;
+      font-size: 1rem;
+      border: 3px solid var(--border);
       flex-shrink: 0;
-      border-radius: 4px;
     }
 
     .step-item h3 {
       font-size: 0.9rem;
-      font-weight: 600;
+      font-weight: 700;
       margin-bottom: 3px;
     }
 
     .step-item p {
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: var(--text-dim);
     }
 
     .step-item code {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      background: rgba(255, 107, 53, 0.08);
-      padding: 1px 5px;
-      border-radius: 2px;
-      color: var(--accent);
+      font-size: 0.7rem;
+      background: var(--bg);
+      padding: 1px 4px;
+      border: 2px solid var(--border);
     }
 
-    /* Criteria */
+    /* === CRITERIA === */
     .criteria-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .criterion {
-      padding: 12px 16px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      font-size: 0.82rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .criterion .check {
-      color: var(--accent);
-    }
-
-    .criterion .cross {
-      color: var(--danger);
-    }
-
-    /* Prizes */
-    .prizes-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       gap: 12px;
     }
 
-    .prize-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 28px 20px;
-      text-align: center;
-      transition: border-color 0.2s, transform 0.2s;
+    .crit-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      background: white;
+      border: var(--border-thick) solid var(--border);
+      box-shadow: var(--shadow);
+      font-size: 0.8rem;
+      font-weight: 600;
     }
 
-    .prize-card:hover {
-      border-color: var(--accent);
-      transform: translateY(-2px);
+    .crit-item .mark {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 0.8rem;
+      border: 3px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .crit-item .mark.check {
+      background: #10b981;
+      color: white;
+    }
+
+    .crit-item .mark.cross {
+      background: var(--danger);
+      color: white;
+    }
+
+    /* === PRIZES === */
+    .prizes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .prize-card {
+      background: white;
+      border: var(--border-thick) solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 32px 20px;
+      text-align: center;
     }
 
     .prize-card .trophy {
-      font-size: 2rem;
+      font-size: 2.5rem;
       margin-bottom: 12px;
     }
 
     .prize-card .place {
-      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 2px;
-      color: var(--text-muted);
-      font-weight: 600;
+      color: var(--text-dim);
       margin-bottom: 8px;
     }
 
-    .prize-card .prize-name {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--accent-secondary);
+    .prize-card .name {
+      font-size: 1.3rem;
+      font-weight: 900;
     }
 
-    .prize-card .prize-sub {
+    .prize-card .sub {
       font-size: 0.8rem;
       color: var(--text-dim);
       margin-top: 6px;
     }
 
-    .prize-card.gold {
-      border-color: rgba(255, 209, 102, 0.2);
-    }
+    .prize-card.gold { border-color: #ffd166; box-shadow: 8px 8px 0px #ffd166; }
+    .prize-card.silver { border-color: #8888a0; box-shadow: 8px 8px 0px #8888a0; }
+    .prize-card.bronze { border-color: var(--accent); box-shadow: 8px 8px 0px var(--accent); }
 
-    .prize-card.gold:hover {
-      border-color: #ffd166;
-    }
-
-    .prize-card.silver {
-      border-color: rgba(136, 136, 160, 0.2);
-    }
-
-    .prize-card.silver:hover {
-      border-color: #8888a0;
-    }
-
-    .prize-card.bronze {
-      border-color: rgba(255, 107, 53, 0.2);
-    }
-
-    .prize-card.bronze:hover {
-      border-color: var(--accent);
-    }
-
-    /* Footer */
+    /* === FOOTER === */
     .footer {
       text-align: center;
       padding: 40px 0;
-      border-top: 1px solid var(--border);
-      color: var(--text-muted);
+      border-top: var(--border-thick) solid var(--border);
+      margin-top: 20px;
       font-size: 0.8rem;
+      font-weight: 500;
     }
 
     .footer a {
       color: var(--accent);
       text-decoration: none;
+      font-weight: 700;
+      border-bottom: 3px solid var(--accent);
     }
 
     .footer a:hover {
-      text-decoration: underline;
+      background: var(--accent);
+      color: white;
     }
 
-    /* Responsive */
-    @media (max-width: 600px) {
-      .hero { padding: 60px 0 40px; }
-      .countdown { gap: 8px; }
-      .countdown-number { font-size: 1.6rem; }
-      .countdown-item { min-width: 44px; }
+    /* === GHOST === */
+    #pixel-ghost {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      image-rendering: pixelated;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0.8;
+      border: 3px solid var(--border);
+      background: white;
+      padding: 4px;
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 700px) {
+      .rules-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
       .criteria-grid { grid-template-columns: 1fr; }
-      .explainer-48h { grid-template-columns: 1fr; }
-      .explainer-plus { display: none; }
+      .explainer-grid { grid-template-columns: 1fr; }
       .prizes-grid { grid-template-columns: 1fr; }
+      .countdown { gap: 10px; }
+      .countdown-number { font-size: 2rem; }
+      .countdown-item { min-width: 44px; }
       #pixel-ghost { display: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      #pixel-ghost { display: none; }
-      .page-wrapper { opacity: 1; animation: none; }
+      .reveal { opacity: 1; transform: none; }
+      #loader { display: none; }
+      .page { opacity: 1; }
     }
   </style>
 </head>
 <body>
-  <div class="page-wrapper">
-    <!-- Pixel ghost — signature element -->
-    <svg id="pixel-ghost" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Loading screen -->
+  <div id="loader">
+    <div class="box">
+      <div class="big">GJ26</div>
+      <div class="sub">kodingvibes gamejam</div>
+      <div class="bar-wrap"><div class="bar-fill" id="load-bar"></div></div>
+    </div>
+  </div>
+
+  <!-- Page -->
+  <div class="page" id="page">
+    <!-- Ghost -->
+    <svg id="pixel-ghost" viewBox="0 0 32 32">
       <rect x="8" y="4" width="16" height="2" fill="#ff6b35"/>
       <rect x="6" y="6" width="20" height="2" fill="#ff6b35"/>
       <rect x="4" y="8" width="24" height="2" fill="#ff6b35"/>
@@ -624,7 +652,6 @@
       <rect x="8" y="26" width="2" height="2" fill="#ff6b35"/>
       <rect x="16" y="26" width="2" height="2" fill="#ff6b35"/>
       <rect x="22" y="26" width="2" height="2" fill="#ff6b35"/>
-      <!-- Eyes -->
       <rect x="10" y="12" width="4" height="4" fill="#0f0f11"/>
       <rect x="18" y="12" width="4" height="4" fill="#0f0f11"/>
       <rect x="10" y="12" width="2" height="2" fill="#ffd166"/>
@@ -634,24 +661,18 @@
     <div class="container">
       <!-- Hero -->
       <section class="hero">
-        <div class="hero-badge">
-          <span>kodingvibes gamejam</span>
-        </div>
-        <h1>GameJam 2026</h1>
-        <p>48 horas divididas en dos mitades: 24h de desarrollo en solitario + 24h de mejora comunitaria. Todos los niveles bienvenidos.</p>
+        <div class="hero-badge">kodingvibes gamejam</div>
+        <h1>GameJam<br>2026</h1>
+        <p>24h creas tu juego en Phaser + 24h mejoras el de otro</p>
         <div class="hero-actions">
-          <a href="https://github.com/kodingvibes/gamejam-2026" class="btn btn-primary" target="_blank">
-            Participar
-          </a>
-          <a href="#como-participar" class="btn btn-secondary">
-            Cómo funciona
-          </a>
+          <a href="https://github.com/kodingvibes/gamejam-2026" class="btn btn-primary" target="_blank">Participar</a>
+          <a href="#como-participar" class="btn btn-secondary">Cómo funciona</a>
         </div>
       </section>
 
       <!-- Countdown -->
-      <section class="countdown-section">
-        <h2>Próxima edición</h2>
+      <div class="countdown-wrap reveal">
+        <div class="label">Próxima edición</div>
         <div class="countdown" id="countdown-display">
           <div class="countdown-item">
             <span class="countdown-number" id="days">--</span>
@@ -673,210 +694,202 @@
             <span class="countdown-label">Seg</span>
           </div>
         </div>
-      </section>
+      </div>
 
       <!-- 48h Explainer -->
-      <section class="section">
-        <h2 class="section-title">48 horas en acción</h2>
-        <div class="explainer-48h">
+      <section class="section reveal">
+        <h2 class="section-title">48 horas</h2>
+        <div class="explainer-grid">
           <div class="explainer-card">
             <div class="big">24h</div>
-            <div class="label">Desarrollo en solitario</div>
-            <div class="sub">Cada participante crea su juego desde cero</div>
+            <div class="label">Desarrollo</div>
+            <div class="sub">Creas tu juego en Phaser desde cero</div>
             <span class="mode solo">Solo</span>
           </div>
           <div class="explainer-card">
             <div class="big">24h</div>
-            <div class="label">Mejora comunitaria</div>
-            <div class="sub">Los juegos se reparten y todos mejoran el de otro</div>
+            <div class="label">Mejora</div>
+            <div class="sub">Te asignan el juego de otro y lo mejoras</div>
             <span class="mode community">Comunidad</span>
           </div>
         </div>
       </section>
 
       <!-- Timeline -->
-      <section class="section">
+      <section class="section reveal">
         <h2 class="section-title">Timeline</h2>
         <div class="timeline">
-          <div class="timeline-item active">
-            <div class="phase">FASE 1</div>
+          <div class="tl-item active">
+            <div class="phase">Fase 1</div>
             <h3>Crea tu juego</h3>
             <div class="date">Vie 31 jul 23:00 → Sáb 1 ago 23:00</div>
-            <div class="desc">24 horas para desarrollar tu juego completo en Phaser. Cualquier género, pero el stack es Phaser. Solo dentro de tu carpeta.</div>
+            <div class="desc">24h para tu juego en Phaser. Cualquier género, solo dentro de tu carpeta.</div>
           </div>
-          <div class="timeline-item">
-            <div class="phase">FASE 2</div>
+          <div class="tl-item">
+            <div class="phase">Fase 2</div>
             <h3>Mejora el juego de otro</h3>
             <div class="date">Sáb 1 ago 23:00 → Dom 2 ago 23:00</div>
-            <div class="desc">Te asignan el juego de otro participante. Agrega features, refactoriza, corrige bugs. Aprendizaje cruzado.</div>
+            <div class="desc">Features, refactor, bugs. Aprendizaje cruzado real.</div>
           </div>
-          <div class="timeline-item">
-            <div class="phase">FIN</div>
+          <div class="tl-item">
+            <div class="phase">Fin</div>
             <h3>Entrega final</h3>
             <div class="date">Dom 2 ago 23:00</div>
-            <div class="desc">Se cierran los PRs. @Motoko revisa todo y anuncia resultados.</div>
+            <div class="desc">Se cierran PRs. @Motoko revisa y anuncia resultados.</div>
           </div>
         </div>
       </section>
 
       <!-- Rules -->
-      <section class="section">
+      <section class="section reveal">
         <h2 class="section-title">Reglas</h2>
         <div class="rules-grid">
-          <div class="rule-card">
-            <span class="icon">🔑</span>
-            <span>Tener cuenta en <strong>kodingvibes.com</strong> — requisito obligatorio</span>
-          </div>
-          <div class="rule-card">
-            <span class="icon">📁</span>
-            <span>Trabajar solo dentro de <code>participantes/tu-nombre/</code></span>
-          </div>
-          <div class="rule-card">
-            <span class="icon">🚫</span>
-            <span>No tocar archivos fuera de tu carpeta</span>
-          </div>
-          <div class="rule-card">
-            <span class="icon">🔀</span>
-            <span>Fase 1: PR con tu juego. Fase 2: PR con mejoras al juego de otro</span>
-          </div>
-          <div class="rule-card">
-            <span class="icon">🤖</span>
-            <span>@Motoko revisa y mergea todos los PRs</span>
-          </div>
-          <div class="rule-card danger">
-            <span class="icon">🚨</span>
-            <span>No juegos eróticos. Violencia extrema: bienvenida</span>
-          </div>
+          <div class="rule-card"><span class="icon">🔑</span> Cuenta en kodingvibes.com</div>
+          <div class="rule-card"><span class="icon">📁</span> Solo dentro de <code>participantes/tu-nombre/</code></div>
+          <div class="rule-card"><span class="icon">🚫</span> No tocar archivos fuera de tu carpeta</div>
+          <div class="rule-card"><span class="icon">🔀</span> Fase 1: PR. Fase 2: PR con mejoras</div>
+          <div class="rule-card"><span class="icon">🤖</span> @Motoko revisa y mergea</div>
+          <div class="rule-card danger"><span class="icon">🚨</span> No erótico. Violencia extrema: sí</div>
         </div>
       </section>
 
-      <!-- How to participate -->
-      <section class="section" id="como-participar">
+      <!-- Steps -->
+      <section class="section reveal" id="como-participar">
         <h2 class="section-title">Cómo participar</h2>
         <div class="steps-grid">
           <div class="step-item">
             <span class="num">1</span>
             <div>
-              <h3>Haz fork del repo</h3>
-              <p>Forkea <code>kodingvibes/gamejam-2026</code> a tu cuenta de GitHub.</p>
+              <h3>Fork del repo</h3>
+              <p>Forkea <code>kodingvibes/gamejam-2026</code></p>
             </div>
           </div>
           <div class="step-item">
             <span class="num">2</span>
             <div>
-              <h3>Clona y crea tu rama</h3>
-              <p><code>git clone</code> tu fork, luego <code>git checkout -b participante/tu-nombre</code></p>
+              <h3>Clona y crea rama</h3>
+              <p><code>git checkout -b participante/tu-nombre</code></p>
             </div>
           </div>
           <div class="step-item">
             <span class="num">3</span>
             <div>
-              <h3>Codea tu juego</h3>
-              <p>Crea <code>participantes/tu-nombre/</code> y desarrolla tu juego en Phaser. HTML, JS, Phaser — todo vale mientras sea Phaser.</p>
+              <h3>Codea en Phaser</h3>
+              <p>Dentro de <code>participantes/tu-nombre/</code></p>
             </div>
           </div>
           <div class="step-item">
             <span class="num">4</span>
             <div>
-              <h3>Sube tu rama y haz PR</h3>
-              <p><code>git push origin participante/tu-nombre</code> y crea un PR hacia <code>kodingvibes/gamejam-2026:main</code></p>
-            </div>
-          </div>
-          <div class="step-item">
-            <span class="num">5</span>
-            <div>
-              <h3>@Motoko revisa</h3>
-              <p>La IA del grupo revisa tu PR. Si pasa los filtros, se mergea automáticamente.</p>
+              <h3>Sube y haz PR</h3>
+              <p><code>git push</code> + PR a <code>kodingvibes/gamejam-2026:main</code></p>
             </div>
           </div>
         </div>
       </section>
 
       <!-- Criteria -->
-      <section class="section">
+      <section class="section reveal">
         <h2 class="section-title">Validación</h2>
         <div class="criteria-grid">
-          <div class="criterion"><span class="check">✓</span> Código solo en tu carpeta</div>
-          <div class="criterion"><span class="check">✓</span> El juego debe funcionar</div>
-          <div class="criterion"><span class="check">✓</span> Nada de código copiado sin entender</div>
-          <div class="criterion"><span class="check">✓</span> npm permitido, sin <code>node_modules/</code></div>
-          <div class="criterion"><span class="cross">✗</span> No juegos eróticos</div>
-          <div class="criterion"><span class="check">✓</span> Violencia extrema: bienvenida</div>
+          <div class="crit-item"><span class="mark check">✓</span> Código en tu carpeta</div>
+          <div class="crit-item"><span class="mark check">✓</span> Juego funciona</div>
+          <div class="crit-item"><span class="mark check">✓</span> Nada copiado sin entender</div>
+          <div class="crit-item"><span class="mark check">✓</span> npm sin <code>node_modules/</code></div>
+          <div class="crit-item"><span class="mark cross">✗</span> No erótico</div>
+          <div class="crit-item"><span class="mark check">✓</span> Violencia: bienvenida</div>
         </div>
       </section>
 
       <!-- Prizes -->
-      <section class="section">
+      <section class="section reveal">
         <h2 class="section-title">Premios</h2>
         <div class="prizes-grid">
           <div class="prize-card gold">
             <div class="trophy">🥇</div>
             <div class="place">Primer lugar</div>
-            <div class="prize-name">???</div>
-            <div class="prize-sub">Por definir</div>
+            <div class="name">???</div>
+            <div class="sub">Por definir</div>
           </div>
           <div class="prize-card silver">
             <div class="trophy">🥈</div>
             <div class="place">Segundo lugar</div>
-            <div class="prize-name">???</div>
-            <div class="prize-sub">Por definir</div>
+            <div class="name">???</div>
+            <div class="sub">Por definir</div>
           </div>
           <div class="prize-card bronze">
             <div class="trophy">🥉</div>
             <div class="place">Tercer lugar</div>
-            <div class="prize-name">???</div>
-            <div class="prize-sub">Por definir</div>
+            <div class="name">???</div>
+            <div class="sub">Por definir</div>
           </div>
         </div>
       </section>
 
       <!-- Footer -->
       <footer class="footer">
-        <p>Organizado por <a href="https://github.com/kodingvibes" target="_blank">kodingvibes</a> · Repo: <a href="https://github.com/kodingvibes/gamejam-2026" target="_blank">gamejam-2026</a></p>
-        <p style="margin-top: 6px;">PRs revisados por <strong>@Motoko</strong></p>
+        <p>Organizado por <a href="https://github.com/kodingvibes" target="_blank">kodingvibes</a> · Repo: <a href="https://github.com/kodingvibes/gamejam-2026" target="_blank">gamejam-2026</a> · PRs: <strong>@Motoko</strong></p>
       </footer>
     </div>
-
-    <script>
-      const target = new Date('2026-07-31T23:00:00-04:00');
-
-      function updateCountdown() {
-        const now = new Date();
-        const diff = target - now;
-
-        if (diff <= 0) {
-          document.getElementById('days').textContent = '00';
-          document.getElementById('hours').textContent = '00';
-          document.getElementById('minutes').textContent = '00';
-          document.getElementById('seconds').textContent = '00';
-          return;
-        }
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-        const minutes = Math.floor((diff / (1000 * 60)) % 60);
-        const seconds = Math.floor((diff / 1000) % 60);
-
-        document.getElementById('days').textContent = String(days).padStart(2, '0');
-        document.getElementById('hours').textContent = String(hours).padStart(2, '0');
-        document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
-        document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
-      }
-
-      updateCountdown();
-      setInterval(updateCountdown, 1000);
-
-      // Pixel ghost bobbing animation
-      const ghost = document.getElementById('pixel-ghost');
-      let ghostY = 0;
-      let ghostDir = 1;
-
-      setInterval(() => {
-        ghostY += ghostDir * 0.5;
-        if (Math.abs(ghostY) > 4) ghostDir *= -1;
-        ghost.style.transform = `translateY(${ghostY}px)`;
-      }, 50);
-    </script>
   </div>
+
+  <script>
+    // === LOADING SCREEN ===
+    const loadBar = document.getElementById('load-bar');
+    const loader = document.getElementById('loader');
+    const page = document.getElementById('page');
+    let progress = 0;
+
+    const loadInterval = setInterval(() => {
+      progress += Math.random() * 15 + 5;
+      if (progress > 100) progress = 100;
+      loadBar.style.width = progress + '%';
+      if (progress >= 100) {
+        clearInterval(loadInterval);
+        setTimeout(() => {
+          loader.classList.add('hidden');
+          page.classList.add('visible');
+        }, 400);
+      }
+    }, 120);
+
+    // === COUNTDOWN ===
+    const target = new Date('2026-07-31T23:00:00-04:00');
+
+    function updateCountdown() {
+      const now = new Date();
+      const diff = target - now;
+      if (diff <= 0) {
+        ['days','hours','minutes','seconds'].forEach(id => document.getElementById(id).textContent = '00');
+        return;
+      }
+      document.getElementById('days').textContent = String(Math.floor(diff / 86400000)).padStart(2,'0');
+      document.getElementById('hours').textContent = String(Math.floor((diff / 3600000) % 24)).padStart(2,'0');
+      document.getElementById('minutes').textContent = String(Math.floor((diff / 60000) % 60)).padStart(2,'0');
+      document.getElementById('seconds').textContent = String(Math.floor((diff / 1000) % 60)).padStart(2,'0');
+    }
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+
+    // === SCROLL REVEAL ===
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // === GHOST BOUNCE ===
+    const ghost = document.getElementById('pixel-ghost');
+    let gy = 0, gd = 1;
+    setInterval(() => {
+      gy += gd * 0.5;
+      if (Math.abs(gy) > 5) gd *= -1;
+      ghost.style.transform = `translateY(${gy}px)`;
+    }, 50);
+  </script>
 </body>
 </html>

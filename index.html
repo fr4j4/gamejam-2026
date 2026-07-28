@@ -600,6 +600,11 @@ Prohibido contenido erótico. Violencia: permitida.</p>
       var pulsed = 'rgb(' + r + ',' + g + ',' + b + ')';
       root.setProperty('--accent', pulsed);
       root.setProperty('--cta-shadow', '6px 6px 0 ' + shade(pulsed, 0.35));
+      // Pulse all accent glow layers on transient
+      var glowIntensity = 0.55 + beatFlash * 0.4;
+      var hazeIntensity = 0.28 + beatFlash * 0.4;
+      root.setProperty('--accent-glow', rgba(accent, Math.min(0.95, glowIntensity)));
+      root.setProperty('--accent-haze', rgba(accent, Math.min(0.68, hazeIntensity)));
 
       // Big hero sprite glow on transient
       if (!star && beatFlash > 0.05) {

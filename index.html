@@ -808,7 +808,7 @@ Prohibido contenido erótico. Violencia: permitida.</p>
     });
   }, { passive: true });
 
-  // ---- BGM (Suno) + beat-reactive glow ----------------------------------
+  // ---- BGM (Suno) + beat-reactive glow (bass only) ----------------------
   var bgm = document.getElementById('bgm');
   var bgmBtn = document.getElementById('bgm-btn');
   var audioCtx = null, analyser = null, dataArray = null;
@@ -821,7 +821,7 @@ Prohibido contenido erótico. Violencia: permitida.</p>
     try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
+      analyser.fftSize = 512;   // 512 → 256 bins, ~86 Hz per bin
       var src = audioCtx.createMediaElementSource(bgm);
       src.connect(analyser);
       analyser.connect(audioCtx.destination);
@@ -835,10 +835,8 @@ Prohibido contenido erótico. Violencia: permitida.</p>
     function loop() {
       if (!analyser || bgm.paused) { beatRaf = requestAnimationFrame(loop); return; }
       analyser.getByteFrequencyData(dataArray);
-      // Bass energy: first 6 bins (roughly 20-250Hz)
-      var bass = 0;
-      for (var i = 0; i < 6; i++) bass += dataArray[i];
-      bass = bass / (6 * 255);  // 0..1
+      // Bass only: first 2 bins = 0-172 Hz (sub-bass + kick)
+      var bass = (dataArray[0] + dataArray[1]) / (2 * 255);
       // Smooth
       beatEnergy = beatEnergy * 0.7 + bass * 0.3;
       // Kick flash: spike when bass jumps

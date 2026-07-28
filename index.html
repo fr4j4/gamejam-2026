@@ -49,6 +49,22 @@
       --toggle-icon: '🌙';
     }
 
+    [data-theme="halloween"] {
+      --bg: #0d0b14;
+      --surface: #1a1528;
+      --border: #ff6b35;
+      --accent: #ff6b35;
+      --accent-secondary: #b44dff;
+      --text: #f0e6d0;
+      --text-dim: #a08070;
+      --danger: #ff0044;
+      --shadow: 8px 8px 0px #000000;
+      --shadow-hover: 12px 12px 0px #000000;
+      --doodle-opacity: 0.55;
+      --bg-gradient: linear-gradient(180deg, rgba(180, 77, 255, 0.2) 0%, #0d0b14 40%, rgba(255, 107, 53, 0.1) 100%);
+      --toggle-icon: '🎃';
+    }
+
     body {
       background: var(--bg-gradient);
       color: var(--text);
@@ -678,6 +694,33 @@
       box-shadow: 4px 4px 0px var(--border);
     }
 
+    /* === HALLOWEEN DOODLES OVERLAY === */
+    [data-theme="halloween"] .doodle {
+      filter: hue-rotate(320deg) saturate(1.4);
+    }
+    [data-theme="halloween"] .hero-badge {
+      background: var(--accent-secondary);
+    }
+    [data-theme="halloween"] .countdown-number {
+      color: var(--accent-secondary);
+    }
+    [data-theme="halloween"] .explainer-card .big {
+      color: var(--accent-secondary);
+    }
+    [data-theme="halloween"] .tl-item.active {
+      border-color: var(--accent-secondary);
+      box-shadow: 8px 8px 0px var(--accent-secondary);
+    }
+    [data-theme="halloween"] .tl-item .phase {
+      color: var(--accent-secondary);
+    }
+    [data-theme="halloween"] .step-item .num {
+      background: var(--accent-secondary);
+    }
+    [data-theme="halloween"] .mode.solo {
+      background: var(--accent-secondary);
+    }
+
     /* === GHOST === */
     #pixel-ghost {
       position: fixed;
@@ -997,21 +1040,25 @@
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
     // === THEME TOGGLE ===
+    const THEMES = ['light', 'dark', 'halloween'];
+    const THEME_ICONS = { light: '☀️', dark: '🌙', halloween: '🎃' };
+
     function toggleTheme() {
       const html = document.documentElement;
-      const current = html.getAttribute('data-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
+      const current = html.getAttribute('data-theme') || 'light';
+      const idx = THEMES.indexOf(current);
+      const next = THEMES[(idx + 1) % THEMES.length];
       html.setAttribute('data-theme', next);
       localStorage.setItem('gamejam-theme', next);
-      document.getElementById('theme-toggle').textContent = next === 'dark' ? '🌙' : '☀️';
+      document.getElementById('theme-toggle').textContent = THEME_ICONS[next];
     }
 
     // Restore saved theme
     (function() {
       const saved = localStorage.getItem('gamejam-theme');
-      if (saved) {
+      if (saved && THEMES.includes(saved)) {
         document.documentElement.setAttribute('data-theme', saved);
-        document.getElementById('theme-toggle').textContent = saved === 'dark' ? '🌙' : '☀️';
+        document.getElementById('theme-toggle').textContent = THEME_ICONS[saved];
       }
     })();
 

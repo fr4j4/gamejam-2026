@@ -808,6 +808,100 @@ Prohibido contenido erótico. Violencia: permitida.</p>
     });
   }, { passive: true });
 
+  // ---- BGM (Suno) + beat-reactive glow ----------------------------------
+  var bgm = document.getElementById('bgm');
+  var bgmBtn = document.getElementById('bgm-btn');
+  var audioCtx = null, analyser = null, dataArray = null;
+  var beatRaf = null;
+  var beatEnergy = 0;          // 0..1 smoothed bass energy
+  var beatFlash = 0;           // 0..1 kick flash (decays fast)
+
+  function initAudioAnalyser() {
+    if (audioCtx) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      var src = audioCtx.createMediaElementSource(bgm);
+      src.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
+      startBeatLoop();
+    } catch(e) { /* audio analyser not available */ }
+  }
+
+  function startBeatLoop() {
+    if (beatRaf) return;
+    function loop() {
+      if (!analyser || bgm.paused) { beatRaf = requestAnimationFrame(loop); return; }
+      analyser.getByteFrequencyData(dataArray);
+      // Bass energy: first 6 bins (roughly 20-250Hz)
+      var bass = 0;
+      for (var i = 0; i < 6; i++) bass += dataArray[i];
+      bass = bass / (6 * 255);  // 0..1
+      // Smooth
+      beatEnergy = beatEnergy * 0.7 + bass * 0.3;
+      // Kick flash: spike when bass jumps
+      if (bass > 0.35 && bass > beatEnergy * 1.3) {
+        beatFlash = Math.min(1, bass * 1.8);
+      }
+      beatFlash *= 0.92;
+      if (beatFlash < 0.01) beatFlash = 0;
+
+      // Apply to backdrop aura
+      var accent = accentLive;
+      var auraIntensity = 0.12 + beatEnergy * 0.28;
+      var aura = 'radial-gradient(1100px 620px at 50% -6%, ' + rgba(accent, auraIntensity) + ', transparent 68%)';
+      var img, size;
+      if (cycleIdx % 2) {
+        img = [aura].concat(SCANLINES); size = ['100% 100%', 'auto'];
+      } else {
+        img = [aura].concat(GRID); size = ['100% 100%', '32px 32px', '32px 32px'];
+      }
+      root.setProperty('--backdrop-image', img.join(', '));
+      root.setProperty('--backdrop-size', size.join(', '));
+
+      // Pulse the accent brightness on kick
+      var kick = 1 + beatFlash * 0.25;
+      var r = Math.min(255, Math.round(rgb(accent)[0] * kick));
+      var g = Math.min(255, Math.round(rgb(accent)[1] * kick));
+      var b = Math.min(255, Math.round(rgb(accent)[2] * kick));
+      var pulsed = 'rgb(' + r + ',' + g + ',' + b + ')';
+      root.setProperty('--accent', pulsed);
+      root.setProperty('--cta-shadow', '6px 6px 0 ' + shade(pulsed, 0.35));
+
+      // Pulse hero sprite glow on beat
+      if (!star && beatFlash > 0.05) {
+        sprite.style.setProperty('--sprite-glow', 'drop-shadow(0 0 ' + (8 + beatFlash * 20) + 'px ' + pulsed + ') brightness(' + (1 + beatFlash * 0.2) + ')');
+      }
+
+      beatRaf = requestAnimationFrame(loop);
+    }
+    beatRaf = requestAnimationFrame(loop);
+  }
+
+  function toggleBGM() {
+    if (bgm.paused) {
+      bgm.play();
+      bgmBtn.textContent = '⏸';
+    } else {
+      bgm.pause();
+      bgmBtn.textContent = '▶';
+    }
+  }
+  // Autoplay on first real user interaction
+  var startBGM = function() {
+    initAudioAnalyser();
+    bgm.play().then(function() {
+      bgmBtn.textContent = '⏸';
+    }).catch(function() {});
+    document.removeEventListener('click', startBGM);
+    document.removeEventListener('touchstart', startBGM);
+    document.removeEventListener('keydown', startBGM);
+  };
+  document.addEventListener('click', startBGM, { once: true });
+  document.addEventListener('touchstart', startBGM, { once: true });
+  document.addEventListener('keydown', startBGM, { once: true });
   // ---- copy prompt -------------------------------------------------------
   var promptText = document.getElementById('prompt-text').textContent;
   // One shared `copied` flag drives both buttons, as in the original — a

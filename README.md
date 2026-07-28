@@ -28,6 +28,7 @@ Todo dentro de la carpeta del otro participante. Así mezclamos estilos, modelos
 3. En Fase 1: haz un **Pull Request** con tu juego a `main`
 4. En Fase 2: haz un **Pull Request** con las mejoras al juego que te tocó
 5. @Motoko revisa y mergea ambos PRs
+6. **No juegos eróticos.** Violencia explícita y extrema sí, permitida. Sangre, gore, desmembramiento, todo bien. Pero nada de contenido erótico o sexual.
 
 ## 🚀 Cómo empezar
 

@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GameJam 2026 — kodingvibes</title>
-  <meta name="description" content="GameJam kodingvibes. 48h, Phaser, puro código.">
+  <meta name="description" content="GameJam organizada por kodingvibes. 48 horas, 2 fases, puro código y buena onda.">
   <meta property="og:title" content="GameJam 2026 — kodingvibes">
-  <meta property="og:description" content="48h. Phaser. Tu juego + mejorar el de otro.">
+  <meta property="og:description" content="48 horas de desarrollo + mejora cruzada. Todos los niveles bienvenidos.">
   <meta property="og:url" content="https://kodingvibes.github.io/gamejam-2026/">
   <meta name="theme-color" content="#ff6b35">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
@@ -89,31 +89,16 @@
     #soundtrack-mini {
       position: fixed;
       top: 10px;
-      left: 10px;
+      right: 10px;
       z-index: 999;
       pointer-events: auto;
     }
-    #soundtrack-mini button {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      padding: 8px 14px;
-      background: white;
-      color: var(--text);
-      border: 3px solid var(--border);
-      box-shadow: 4px 4px 0px var(--border);
-      cursor: pointer;
-      transition: all 0.1s;
-    }
-    #soundtrack-mini button:hover {
-      transform: translate(-2px, -2px);
-      box-shadow: 6px 6px 0px var(--border);
-    }
-    #soundtrack-mini button:active {
-      transform: translate(1px, 1px);
-      box-shadow: 2px 2px 0px var(--border);
+    #soundtrack-mini iframe {
+      width: 200px;
+      height: 60px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      opacity: 0;
     }
 
     /* === 8-BIT DOODLES === */
@@ -877,9 +862,6 @@
     <svg class="doodle" width="20" height="20" viewBox="0 0 20 20"><rect x="2" y="2" width="16" height="16" fill="#ff6b35"/><rect x="4" y="4" width="12" height="12" fill="#ffd166"/><rect x="6" y="6" width="8" height="8" fill="#ff6b35"/><rect x="8" y="8" width="4" height="4" fill="#1a1a1a"/></svg>
   </div>
 
-  <!-- Soundtrack (autoplay, hidden) -->
-  <audio id="bgm" src="https://cdn1.suno.ai/9d4d71bd-d202-463e-8856-5bc973196992.mp3" preload="auto" loop style="display:none"></audio>
-
   <!-- Loading screen -->
   <div id="loader">
     <div class="box">
@@ -923,7 +905,7 @@
       <section class="hero">
         <div class="hero-badge">kodingvibes gamejam</div>
         <h1>GameJam<br>2026</h1>
-        <p>24 Horas creas tu juego en Phaser<br>+ 24 horas y la comunidad mejorara el tuyo y tu el de otros</p>
+        <p>48 horas de desarrollo + mejora cruzada. Todos los niveles bienvenidos.</p>
         <div class="hero-actions">
           <a href="https://github.com/kodingvibes/gamejam-2026" class="btn btn-primary" target="_blank">Participar</a>
           <a href="#como-participar" class="btn btn-secondary">Cómo funciona</a>
@@ -958,18 +940,18 @@
 
       <!-- 48h Explainer -->
       <section class="section reveal">
-        <h2 class="section-title">48 horas</h2>
+        <h2 class="section-title">48 horas en acción</h2>
         <div class="explainer-grid">
           <div class="explainer-card">
             <div class="big">24h</div>
             <div class="label">Desarrollo</div>
-            <div class="sub">Creas tu juego en Phaser desde cero</div>
+            <div class="sub">Cada participante crea su juego desde cero</div>
             <span class="mode solo">Solo</span>
           </div>
           <div class="explainer-card">
             <div class="big">24h</div>
             <div class="label">Mejora</div>
-            <div class="sub">Te asignan el juego de otro y lo mejoras</div>
+            <div class="sub">Los juegos se reparten y todos mejoran el de otro</div>
             <span class="mode community">Comunidad</span>
           </div>
         </div>
@@ -983,13 +965,13 @@
             <div class="phase">Fase 1</div>
             <h3>Crea tu juego</h3>
             <div class="date">Vie 31 jul 23:00 → Sáb 1 ago 23:00</div>
-            <div class="desc">24h para tu juego en Phaser. Cualquier género, solo dentro de tu carpeta.</div>
+            <div class="desc">24 horas para desarrollar tu juego completo. Cualquier stack, cualquier género. Solo dentro de tu carpeta.</div>
           </div>
           <div class="tl-item">
             <div class="phase">Fase 2</div>
             <h3>Mejora el juego de otro</h3>
             <div class="date">Sáb 1 ago 23:00 → Dom 2 ago 23:00</div>
-            <div class="desc">Features, refactor, bugs. Aprendizaje cruzado real.</div>
+            <div class="desc">Te asignan el juego de otro participante. Agrega features, refactoriza, corrige bugs. Aprendizaje cruzado.</div>
           </div>
           <div class="tl-item">
             <div class="phase">Fin</div>
@@ -1004,12 +986,12 @@
       <section class="section reveal">
         <h2 class="section-title">Reglas</h2>
         <div class="rules-grid">
-          <div class="rule-card"><span class="icon">🔑</span> Cuenta en kodingvibes.com</div>
-          <div class="rule-card"><span class="icon">📁</span> Solo dentro de <code>participantes/tu-nombre/</code></div>
+          <div class="rule-card"><span class="icon">🔑</span> Tener cuenta en <strong>kodingvibes.com</strong> — requisito obligatorio</div>
+          <div class="rule-card"><span class="icon">📁</span> Trabajar solo dentro de <code>participantes/tu-nombre/</code></div>
           <div class="rule-card"><span class="icon">🚫</span> No tocar archivos fuera de tu carpeta</div>
-          <div class="rule-card"><span class="icon">🔀</span> Fase 1: PR. Fase 2: PR con mejoras</div>
-          <div class="rule-card"><span class="icon">🤖</span> @Motoko revisa y mergea</div>
-          <div class="rule-card danger"><span class="icon">🚨</span> No erótico. Violencia extrema: sí</div>
+          <div class="rule-card"><span class="icon">🔀</span> Fase 1: PR con tu juego. Fase 2: PR con mejoras al juego de otro</div>
+          <div class="rule-card"><span class="icon">🤖</span> @Motoko revisa y mergea todos los PRs</div>
+          <div class="rule-card danger"><span class="icon">🚨</span> No juegos eróticos. Violencia extrema: bienvenida</div>
         </div>
       </section>
 
@@ -1020,29 +1002,36 @@
           <div class="step-item">
             <span class="num">1</span>
             <div>
-              <h3>Fork del repo</h3>
-              <p>Forkea <code>kodingvibes/gamejam-2026</code></p>
+              <h3>Haz fork del repo</h3>
+              <p>Forkea <code>kodingvibes/gamejam-2026</code> a tu cuenta de GitHub.</p>
             </div>
           </div>
           <div class="step-item">
             <span class="num">2</span>
             <div>
-              <h3>Clona y crea rama</h3>
-              <p><code>git checkout -b participante/tu-nombre</code></p>
+              <h3>Clona y crea tu rama</h3>
+              <p><code>git clone</code> tu fork, luego <code>git checkout -b participante/tu-nombre</code></p>
             </div>
           </div>
           <div class="step-item">
             <span class="num">3</span>
             <div>
-              <h3>Codea en Phaser</h3>
-              <p>Dentro de <code>participantes/tu-nombre/</code></p>
+              <h3>Codea tu juego</h3>
+              <p>Crea <code>participantes/tu-nombre/</code> y desarrolla todo ahí. HTML, Phaser, Python — lo que quieras.</p>
             </div>
           </div>
           <div class="step-item">
             <span class="num">4</span>
             <div>
-              <h3>Sube y haz PR</h3>
-              <p><code>git push</code> + PR a <code>kodingvibes/gamejam-2026:main</code></p>
+              <h3>Sube tu rama y haz PR</h3>
+              <p><code>git push origin participante/tu-nombre</code> y crea un PR hacia <code>kodingvibes/gamejam-2026:main</code></p>
+            </div>
+          </div>
+          <div class="step-item">
+            <span class="num">5</span>
+            <div>
+              <h3>@Motoko revisa</h3>
+              <p>La IA del grupo revisa tu PR. Si pasa los filtros, se mergea automáticamente.</p>
             </div>
           </div>
         </div>
@@ -1052,12 +1041,12 @@
       <section class="section reveal">
         <h2 class="section-title">Validación</h2>
         <div class="criteria-grid">
-          <div class="crit-item"><span class="mark check">✓</span> Código en tu carpeta</div>
-          <div class="crit-item"><span class="mark check">✓</span> Juego funciona</div>
-          <div class="crit-item"><span class="mark check">✓</span> Nada copiado sin entender</div>
-          <div class="crit-item"><span class="mark check">✓</span> npm sin <code>node_modules/</code></div>
-          <div class="crit-item"><span class="mark cross">✗</span> No erótico</div>
-          <div class="crit-item"><span class="mark check">✓</span> Violencia: bienvenida</div>
+          <div class="crit-item"><span class="mark check">✓</span> Código solo en tu carpeta</div>
+          <div class="crit-item"><span class="mark check">✓</span> El juego debe funcionar</div>
+          <div class="crit-item"><span class="mark check">✓</span> Nada de código copiado sin entender</div>
+          <div class="crit-item"><span class="mark check">✓</span> npm permitido, sin <code>node_modules/</code></div>
+          <div class="crit-item"><span class="mark cross">✗</span> No juegos eróticos</div>
+          <div class="crit-item"><span class="mark check">✓</span> Violencia extrema: bienvenida</div>
         </div>
       </section>
 
@@ -1092,7 +1081,7 @@
 
       <!-- Soundtrack Mini Player -->
       <div id="soundtrack-mini">
-        <button id="bgm-btn" onclick="toggleBGM()">🎵 PLAY</button>
+        <iframe src="https://suno.com/embed/9d4d71bd-d202-463e-8856-5bc973196992?autoplay=1" width="200" height="60" frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen loading="eager" referrerpolicy="no-referrer-when-downgrade" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></iframe>
       </div>
 
       <!-- Prizes -->
@@ -1122,7 +1111,8 @@
 
       <!-- Footer -->
       <footer class="footer">
-        <p>Organizado por <a href="https://github.com/kodingvibes" target="_blank">kodingvibes</a> · Repo: <a href="https://github.com/kodingvibes/gamejam-2026" target="_blank">gamejam-2026</a> · PRs: <strong>@Motoko</strong></p>
+        <p>Organizado por <a href="https://github.com/kodingvibes" target="_blank">kodingvibes</a> · Repo: <a href="https://github.com/kodingvibes/gamejam-2026" target="_blank">gamejam-2026</a></p>
+        <p style="margin-top: 6px;">PRs revisados por <strong>@Motoko</strong></p>
       </footer>
     </div>
   </div>
@@ -1207,31 +1197,6 @@
       if (Math.abs(gy) > 5) gd *= -1;
       ghost.style.transform = `translateY(${gy}px)`;
     }, 50);
-
-    // === BGM (Suno) ===
-    const bgm = document.getElementById('bgm');
-    const bgmBtn = document.getElementById('bgm-btn');
-    function toggleBGM() {
-      if (bgm.paused) {
-        bgm.play();
-        bgmBtn.textContent = '🎵 PAUSE';
-      } else {
-        bgm.pause();
-        bgmBtn.textContent = '🎵 PLAY';
-      }
-    }
-    // Autoplay on first real user interaction (browsers block programmatic clicks)
-    const startBGM = () => {
-      bgm.play().then(() => {
-        bgmBtn.textContent = '🎵 PAUSE';
-      }).catch(() => {});
-      document.removeEventListener('click', startBGM);
-      document.removeEventListener('touchstart', startBGM);
-      document.removeEventListener('keydown', startBGM);
-    };
-    document.addEventListener('click', startBGM, { once: true });
-    document.addEventListener('touchstart', startBGM, { once: true });
-    document.addEventListener('keydown', startBGM, { once: true });
   </script>
 
   <!-- Matrix Rain -->

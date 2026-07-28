@@ -8,7 +8,7 @@ La gamejam se divide en **2 fases de 24 horas**:
 
 ### Fase 1: Desarrollo (primeras 24h)
 
-Cada participante desarrolla su juego completo dentro de `participantes/<su-nombre>/`. Al terminar, hace un **Pull Request** a `main`. @Motoko revisa y mergea.
+Cada participante desarrolla su juego completo en **Phaser** dentro de `participantes/<su-nombre>/`. Al terminar, hace un **Pull Request** a `main`. @Motoko revisa y mergea.
 
 ### Fase 2: Mejora cruzada (segundas 24h)
 
@@ -46,10 +46,10 @@ cd gamejam-2026
 git checkout -b participante/tu-nombre
 ```
 
-### Paso 4: Crea tu carpeta y codea
+### Paso 4: Crea tu carpeta y programa en Phaser
 ```bash
 mkdir participantes/tu-nombre
-# ¡A codear!
+# Crea tu juego con Phaser 3 dentro de esta carpeta
 ```
 
 ### Paso 5: Sube tu rama al fork

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0e0d0b; width: 1200px; height: 630px; overflow: hidden; font-family: 'IBM Plex Mono', monospace; }
+
+  /* backdrop grid */
+  .backdrop {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(216,255,62,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(216,255,62,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: 0;
+  }
+
+  /* scanlines */
+  .scanlines {
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(180deg, rgba(0,0,0,.15) 0 1px, transparent 1px 3px);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* top border accent line */
+  .top-accent {
+    position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: #d8ff3e; z-index: 2;
+  }
+
+  /* pixel grid logo */
+  .pixel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 7px);
+    grid-auto-rows: 7px;
+    gap: 3px;
+  }
+  .pixel-grid span { display: block; width: 7px; height: 7px; }
+  .pixel-accent { background: #d8ff3e; }
+  .pixel-void { background: #0e0d0b; }
+  .pixel-border { background: #2b2823; }
+
+  .container {
+    position: relative; z-index: 2;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    padding: 50px 70px;
+  }
+
+  .header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: auto;
+  }
+  .header-text {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px; color: #8f897c;
+    letter-spacing: 2px;
+  }
+
+  .main {
+    display: flex; flex-direction: column;
+    gap: 16px;
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: #0e0d0b; background: #d8ff3e;
+    padding: 8px 14px;
+    width: fit-content;
+  }
+
+  .title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 64px; line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: #f4f1e8;
+  }
+  .title span { color: #d8ff3e; }
+
+  .subtitle {
+    font-size: 18px; line-height: 1.5;
+    color: #b8b1a4;
+    max-width: 50ch;
+    margin-top: 6px;
+  }
+
+  .stats {
+    display: flex; gap: 20px; margin-top: 20px;
+  }
+  .stat {
+    border: 2px solid #2b2823; background: #161512;
+    padding: 14px 20px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .stat-num {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 28px; color: #d8ff3e;
+  }
+  .stat-label {
+    font-size: 10px; letter-spacing: 1.4px;
+    text-transform: uppercase; color: #8f897c;
+  }
+
+  .footer {
+    margin-top: auto;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px; letter-spacing: 1.2px;
+    text-transform: uppercase; color: #8f897c;
+  }
+  .footer-dot {
+    width: 6px; height: 6px;
+    background: #d8ff3e; display: inline-block;
+  }
+
+  /* glow on accent elements */
+  .glow { text-shadow: 0 0 8px rgba(216,255,62,.4), 0 0 20px rgba(216,255,62,.15); }
+</style>
+</head>
+<body>
+  <div class="backdrop"></div>
+  <div class="scanlines"></div>
+  <div class="top-accent"></div>
+
+  <div class="container">
+    <div class="header">
+      <div class="pixel-grid">
+        <span class="pixel-accent"></span><span class="pixel-accent"></span><span class="pixel-accent"></span>
+        <span class="pixel-accent"></span><span class="pixel-void"></span><span class="pixel-accent"></span>
+        <span class="pixel-accent"></span><span class="pixel-border"></span><span class="pixel-accent"></span>
+      </div>
+      <span class="header-text">GJ26</span>
+    </div>
+
+    <div class="main">
+      <div class="badge">Edición 01 · Online · Phaser 3</div>
+      <div class="title">GAMEJAM<br><span>2026</span></div>
+      <div class="subtitle">Un fin de semana de AI Jam en Phaser: construyes tu juego con tu agente, después heredas el de otra persona y lo dejas mejor.</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-num glow">48H</div>
+          <div class="stat-label">de jam · dos fases</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num glow">VIE 31</div>
+          <div class="stat-label">jul · 23:00</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="footer-dot"></span>
+      kodingvibes / gamejam
+    </div>
+  </div>
+</body>
+</html>

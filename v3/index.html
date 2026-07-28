@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GameJam 2026 — kodingvibes (arcade)</title>
-<meta name="description" content="GameJam kodingvibes. 48h de vibecoding en Phaser 3, en dos fases.">
+<meta name="description" content="GameJam kodingvibes. 48h de AI Jam en Phaser 3, en dos fases.">
 <meta property="og:title" content="GameJam 2026 — kodingvibes (arcade)">
 <meta property="og:description" content="48h. Phaser. Tu juego + mejorar el de otro.">
 <meta property="og:url" content="https://kodingvibes.github.io/gamejam-2026/v3/">
@@ -107,14 +107,14 @@
 
     <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #0e0d0b; background: var(--accent); padding: 7px 11px; margin-bottom: clamp(20px, 4vw, 30px); animation: fadeup .6s ease-out both">Edición 01 · Online · Phaser 3</div>
     <h1 style="font-family: 'Press Start 2P', monospace; font-size: clamp(28px, 7.6vw, 72px); line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 clamp(16px, 3vw, 24px); padding-right: clamp(70px, 18vw, 190px); animation: fadeup .7s ease-out .08s both">GAMEJAM<br><span style="color: var(--accent)">2026</span></h1>
-    <p style="font-size: clamp(15.5px, 4.2vw, 19px); line-height: 1.6; color: #b8b1a4; max-width: 46ch; margin: 0 0 clamp(22px, 5vw, 32px); text-wrap: pretty; animation: fadeup .7s ease-out .16s both">Un fin de semana de vibecoding en Phaser: primero construyes tu juego con tu agente, después heredas el de otra persona y lo dejas mejor de como lo encontraste.</p>
+    <p style="font-size: clamp(15.5px, 4.2vw, 19px); line-height: 1.6; color: #b8b1a4; max-width: 46ch; margin: 0 0 clamp(22px, 5vw, 32px); text-wrap: pretty; animation: fadeup .7s ease-out .16s both">Un fin de semana de AI Jam en Phaser: primero construyes tu juego con tu agente, después heredas el de otra persona y lo dejas mejor de como lo encontraste.</p>
     <div style="display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; margin-bottom: clamp(24px, 5vw, 34px); animation: fadeup .7s ease-out .24s both">
       <div style="flex: 1 1 240px; border: 3px solid #2b2823; background: #161512; padding: clamp(18px, 4vw, 26px) clamp(18px, 4vw, 24px)">
         <div style="font-family: 'Press Start 2P', monospace; font-size: clamp(40px, 12vw, 78px); line-height: 1.05; color: var(--accent)">48H</div>
         <div style="font-size: 12px; letter-spacing: 1.6px; text-transform: uppercase; color: #8f897c; margin-top: 14px">de jam · dos fases · un fin de semana</div>
       </div>
       <div style="flex: 1 1 240px; border: 3px solid #2b2823; background: #161512; padding: clamp(18px, 4vw, 26px) clamp(18px, 4vw, 24px); display: flex; flex-direction: column; justify-content: center; gap: 10px">
-        <div style="display: flex; align-items: center; gap: 9px; font-size: 10.5px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: #8f897c"><span style="width: 8px; height: 8px; display: inline-block; background: var(--accent)"></span>Esto es vibecoding</div>
+        <div style="display: flex; align-items: center; gap: 9px; font-size: 10.5px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: #8f897c"><span style="width: 8px; height: 8px; display: inline-block; background: var(--accent)"></span>Esto es AI Jam</div>
         <div style="font-family: 'Press Start 2P', monospace; font-size: clamp(13px, 3.4vw, 18px); line-height: 1.55">TU AGENTE CODEA</div>
         <div style="font-size: 14px; line-height: 1.5; color: #b8b1a4">Le pasas el prompt y arrancan juntos. No necesitas saber codear, sí intentarlo.</div>
       </div>
@@ -136,8 +136,8 @@
 
   <div style="position: relative; z-index: 1; border-top: 3px solid #2b2823; border-bottom: 3px solid #2b2823; color: #0e0d0b; overflow: hidden; white-space: nowrap; background: var(--accent)">
     <div style="display: inline-flex; gap: 34px; padding: 10px 0; font-family: 'Press Start 2P', monospace; font-size: 10px; will-change: transform; animation: marquee 30s linear infinite">
-      <span>VIE 31 JUL 23:00 START</span><span>*</span><span>48H NON STOP</span><span>*</span><span>VIBECODING</span><span>*</span><span>REVISA @MOTOKO</span><span>*</span>
-      <span>VIE 31 JUL 23:00 START</span><span>*</span><span>48H NON STOP</span><span>*</span><span>VIBECODING</span><span>*</span><span>REVISA @MOTOKO</span><span>*</span>
+      <span>VIE 31 JUL 23:00 START</span><span>*</span><span>48H NON STOP</span><span>*</span><span>AI JAM</span><span>*</span><span>REVISA @MOTOKO</span><span>*</span>
+      <span>VIE 31 JUL 23:00 START</span><span>*</span><span>48H NON STOP</span><span>*</span><span>AI JAM</span><span>*</span><span>REVISA @MOTOKO</span><span>*</span>
     </div>
   </div>
 
@@ -273,7 +273,7 @@ PASO 4 - Entrega
 README corto, commits claros, push a mi fork y abre la PR a main con título &quot;[fase 1] nombre del juego&quot;. Devuélveme el link.
 
 Prohibido contenido erótico. Violencia: permitida.</p>
-      <div style="font-size: 13.5px; line-height: 1.55; color: #8f897c; padding: 0 20px 20px">Esto es vibecoding: la idea es construir conversando con tu LLM. Escribir a mano está permitido, pero no es el punto.</div>
+      <div style="font-size: 13.5px; line-height: 1.55; color: #8f897c; padding: 0 20px 20px">Esto es AI Jam: la idea es construir conversando con tu LLM. Escribir a mano está permitido, pero no es el punto.</div>
     </div>
   </section>
 

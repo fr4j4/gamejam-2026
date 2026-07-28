@@ -69,6 +69,18 @@
   .copy-big:hover { border-color: #f4f1e8 }
   .copy-small:hover { opacity: .85 }
 
+  /* ---- sprite del héroe: caja fija para que no baile entre sets ---------- */
+  /* anclado por right/top, cada set traía su propio tamaño y el centro saltaba
+     8px en X y 21.6px en Y al rotar. Caja del set más grande, contenido al medio. */
+  #hero-sprite {
+    width: calc(12 * clamp(6px, 1.5vw, 12px));
+    height: calc(8 * clamp(6px, 1.5vw, 16px));
+    justify-content: center;
+    align-content: center;
+  }
+  /* apilado bajo el título no aporta y empuja el CTA fuera de pantalla */
+  @media (max-width: 600px) { #hero-sprite { display: none !important } }
+
   /* ---- arcade glow: todo lo que lleva el acento emite luz --------------- */
   [style*="color: var(--accent)"] {
     text-shadow: 0 0 .3em var(--accent-glow), 0 0 .9em var(--accent-haze);
@@ -530,10 +542,20 @@ Prohibido contenido erótico. Violencia: permitida.</p>
   var spriteIdx = 0, star = false, hue = 0, flip = 0;
   var starTimer = null, starOff = null, flipOff = null, taps = [];
 
+  // filas y columnas vacías al borde ocupan lugar igual y descentran el dibujo
+  // dentro de su propia caja: el corazón perdía 8px por su última fila en blanco.
+  function trim(rows) {
+    var keep = rows.filter(function (r) { return /[^.]/.test(r); });
+    var lo = Math.min.apply(null, keep.map(function (r) { return r.search(/[^.]/); }));
+    var hi = Math.max.apply(null, keep.map(function (r) { return r.replace(/\.+$/, '').length; }));
+    return keep.map(function (r) { return r.slice(lo, hi); });
+  }
+
   function drawSprite() {
     var set = SETS[spriteIdx % SETS.length];
+    var rows = trim(set.rows);
     var cell = 'clamp(6px, 1.5vw, ' + set.px + 'px)';
-    sprite.style.setProperty('--sprite-cols', 'repeat(' + set.rows[0].length + ', ' + cell + ')');
+    sprite.style.setProperty('--sprite-cols', 'repeat(' + rows[0].length + ', ' + cell + ')');
     sprite.style.setProperty('--sprite-px', cell);
     sprite.style.setProperty('--sprite-anim', flip
       ? (flip % 2 ? 'flipkick 0.65s ease-out' : 'flipkick2 0.65s ease-out')
@@ -541,13 +563,30 @@ Prohibido contenido erótico. Violencia: permitida.</p>
     sprite.style.setProperty('--sprite-glow', star
       ? 'drop-shadow(0 0 14px hsl(' + (hue % 360) + ' 100% 60%)) brightness(1.25)'
       : 'drop-shadow(0 0 7px var(--accent-glow))');
-    sprite.replaceChildren(cells(set.rows, function (ch, x, y) {
+    sprite.replaceChildren(cells(rows, function (ch, x, y) {
       if (ch === '1') return star ? 'hsl(' + ((hue + (x + y) * 22) % 360) + ' 100% 62%)' : 'var(--accent)';
       return ch === '2' ? '#0e0d0b' : ch === '3' ? '#f4f1e8' : 'transparent';
     }));
   }
   drawSprite();
   setInterval(function () { spriteIdx++; drawSprite(); }, 5000);
+
+  // El `top: clamp(60px, calc(196px - 8vw), 158px)` original no seguía al
+  // título: el sprite quedaba 66px debajo de su centro a 390px de ancho y 85px
+  // encima a 2000px. La altura del h1 depende de por dónde corta las líneas,
+  // así que ninguna fórmula de vw la acierta. Lo anclamos al h1 medido.
+  var hero = document.querySelector('h1');
+  function placeSprite() {
+    sprite.style.top = Math.round(hero.offsetTop + hero.offsetHeight / 2 - sprite.offsetHeight / 2) + 'px';
+  }
+  placeSprite();
+  // las fuentes entran con font-display:swap y cambian la altura del h1
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(placeSprite);
+  var placeRaf = null;
+  addEventListener('resize', function () {
+    if (placeRaf) return;
+    placeRaf = requestAnimationFrame(function () { placeRaf = null; placeSprite(); });
+  });
 
   sprite.addEventListener('click', function () {
     var now = Date.now();

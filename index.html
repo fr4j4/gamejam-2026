@@ -1220,11 +1220,9 @@
         bgmBtn.textContent = '🎵 PLAY';
       }
     }
-    // Autoplay on page load (browser may block it)
-    bgm.play().then(() => {
-      bgmBtn.textContent = '🎵 PAUSE';
-    }).catch(() => {
-      // Browser blocked autoplay — button stays as PLAY for manual start
+    // Simulate click on the play button when page finishes loading
+    window.addEventListener('load', () => {
+      bgmBtn.click();
     });
   </script>
 

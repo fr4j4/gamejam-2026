@@ -808,20 +808,21 @@ Prohibido contenido erótico. Violencia: permitida.</p>
     });
   }, { passive: true });
 
-  // ---- BGM (Suno) + beat-reactive glow (bass only) ----------------------
+  // ---- BGM (Suno) + kick-reactive glow (transient-only) -----------------
   var bgm = document.getElementById('bgm');
   var bgmBtn = document.getElementById('bgm-btn');
   var audioCtx = null, analyser = null, dataArray = null;
   var beatRaf = null;
-  var beatEnergy = 0;          // 0..1 smoothed bass energy
-  var beatFlash = 0;           // 0..1 kick flash (decays fast)
+  var beatFlash = 0;           // 0..1 kick transient, decays fast
+  var bassHistory = [];        // last N bass samples for transient detection
+  var BASS_HISTORY_LEN = 10;
 
   function initAudioAnalyser() {
     if (audioCtx) return;
     try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 512;   // 512 → 256 bins, ~86 Hz per bin
+      analyser.fftSize = 1024;  // 1024 → 512 bins, ~43 Hz per bin @ 44.1kHz
       var src = audioCtx.createMediaElementSource(bgm);
       src.connect(analyser);
       analyser.connect(audioCtx.destination);
@@ -835,20 +836,23 @@ Prohibido contenido erótico. Violencia: permitida.</p>
     function loop() {
       if (!analyser || bgm.paused) { beatRaf = requestAnimationFrame(loop); return; }
       analyser.getByteFrequencyData(dataArray);
-      // Bass only: first 2 bins = 0-172 Hz (sub-bass + kick)
-      var bass = (dataArray[0] + dataArray[1]) / (2 * 255);
-      // Smooth
-      beatEnergy = beatEnergy * 0.7 + bass * 0.3;
-      // Kick flash: spike when bass jumps
-      if (bass > 0.35 && bass > beatEnergy * 1.3) {
-        beatFlash = Math.min(1, bass * 1.8);
+      // Sub-bass only: first bin = 0-43 Hz (pure kick drum territory)
+      var bass = dataArray[0] / 255;
+      // Track recent average for transient detection
+      bassHistory.push(bass);
+      if (bassHistory.length > BASS_HISTORY_LEN) bassHistory.shift();
+      var avg = bassHistory.reduce(function(a, b) { return a + b; }, 0) / bassHistory.length;
+      // Transient: sharp spike well above the recent average
+      if (bass > 0.4 && bass > avg * 2.2) {
+        beatFlash = Math.min(1, bass * 1.5);
       }
-      beatFlash *= 0.92;
+      // Fast decay — snap back quickly
+      beatFlash *= 0.82;
       if (beatFlash < 0.01) beatFlash = 0;
 
-      // Apply to backdrop aura
+      // Apply to backdrop aura (only on kick transient)
       var accent = accentLive;
-      var auraIntensity = 0.12 + beatEnergy * 0.28;
+      var auraIntensity = 0.08 + beatFlash * 0.5;
       var aura = 'radial-gradient(1100px 620px at 50% -6%, ' + rgba(accent, auraIntensity) + ', transparent 68%)';
       var img, size;
       if (cycleIdx % 2) {
@@ -859,8 +863,8 @@ Prohibido contenido erótico. Violencia: permitida.</p>
       root.setProperty('--backdrop-image', img.join(', '));
       root.setProperty('--backdrop-size', size.join(', '));
 
-      // Pulse the accent brightness on kick
-      var kick = 1 + beatFlash * 0.25;
+      // Pulse the accent brightness hard on kick
+      var kick = 1 + beatFlash * 0.6;
       var r = Math.min(255, Math.round(rgb(accent)[0] * kick));
       var g = Math.min(255, Math.round(rgb(accent)[1] * kick));
       var b = Math.min(255, Math.round(rgb(accent)[2] * kick));
@@ -868,9 +872,9 @@ Prohibido contenido erótico. Violencia: permitida.</p>
       root.setProperty('--accent', pulsed);
       root.setProperty('--cta-shadow', '6px 6px 0 ' + shade(pulsed, 0.35));
 
-      // Pulse hero sprite glow on beat
+      // Big hero sprite glow on kick
       if (!star && beatFlash > 0.05) {
-        sprite.style.setProperty('--sprite-glow', 'drop-shadow(0 0 ' + (8 + beatFlash * 20) + 'px ' + pulsed + ') brightness(' + (1 + beatFlash * 0.2) + ')');
+        sprite.style.setProperty('--sprite-glow', 'drop-shadow(0 0 ' + (8 + beatFlash * 40) + 'px ' + pulsed + ') brightness(' + (1 + beatFlash * 0.5) + ')');
       }
 
       beatRaf = requestAnimationFrame(loop);

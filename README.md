@@ -8,7 +8,6 @@ Repositorio oficial de la gamejam organizada por **kodingvibes**.
 2. No tocar archivos fuera de tu carpeta — eso incluye README, .gitignore, etc.
 3. Al terminar, haz un **Pull Request** a `main`
 4. @Motoko revisa y mergea
-5. **Prohibido el uso de Fable y Opus** — código generado por estas IAs no será aceptado
 
 ## 🚀 Cómo empezar
 

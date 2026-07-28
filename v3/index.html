@@ -78,6 +78,8 @@
     justify-content: center;
     align-content: center;
   }
+  /* apilado bajo el título no aporta y empuja el CTA fuera de pantalla */
+  @media (max-width: 600px) { #hero-sprite { display: none !important } }
 
   /* ---- arcade glow: todo lo que lleva el acento emite luz --------------- */
   [style*="color: var(--accent)"] {

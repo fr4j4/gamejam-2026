@@ -69,6 +69,43 @@
   .copy-big:hover { border-color: #f4f1e8 }
   .copy-small:hover { opacity: .85 }
 
+  /* ---- arcade glow: todo lo que lleva el acento emite luz --------------- */
+  [style*="color: var(--accent)"] {
+    text-shadow: 0 0 .3em var(--accent-glow), 0 0 .9em var(--accent-haze);
+  }
+  [style*="background: var(--accent)"],
+  [style*="solid var(--accent)"] {
+    filter: drop-shadow(0 0 4px var(--accent-glow)) drop-shadow(0 0 13px var(--accent-haze));
+  }
+  /* los grids de pixel-art brillan por contenedor, no celda por celda:
+     84 sprites + 384 doodles con drop-shadow propio matan el scroll */
+  #hero-sprite > span, #doodles span { filter: none; text-shadow: none }
+
+  /* ---- señal de tele vieja en los botones -------------------------------- */
+  @keyframes vsync { from { transform: translateY(-150%) } to { transform: translateY(260%) } }
+  :is(.cta-primary, .cta-repo, .copy-big, .copy-small, #soundtrack-mini button) {
+    position: relative;
+    overflow: hidden;
+  }
+  :is(.cta-primary, .cta-repo, .copy-big, .copy-small, #soundtrack-mini button)::before,
+  :is(.cta-primary, .cta-repo, .copy-big, .copy-small, #soundtrack-mini button)::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+  }
+  /* líneas de barrido fijas */
+  :is(.cta-primary, .cta-repo, .copy-big, .copy-small, #soundtrack-mini button)::before {
+    inset: 0;
+    background: repeating-linear-gradient(180deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
+  }
+  /* banda de sincronía bajando, como una tele desajustada */
+  :is(.cta-primary, .cta-repo, .copy-big, .copy-small, #soundtrack-mini button)::after {
+    top: 0; left: 0; right: 0;
+    height: 34%;
+    background: linear-gradient(180deg, transparent, rgba(255,255,255,.13), transparent);
+    animation: vsync 4.2s linear infinite;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important }
   }
@@ -435,6 +472,8 @@ function toggleBGM() {
     root.setProperty('--backdrop-image', img.join(', '));
     root.setProperty('--backdrop-size', size.join(', '));
     root.setProperty('--cta-shadow', '6px 6px 0 ' + shade(accent, 0.35));
+    root.setProperty('--accent-glow', rgba(accent, 0.55));
+    root.setProperty('--accent-haze', rgba(accent, 0.28));
   }
 
   var cycleIdx = Math.floor(Math.random() * PALETTE.length);
@@ -514,7 +553,7 @@ function toggleBGM() {
       : 'flipbob 6s ease-in-out infinite');
     sprite.style.setProperty('--sprite-glow', star
       ? 'drop-shadow(0 0 14px hsl(' + (hue % 360) + ' 100% 60%)) brightness(1.25)'
-      : 'none');
+      : 'drop-shadow(0 0 7px var(--accent-glow))');
     sprite.replaceChildren(cells(set.rows, function (ch, x, y) {
       if (ch === '1') return star ? 'hsl(' + ((hue + (x + y) * 22) % 360) + ' 100% 62%)' : 'var(--accent)';
       return ch === '2' ? '#0e0d0b' : ch === '3' ? '#f4f1e8' : 'transparent';
@@ -561,7 +600,7 @@ function toggleBGM() {
     outer.style.cssText = 'position:absolute;top:' + sp.top + ';left:' + sp.left + ';will-change:transform';
     var inner = document.createElement('div');
     inner.style.cssText = 'display:grid;grid-template-columns:repeat(8, ' + sp.px + 'px);grid-auto-rows:' + sp.px +
-      'px;opacity:.34;animation:' + (i % 2 ? 'bob ' : 'drift ') + sp.dur + 's ease-in-out ' + sp.del + 's infinite;will-change:transform';
+      'px;opacity:.34;filter:drop-shadow(0 0 5px var(--accent-haze));animation:' + (i % 2 ? 'bob ' : 'drift ') + sp.dur + 's ease-in-out ' + sp.del + 's infinite;will-change:transform';
     var tint = i % 3 === 0 ? '#f4f1e8' : 'var(--accent)';
     inner.appendChild(cells(SHAPES[sp.s], function (ch) {
       return ch === '1' ? tint : ch === '2' ? '#0e0d0b' : 'transparent';

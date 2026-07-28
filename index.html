@@ -51,26 +51,34 @@
     .doodle {
       position: absolute;
       image-rendering: pixelated;
-      opacity: 0.08;
+      opacity: 0.35;
       animation: floatDoodle linear infinite;
     }
 
     @keyframes floatDoodle {
-      0% { transform: translateY(0) rotate(0deg); }
-      25% { transform: translateY(-20px) rotate(5deg); }
-      50% { transform: translateY(0) rotate(0deg); }
-      75% { transform: translateY(20px) rotate(-5deg); }
-      100% { transform: translateY(0) rotate(0deg); }
+      0% { transform: translateY(0) rotate(0deg) scale(1); }
+      25% { transform: translateY(-30px) rotate(8deg) scale(1.1); }
+      50% { transform: translateY(0) rotate(0deg) scale(1); }
+      75% { transform: translateY(30px) rotate(-8deg) scale(0.9); }
+      100% { transform: translateY(0) rotate(0deg) scale(1); }
     }
 
-    .doodle:nth-child(1) { top: 8%; left: 5%; animation-duration: 8s; }
-    .doodle:nth-child(2) { top: 15%; right: 8%; animation-duration: 10s; animation-delay: -2s; }
-    .doodle:nth-child(3) { top: 40%; left: 3%; animation-duration: 7s; animation-delay: -4s; }
-    .doodle:nth-child(4) { top: 55%; right: 5%; animation-duration: 9s; animation-delay: -1s; }
-    .doodle:nth-child(5) { top: 70%; left: 6%; animation-duration: 11s; animation-delay: -3s; }
-    .doodle:nth-child(6) { top: 85%; right: 4%; animation-duration: 8s; animation-delay: -5s; }
-    .doodle:nth-child(7) { top: 25%; left: 50%; animation-duration: 12s; animation-delay: -6s; }
-    .doodle:nth-child(8) { top: 65%; left: 50%; animation-duration: 9s; animation-delay: -2s; }
+    .doodle:nth-child(1) { top: 5%; left: 3%; animation-duration: 7s; }
+    .doodle:nth-child(2) { top: 12%; right: 4%; animation-duration: 9s; animation-delay: -1s; }
+    .doodle:nth-child(3) { top: 25%; left: 2%; animation-duration: 8s; animation-delay: -3s; }
+    .doodle:nth-child(4) { top: 35%; right: 3%; animation-duration: 10s; animation-delay: -2s; }
+    .doodle:nth-child(5) { top: 48%; left: 4%; animation-duration: 7s; animation-delay: -4s; }
+    .doodle:nth-child(6) { top: 58%; right: 5%; animation-duration: 9s; animation-delay: -1s; }
+    .doodle:nth-child(7) { top: 70%; left: 3%; animation-duration: 11s; animation-delay: -5s; }
+    .doodle:nth-child(8) { top: 80%; right: 4%; animation-duration: 8s; animation-delay: -3s; }
+    .doodle:nth-child(9) { top: 15%; left: 50%; animation-duration: 12s; animation-delay: -6s; }
+    .doodle:nth-child(10) { top: 45%; left: 55%; animation-duration: 9s; animation-delay: -2s; }
+    .doodle:nth-child(11) { top: 65%; left: 48%; animation-duration: 10s; animation-delay: -4s; }
+    .doodle:nth-child(12) { top: 90%; left: 10%; animation-duration: 8s; animation-delay: -7s; }
+    .doodle:nth-child(13) { top: 8%; left: 70%; animation-duration: 11s; animation-delay: -2s; }
+    .doodle:nth-child(14) { top: 55%; left: 15%; animation-duration: 7s; animation-delay: -5s; }
+    .doodle:nth-child(15) { top: 75%; left: 70%; animation-duration: 9s; animation-delay: -1s; }
+    .doodle:nth-child(16) { top: 30%; left: 80%; animation-duration: 10s; animation-delay: -6s; }
 
     /* === LOADING SCREEN === */
     #loader {
@@ -670,6 +678,13 @@
     <svg class="doodle" width="22" height="22" viewBox="0 0 22 22"><rect x="2" y="2" width="18" height="18" fill="#ffd166"/><rect x="6" y="2" width="2" height="6" fill="#1a1a1a"/><rect x="14" y="2" width="2" height="6" fill="#1a1a1a"/><rect x="2" y="14" width="18" height="2" fill="#1a1a1a"/></svg>
     <svg class="doodle" width="30" height="30" viewBox="0 0 30 30"><rect x="2" y="2" width="26" height="26" fill="#ff6b35"/><rect x="6" y="6" width="18" height="18" fill="#ffd166"/><rect x="10" y="10" width="10" height="10" fill="#ff6b35"/><rect x="13" y="13" width="4" height="4" fill="#1a1a1a"/></svg>
     <svg class="doodle" width="26" height="26" viewBox="0 0 26 26"><rect x="2" y="2" width="22" height="22" fill="#ffd166"/><rect x="6" y="6" width="4" height="4" fill="#1a1a1a"/><rect x="16" y="6" width="4" height="4" fill="#1a1a1a"/><rect x="6" y="16" width="14" height="4" fill="#1a1a1a"/><rect x="10" y="12" width="6" height="2" fill="#1a1a1a"/></svg>
+    <svg class="doodle" width="40" height="40" viewBox="0 0 40 40"><rect x="4" y="4" width="32" height="32" fill="#ff6b35"/><rect x="8" y="8" width="24" height="24" fill="#ffd166"/><rect x="12" y="12" width="16" height="16" fill="#ff6b35"/><rect x="16" y="16" width="8" height="8" fill="#1a1a1a"/></svg>
+    <svg class="doodle" width="18" height="18" viewBox="0 0 18 18"><rect x="2" y="2" width="14" height="14" fill="#ffd166"/><rect x="4" y="4" width="10" height="10" fill="#ff6b35"/><rect x="6" y="6" width="6" height="6" fill="#ffd166"/><rect x="8" y="8" width="2" height="2" fill="#1a1a1a"/></svg>
+    <svg class="doodle" width="34" height="34" viewBox="0 0 34 34"><rect x="2" y="2" width="30" height="30" fill="#ff6b35"/><rect x="6" y="6" width="22" height="22" fill="none" stroke="#ffd166" stroke-width="3"/><rect x="10" y="10" width="14" height="14" fill="#ffd166"/><rect x="14" y="14" width="6" height="6" fill="#1a1a1a"/></svg>
+    <svg class="doodle" width="28" height="28" viewBox="0 0 28 28"><rect x="2" y="2" width="24" height="24" fill="#ffd166"/><rect x="6" y="2" width="4" height="8" fill="#1a1a1a"/><rect x="18" y="2" width="4" height="8" fill="#1a1a1a"/><rect x="2" y="18" width="24" height="4" fill="#1a1a1a"/><rect x="10" y="10" width="8" height="4" fill="#1a1a1a"/></svg>
+    <svg class="doodle" width="24" height="24" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" fill="#ff6b35"/><rect x="6" y="6" width="12" height="12" fill="#ffd166"/><rect x="8" y="8" width="8" height="8" fill="#ff6b35"/><rect x="10" y="10" width="4" height="4" fill="#1a1a1a"/></svg>
+    <svg class="doodle" width="32" height="32" viewBox="0 0 32 32"><rect x="2" y="2" width="28" height="28" fill="#ffd166"/><rect x="6" y="6" width="20" height="20" fill="#ff6b35"/><rect x="10" y="10" width="12" height="12" fill="#ffd166"/><rect x="14" y="14" width="4" height="4" fill="#1a1a1a"/></svg>
+    <svg class="doodle" width="20" height="20" viewBox="0 0 20 20"><rect x="2" y="2" width="16" height="16" fill="#ff6b35"/><rect x="4" y="4" width="12" height="12" fill="#ffd166"/><rect x="6" y="6" width="8" height="8" fill="#ff6b35"/><rect x="8" y="8" width="4" height="4" fill="#1a1a1a"/></svg>
   </div>
 
   <!-- Loading screen -->

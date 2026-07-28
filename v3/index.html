@@ -29,7 +29,39 @@
   @keyframes flipbob { 0% { transform: translateY(0) rotateY(0deg) } 50% { transform: translateY(-14px) rotateY(180deg) } 100% { transform: translateY(0) rotateY(360deg) } }
   @keyframes drift { 0% { transform: translate3d(0,0,0) } 50% { transform: translate3d(0,-30px,0) } 100% { transform: translate3d(0,0,0) } }
 
-  /* hover/active states the dc-runtime used to inline via style-hover= */
+  /* ---- soundtrack mini player ------------------------------------------- */
+  #soundtrack-mini {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: #8f897c;
+  }
+  #soundtrack-mini button {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    cursor: pointer;
+    background: #0e0d0b;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+    padding: 0;
+    transition: background .15s, color .15s;
+  }
+  #soundtrack-mini button:hover {
+    background: var(--accent);
+    color: #0e0d0b;
+  }
   .anthem-btn:hover, .suno-link:hover { color: var(--accent) }
   .cta-primary:hover, .cta-repo:hover { transform: translate(-2px, -2px) }
   .cta-primary:active { transform: translate(3px, 3px) }
@@ -67,7 +99,8 @@
   <!-- Soundtrack (autoplay, hidden) -->
   <audio id="bgm" src="https://cdn1.suno.ai/9d4d71bd-d202-463e-8856-5bc973196992.mp3" preload="auto" loop style="display:none"></audio>
   <div id="soundtrack-mini">
-    <button id="bgm-btn" onclick="toggleBGM()">🎵 PLAY</button>
+    <span id="soundtrack-label">Soundtrack Oficial KodingVibes GM26</span>
+    <button id="bgm-btn" onclick="toggleBGM()">▶</button>
   </div>
 
   <section style="position: relative; z-index: 1; max-width: 1040px; margin: 0 auto; padding: clamp(34px, 9vw, 72px) 18px clamp(26px, 6vw, 42px)">
@@ -539,16 +572,16 @@ Prohibido contenido erótico. Violencia: permitida.</p>
   function toggleBGM() {
     if (bgm.paused) {
       bgm.play();
-      bgmBtn.textContent = '🎵 PAUSE';
+      bgmBtn.textContent = '⏸';
     } else {
       bgm.pause();
-      bgmBtn.textContent = '🎵 PLAY';
+      bgmBtn.textContent = '▶';
     }
   }
   // Autoplay on first real user interaction
   var startBGM = function() {
     bgm.play().then(function() {
-      bgmBtn.textContent = '🎵 PAUSE';
+      bgmBtn.textContent = '⏸';
     }).catch(function() {});
     document.removeEventListener('click', startBGM);
     document.removeEventListener('touchstart', startBGM);

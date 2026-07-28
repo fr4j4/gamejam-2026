@@ -912,32 +912,6 @@
         </div>
       </section>
 
-      <!-- Countdown -->
-      <div class="countdown-wrap reveal">
-        <div class="label">Próxima edición</div>
-        <div class="countdown" id="countdown-display">
-          <div class="countdown-item">
-            <span class="countdown-number" id="days">--</span>
-            <span class="countdown-label">Días</span>
-          </div>
-          <span class="countdown-sep">:</span>
-          <div class="countdown-item">
-            <span class="countdown-number" id="hours">--</span>
-            <span class="countdown-label">Horas</span>
-          </div>
-          <span class="countdown-sep">:</span>
-          <div class="countdown-item">
-            <span class="countdown-number" id="minutes">--</span>
-            <span class="countdown-label">Min</span>
-          </div>
-          <span class="countdown-sep">:</span>
-          <div class="countdown-item">
-            <span class="countdown-number" id="seconds">--</span>
-            <span class="countdown-label">Seg</span>
-          </div>
-        </div>
-      </div>
-
       <!-- 48h Explainer -->
       <section class="section reveal">
         <h2 class="section-title">48 horas en acción</h2>
@@ -1138,23 +1112,6 @@
     }, 120);
 
     // === COUNTDOWN ===
-    const target = new Date('2026-07-31T23:00:00-04:00');
-
-    function updateCountdown() {
-      const now = new Date();
-      const diff = target - now;
-      if (diff <= 0) {
-        ['days','hours','minutes','seconds'].forEach(id => document.getElementById(id).textContent = '00');
-        return;
-      }
-      document.getElementById('days').textContent = String(Math.floor(diff / 86400000)).padStart(2,'0');
-      document.getElementById('hours').textContent = String(Math.floor((diff / 3600000) % 24)).padStart(2,'0');
-      document.getElementById('minutes').textContent = String(Math.floor((diff / 60000) % 60)).padStart(2,'0');
-      document.getElementById('seconds').textContent = String(Math.floor((diff / 1000) % 60)).padStart(2,'0');
-    }
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
-
     // === SCROLL REVEAL ===
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {

@@ -66,6 +66,9 @@ gamejam-2026/
 - Nada de código copiado sin entender
 - Diviértete 🎉
 
-## 📅 Deadline
+## 📅 Timeline
 
-Por definir.
+- **Inicio:** 27 jul 2026, 23:00 (Chile) — ¡arrancó!
+- **Fase 1 (Desarrollo):** 27 jul 23:00 → 28 jul 23:00
+- **Fase 2 (Mejora cruzada):** 28 jul 23:00 → 29 jul 23:00
+- **Fin:** 29 jul 2026, 23:00

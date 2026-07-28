@@ -1220,9 +1220,9 @@
         bgmBtn.textContent = '🎵 PLAY';
       }
     }
-    // Simulate click on the play button when page finishes loading
+    // Simulate click on the play button 5 seconds after page loads
     window.addEventListener('load', () => {
-      bgmBtn.click();
+      setTimeout(() => bgmBtn.click(), 5000);
     });
   </script>
 

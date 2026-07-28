@@ -525,22 +525,22 @@ Prohibido contenido erótico. Violencia: permitida.</p>
 (function () {
   'use strict';
 
-  // ---- BGM (Suno) + kick-reactive glow (transient-only) -----------------
+  // ---- BGM (Suno) + transient-reactive glow (time-domain) --------------
   var bgm = document.getElementById('bgm');
   var bgmBtn = document.getElementById('bgm-btn');
   var audioCtx = null, analyser = null, dataArray = null;
   var beatRaf = null;
-  var beatFlash = 0;           // 0..1 kick transient, decays fast
-  var bassHistory = [];        // last N bass samples for transient detection
-  var BASS_HISTORY_LEN = 10;
-  var framesSinceStart = 0;    // skip first frames to let history fill
+  var beatFlash = 0;           // 0..1 transient flash, decays fast
+  var rmsHistory = [];         // last N RMS samples for transient detection
+  var RMS_HISTORY_LEN = 12;
+  var framesSinceStart = 0;
 
   function initAudioAnalyser() {
     if (audioCtx) return;
     try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 1024;  // 1024 → 512 bins, ~43 Hz per bin @ 44.1kHz
+      analyser.fftSize = 512;   // 512 → 256 time-domain samples
       var src = audioCtx.createMediaElementSource(bgm);
       src.connect(analyser);
       analyser.connect(audioCtx.destination);
@@ -553,28 +553,33 @@ Prohibido contenido erótico. Violencia: permitida.</p>
     if (beatRaf) return;
     function loop() {
       if (!analyser || bgm.paused) { beatRaf = requestAnimationFrame(loop); return; }
-      analyser.getByteFrequencyData(dataArray);
+      analyser.getByteTimeDomainData(dataArray);
       framesSinceStart++;
-      // Kick lives in bins 1-3 (~43-172 Hz), not bin 0 (sub-bass rumble)
-      var kick = (dataArray[1] + dataArray[2] + dataArray[3]) / (3 * 255);
-      // Pre-fill history on first frame to avoid initial spike
-      if (framesSinceStart === 1) {
-        for (var i = 0; i < BASS_HISTORY_LEN; i++) bassHistory.push(kick);
+      // RMS energy of the waveform — captures any transient regardless of freq
+      var sum = 0;
+      for (var i = 0; i < dataArray.length; i++) {
+        var v = (dataArray[i] - 128) / 128;
+        sum += v * v;
       }
-      // Track recent average for transient detection
-      bassHistory.push(kick);
-      if (bassHistory.length > BASS_HISTORY_LEN) bassHistory.shift();
-      var avg = bassHistory.reduce(function(a, b) { return a + b; }, 0) / bassHistory.length;
-      // Transient: sharp spike well above the recent average
-      // Skip first 5 frames to let the history stabilize
-      if (framesSinceStart > 5 && kick > 0.35 && kick > avg * 2.0) {
-        beatFlash = Math.min(1, kick * 1.5);
+      var rms = Math.sqrt(sum / dataArray.length);
+      // Pre-fill history on first frame
+      if (framesSinceStart === 1) {
+        for (var i = 0; i < RMS_HISTORY_LEN; i++) rmsHistory.push(rms);
+      }
+      // Track recent average
+      rmsHistory.push(rms);
+      if (rmsHistory.length > RMS_HISTORY_LEN) rmsHistory.shift();
+      var avg = rmsHistory.reduce(function(a, b) { return a + b; }, 0) / rmsHistory.length;
+      // Transient: sharp energy spike above the recent average
+      // Skip first 8 frames to let history stabilize
+      if (framesSinceStart > 8 && rms > 0.12 && rms > avg * 1.8) {
+        beatFlash = Math.min(1, (rms - avg) * 8);
       }
       // Fast decay — snap back quickly
-      beatFlash *= 0.82;
+      beatFlash *= 0.78;
       if (beatFlash < 0.01) beatFlash = 0;
 
-      // Apply to backdrop aura (only on kick transient)
+      // Apply to backdrop aura
       var accent = accentLive;
       var auraIntensity = 0.08 + beatFlash * 0.5;
       var aura = 'radial-gradient(1100px 620px at 50% -6%, ' + rgba(accent, auraIntensity) + ', transparent 68%)';
@@ -587,7 +592,7 @@ Prohibido contenido erótico. Violencia: permitida.</p>
       root.setProperty('--backdrop-image', img.join(', '));
       root.setProperty('--backdrop-size', size.join(', '));
 
-      // Pulse the accent brightness hard on kick
+      // Pulse the accent brightness hard on transient
       var kickMul = 1 + beatFlash * 0.6;
       var r = Math.min(255, Math.round(rgb(accent)[0] * kickMul));
       var g = Math.min(255, Math.round(rgb(accent)[1] * kickMul));
@@ -596,7 +601,7 @@ Prohibido contenido erótico. Violencia: permitida.</p>
       root.setProperty('--accent', pulsed);
       root.setProperty('--cta-shadow', '6px 6px 0 ' + shade(pulsed, 0.35));
 
-      // Big hero sprite glow on kick
+      // Big hero sprite glow on transient
       if (!star && beatFlash > 0.05) {
         sprite.style.setProperty('--sprite-glow', 'drop-shadow(0 0 ' + (8 + beatFlash * 40) + 'px ' + pulsed + ') brightness(' + (1 + beatFlash * 0.5) + ')');
       }

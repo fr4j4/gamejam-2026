@@ -43,8 +43,13 @@ mkdir participantes/tu-nombre
 ```
 gamejam-2026/
 ├── participantes/
-│   ├── ejemplo/          # Ejemplo de estructura
-│   │   └── README.md
+│   ├── ejemplos/         # Juegos de ejemplo en Phaser
+│   │   ├── Snake/
+│   │   ├── Tetris/
+│   │   ├── Minesweeper/
+│   │   ├── Twenty48/
+│   │   ├── SpaceInvaders/
+│   │   └── RiverRaid/
 │   └── tu-nombre/        # Tu juego aquí
 │       ├── index.html
 │       └── ...

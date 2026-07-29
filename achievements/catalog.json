@@ -1,0 +1,253 @@
+{
+  "version": 1,
+  "last_updated": "2026-07-29",
+  "categories": {
+    "automatic": {
+      "label": "Automáticos",
+      "description": "Se detectan automáticamente al mergear el PR",
+      "color": "#4ade80"
+    },
+    "semi_automatic": {
+      "label": "Semiautomáticos",
+      "description": "Detección con heurística + revisión rápida",
+      "color": "#facc15"
+    },
+    "manual": {
+      "label": "Manuales",
+      "description": "Asignados por organizadores",
+      "color": "#f87171"
+    },
+    "community": {
+      "label": "Comunitarios",
+      "description": "Votación popular en el grupo",
+      "color": "#a78bfa"
+    }
+  },
+  "achievements": [
+    {
+      "id": "dracula-del-codigo",
+      "emoji": "🧛",
+      "name": "Drácula del Código",
+      "description": "Al menos 1 commit entre las 02:00 y 06:00 AM (hora Chile)",
+      "category": "automatic",
+      "citation": "Codeó de noche. Como debe ser.",
+      "icon": "🧛"
+    },
+    {
+      "id": "flush-eo-el-repo",
+      "emoji": "🚽",
+      "name": "El Que Flush-eó el Repo",
+      "description": "git push --force detectado en el historial del PR",
+      "category": "automatic",
+      "citation": "Hizo push --force y sobrevivió para contarlo.",
+      "icon": "🚽"
+    },
+    {
+      "id": "hizo-sufrir-a-motoko",
+      "emoji": "😈",
+      "name": "Hizo Sufrir a Motoko",
+      "description": "Más de 30 archivos modificados O diff > 5000 líneas",
+      "category": "automatic",
+      "citation": "Su PR tenía 47 archivos modificados. 47. Sobreviví.",
+      "icon": "😈"
+    },
+    {
+      "id": "bug-mas-epico",
+      "emoji": "🐛",
+      "name": "Bug Más Épico",
+      "description": "Más de 10 commits después del primer review (fixes en cadena)",
+      "category": "automatic",
+      "citation": "Encontró un bug tan glorioso que merecía su propio juego.",
+      "icon": "🐛"
+    },
+    {
+      "id": "casa-de-los-simpson",
+      "emoji": "🏗️",
+      "name": "Casa de los Simpson",
+      "description": "Presencia de var o variables globales sin declaración",
+      "category": "automatic",
+      "citation": "Su código se sostenía con puras variables globales y esperanza.",
+      "icon": "🏗️"
+    },
+    {
+      "id": "olvido-el-return",
+      "emoji": "🚀",
+      "name": "Olvidó el Return",
+      "description": "Función principal sin return (análisis estático)",
+      "category": "automatic",
+      "citation": "Su función principal no retornaba nada pero el juego corría igual.",
+      "icon": "🚀"
+    },
+    {
+      "id": "frio-como-el-hielo",
+      "emoji": "🧊",
+      "name": "Frío como el Hielo",
+      "description": "Juego que pesa menos de 100 KB total",
+      "category": "automatic",
+      "citation": "Su código era tan eficiente que consumía menos RAM que el bloc de notas.",
+      "icon": "🧊"
+    },
+    {
+      "id": "prompt-skills-level-dios",
+      "emoji": "🧠",
+      "name": "Prompt Skills Level: Dios",
+      "description": "Prompt pide algo épico pero el resultado es pacífico/absurdo",
+      "category": "automatic",
+      "citation": "Le pidió un juego de guerra y le salió un simulador de granja.",
+      "icon": "🧠"
+    },
+    {
+      "id": "gamblers-fallacy",
+      "emoji": "🎰",
+      "name": "Gambler's Fallacy",
+      "description": "Math.random() en más del 30% de las funciones",
+      "category": "automatic",
+      "citation": "Puso RNG en todo. Hasta en el menú principal.",
+      "icon": "🎰"
+    },
+    {
+      "id": "barrendero-de-bugs",
+      "emoji": "🧹",
+      "name": "Barrendero de Bugs",
+      "description": "Más de 5 commits con 'fix', 'bug', 'arreglo' o 'error' en el mensaje",
+      "category": "automatic",
+      "citation": "Encontró un bug, lo reportó, y al día siguiente el bug se había reproducido solo.",
+      "icon": "🧹"
+    },
+    {
+      "id": "codigo-tarzan",
+      "emoji": "🐒",
+      "name": "Código Tarzán",
+      "description": "Sin funciones declaradas, todo en línea, pero el juego corre",
+      "category": "semi_automatic",
+      "citation": "Su código era puro instinto, sin estructura, pero funcionaba.",
+      "icon": "🐒"
+    },
+    {
+      "id": "alquimista-digital",
+      "emoji": "🧪",
+      "name": "Alquimista Digital",
+      "description": "Importa 3+ frameworks/libs no relacionadas",
+      "category": "semi_automatic",
+      "citation": "Combinó tres frameworks que no debían combinarse y milagrosamente funcionó.",
+      "icon": "🧪"
+    },
+    {
+      "id": "dios-del-caos",
+      "emoji": "🎲",
+      "name": "Dios del Caos",
+      "description": "Sin try/catch, sin validaciones, y el juego funciona igual",
+      "category": "semi_automatic",
+      "citation": "Su juego funcionaba por razones que ni él entiende.",
+      "icon": "🎲"
+    },
+    {
+      "id": "rompecabezas-humano",
+      "emoji": "🧩",
+      "name": "Rompecabezas Humano",
+      "description": "Más de 3 niveles de anidamiento, callbacks sin nombre, lógica críptica",
+      "category": "semi_automatic",
+      "citation": "Su código era tan enredado que ni él lo entendía al día siguiente.",
+      "icon": "🧩"
+    },
+    {
+      "id": "efecto-mariposa",
+      "emoji": "🎯",
+      "name": "Efecto Mariposa",
+      "description": "Una línea comentada que al restaurarse rompe todo",
+      "category": "semi_automatic",
+      "citation": "Cambió una línea de código y se rompió todo el juego. Lo dejó así.",
+      "icon": "🎯"
+    },
+    {
+      "id": "doble-personalidad",
+      "emoji": "🎭",
+      "name": "Doble Personalidad",
+      "description": "El juego cambia de género/mecánica a mitad de la partida",
+      "category": "manual",
+      "citation": "Su juego cambiaba de género a mitad de la partida sin avisar.",
+      "icon": "🎭"
+    },
+    {
+      "id": "circo-de-tres-pistas",
+      "emoji": "🎪",
+      "name": "Circo de Tres Pistas",
+      "description": "Tres mecánicas distintas sin relación entre sí",
+      "category": "manual",
+      "citation": "Tres mecánicas distintas que no tenían nada que ver entre sí.",
+      "icon": "🎪"
+    },
+    {
+      "id": "carrusel-de-la-confusion",
+      "emoji": "🎠",
+      "name": "Carrusel de la Confusión",
+      "description": "Más tiempo de carga que de juego real",
+      "category": "manual",
+      "citation": "Su juego tenía más pantallas de carga que de juego real.",
+      "icon": "🎠"
+    },
+    {
+      "id": "modo-facil-la-vida",
+      "emoji": "🧸",
+      "name": "Modo Fácil: La Vida",
+      "description": "El juego es imposible de perder",
+      "category": "manual",
+      "citation": "Su juego era imposible de perder. Hasta que lo jugó él.",
+      "icon": "🧸"
+    },
+    {
+      "id": "director-de-cine-mudo",
+      "emoji": "🎬",
+      "name": "Director de Cine Mudo",
+      "description": "Sin sonido pero con diálogos/subtítulos memorables",
+      "category": "manual",
+      "citation": "Su juego no tenía sonido, pero los subtítulos eran obra de arte.",
+      "icon": "🎬"
+    },
+    {
+      "id": "el-que-hizo-un-juego-de-carreras",
+      "emoji": "🏃",
+      "name": "El Que Hizo un Juego de Carreras...",
+      "description": "El título promete una cosa, la ejecución entrega otra",
+      "category": "manual",
+      "citation": "Hizo un juego de carreras y terminó siendo un walking simulator.",
+      "icon": "🏃"
+    },
+    {
+      "id": "mas-explosiones-que-michael-bay",
+      "emoji": "🧨",
+      "name": "Más Explosiones Que un Michael Bay",
+      "description": "Votación popular — todo explota",
+      "category": "community",
+      "citation": "Todo explotaba. Incluyendo su código.",
+      "icon": "🧨"
+    },
+    {
+      "id": "cricket-mental",
+      "emoji": "🦗",
+      "name": "Cricket Mental",
+      "description": "Votación popular — más bugs que features",
+      "category": "community",
+      "citation": "Su juego tenía más bugs que features.",
+      "icon": "🦗"
+    },
+    {
+      "id": "se-lanzo-sin-red",
+      "emoji": "🎤",
+      "name": "Se Lanzó Sin Red",
+      "description": "Votación popular — no probó nada antes del PR",
+      "category": "community",
+      "citation": "No probó nada antes del PR. Y sobrevivió.",
+      "icon": "🎤"
+    },
+    {
+      "id": "debuggeo-con-fe",
+      "emoji": "🧿",
+      "name": "Debuggeó con Fe",
+      "description": "Votación popular — console.log hasta en el HTML",
+      "category": "community",
+      "citation": "Puso console.log hasta en el HTML y funcionó.",
+      "icon": "🧿"
+    }
+  ]
+}

@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GameJam 2026 — kodingvibes</title>
+<title>GameJam 2026 — kodingvibes (arcade)</title>
 <meta name="description" content="GameJam kodingvibes. 48h de AI Jam en Phaser 3, en dos fases.">
-<meta property="og:title" content="GameJam 2026 — kodingvibes">
+<meta property="og:title" content="GameJam 2026 — kodingvibes (arcade)">
 <meta property="og:description" content="48h. Phaser. Tu juego + mejorar el de otro.">
 <meta property="og:url" content="https://kodingvibes.github.io/gamejam-2026/">
 <meta property="og:type" content="website">
@@ -38,25 +38,28 @@
   @keyframes flipbob { 0% { transform: translateY(0) rotateY(0deg) } 50% { transform: translateY(-14px) rotateY(180deg) } 100% { transform: translateY(0) rotateY(360deg) } }
   @keyframes drift { 0% { transform: translate3d(0,0,0) } 50% { transform: translate3d(0,-30px,0) } 100% { transform: translate3d(0,0,0) } }
 
-  /* ---- soundtrack mini player (inside header) ------------------------- */
+  /* ---- soundtrack mini player ------------------------------------------- */
   #soundtrack-mini {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    z-index: 60;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
     letter-spacing: 0.5px;
     color: #8f897c;
   }
-  .label-mobile { display: none; }
   #soundtrack-mini button {
-    width: 26px;
-    height: 26px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
+    font-size: 14px;
     cursor: pointer;
     background: #0e0d0b;
     color: var(--accent);
@@ -84,6 +87,8 @@
     justify-content: center;
     align-content: center;
   }
+  /* apilado bajo el título no aporta y empuja el CTA fuera de pantalla */
+  @media (max-width: 600px) { #hero-sprite { display: none !important } }
 
   /* ---- arcade glow: todo lo que lleva el acento emite luz --------------- */
   [style*="color: var(--accent)"] {
@@ -125,76 +130,9 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important }
   }
-
-  /* ===== MOBILE-FIRST RESPONSIVE ===== */
-
-  /* ≤600px — tablets pequeñas y móviles grandes */
-  @media (max-width: 600px) {
-    section:first-of-type h1 {
-      padding-right: 0 !important;
-    }
-    /* apilado bajo el título no aporta y empuja el CTA fuera de pantalla */
-    #hero-sprite { display: none !important; }
-    #doodles { display: none !important; }
-  }
-
-  /* ≤480px — móviles */
-  @media (max-width: 480px) {
-    section:has(#cd-d) > div:last-child {
-      grid-template-columns: repeat(2, 1fr) !important;
-      gap: 6px !important;
-    }
-    .label-desktop { display: none !important; }
-    .label-mobile { display: inline !important; }
-    #prompt-text {
-      font-size: 12px !important;
-      padding: 14px !important;
-      max-height: 240px !important;
-    }
-    section#timeline [style*="border-left"] {
-      padding: 14px !important;
-    }
-    section#reglas [style*="grid-template-columns: 34px 1fr"] {
-      padding: 14px 16px !important;
-      gap: 10px !important;
-      font-size: 14px !important;
-    }
-    section#evaluacion [style*="grid-template-columns: repeat(10"] {
-      gap: 2px !important;
-    }
-    section#evaluacion [style*="grid-template-columns: repeat(10"] span {
-      height: 10px !important;
-    }
-    footer > div {
-      justify-content: center !important;
-      text-align: center !important;
-      font-size: 11px !important;
-    }
-  }
-
-  /* ≤375px — móviles pequeños */
-  @media (max-width: 375px) {
-    header div:last-child {
-      font-size: 9px !important;
-      letter-spacing: 0.8px !important;
-    }
-    .cta-repo {
-      padding: 14px 20px !important;
-      font-size: 10px !important;
-    }
-  }
-
-  /* ≤340px — móviles extremos */
-  @media (max-width: 340px) {
-    header div:last-child {
-      display: none !important;
-    }
-  }
 </style>
 </head>
 <body>
-
-
 <div style="font-family: 'IBM Plex Mono', monospace; background: #0e0d0b; color: #f4f1e8; min-height: 100vh; overflow-x: hidden; background-image: var(--backdrop-image); background-size: var(--backdrop-size)">
 
   <div aria-hidden="true" style="position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden">
@@ -203,7 +141,7 @@
 
 
   <header style="position: sticky; top: 0; z-index: 50; background: #0e0d0b; border-bottom: 3px solid #2b2823">
-    <div style="max-width: 1040px; margin: 0 auto; padding: 9px 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px">
+    <div style="max-width: 1040px; margin: 0 auto; padding: 13px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px">
       <div style="display: flex; align-items: center; gap: 9px">
         <span style="display: grid; grid-template-columns: repeat(3, 5px); grid-auto-rows: 5px; gap: 2px">
           <span style="background: var(--accent)"></span><span style="background: var(--accent)"></span><span style="background: var(--accent)"></span>
@@ -212,20 +150,16 @@
         </span>
         <span style="font-family: 'Press Start 2P', monospace; font-size: 11px">GJ26</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 12px; font-size: 10px; font-family: 'IBM Plex Mono', monospace; color: #8f897c">
-        <div id="soundtrack-mini">
-          <span class="label-desktop">Soundtrack Oficial KodingVibes GM26</span>
-          <span class="label-mobile">OST GM26</span>
-          <button id="bgm-btn" onclick="toggleBGM()">▶</button>
-        </div>
-        <a href="prensa/comunicado-prensa.pdf" target="_blank" style="color: #8f897c; text-decoration: none; border: 1px solid #2b2823; padding: 3px 8px; transition: color .15s, border-color .15s">📰 Prensa</a>
-        <span style="font-size: 10px; font-weight: 500; letter-spacing: 1.2px; text-transform: uppercase">kodingvibes / gamejam</span>
-      </div>
+      <div style="font-size: 11px; font-weight: 500; letter-spacing: 1.4px; text-transform: uppercase; color: #8f897c">kodingvibes / gamejam</div>
     </div>
   </header>
 
   <!-- Soundtrack (autoplay, hidden) -->
-  <audio id="bgm" src="assets/soundtrack.mp3" preload="auto" loop style="display:none"></audio>
+  <audio id="bgm" src="https://cdn1.suno.ai/9d4d71bd-d202-463e-8856-5bc973196992.mp3" preload="auto" loop style="display:none"></audio>
+  <div id="soundtrack-mini">
+    <span id="soundtrack-label">Soundtrack Oficial KodingVibes GM26</span>
+    <button id="bgm-btn" onclick="toggleBGM()">▶</button>
+  </div>
 
   <section style="position: relative; z-index: 1; max-width: 1040px; margin: 0 auto; padding: clamp(34px, 9vw, 72px) 18px clamp(26px, 6vw, 42px)">
 
@@ -417,12 +351,59 @@ Prohibido contenido erótico. Violencia: permitida.</p>
     <p style="font-size: 13.5px; line-height: 1.6; color: #8f897c; margin: 14px 0 0">Ramas, carpetas, npm y el formato exacto de la PR están explicados en el <a href="https://github.com/kodingvibes/gamejam-2026" target="_blank" rel="noopener" style="color: #f4f1e8; font-weight: 600">README del repo</a>. Acá no te aburrimos con eso.</p>
   </section>
 
-  <section id="evaluacion" style="position: relative; z-index: 1; max-width: 1040px; margin: 0 auto; padding: clamp(40px, 8vw, 70px) 18px 0">
+ <section id="premios" style="position: relative; z-index: 1; max-width: 1040px; margin: 0 auto; padding: clamp(40px, 8vw, 70px) 18px 0">
     <div style="display: flex; align-items: center; gap: 14px; margin-bottom: clamp(18px, 4vw, 28px)">
-      <span style="font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--accent)">05</span>
-      <span style="font-size: 10.5px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: #8f897c">Evaluación</span>
+      <span style="font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--accent)">06</span>
+      <span style="font-size: 10.5px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: #8f897c">Certificados</span>
       <span style="flex: 1; height: 3px; background: #2b2823"></span>
     </div>
+    <div style="border: 3px solid var(--accent); background: #161512; padding: clamp(20px, 5vw, 30px); display: flex; align-items: center; gap: 20px; flex-wrap: wrap">
+      <div style="font-family: 'Press Start 2P', monospace; font-size: 40px; color: var(--accent)">🏆</div>
+      <div style="flex: 1; min-width: 280px">
+        <h3 style="font-family: 'Press Start 2P', monospace; font-size: 13px; line-height: 1.5; margin: 0 0 10px">CERTIFICADOS OFICIALES</h3>
+        <p style="font-size: 15.5px; line-height: 1.55; color: #b8b1a4; margin: 0">Todes les participantes reciben certificado oficial. Además, entregamos certificados en las siguientes categorías:</p>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px">
+      <div style="border: 3px solid #2b2823; background: #161512; padding: 20px">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 8px">✦ EXCELENCIA</div>
+        <p style="font-size: 14.5px; line-height: 1.55; margin: 0; color: #d9d3c6">Al proyecto que mejor lo bordó todo. Consistencia, calidad, impacto.</p>
+      </div>
+      <div style="border: 3px solid #2b2823; background: #161512; padding: 20px">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 8px">✦ INNOVACIÓN</div>
+        <p style="font-size: 14.5px; line-height: 1.55; margin: 0; color: #d9d3c6">Para la idea más rompedora, el approach más inesperado, la mecánica que nadie vio venir.</p>
+      </div>
+      <div style="border: 3px solid #2b2823; background: #161512; padding: 20px">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 8px">✦ CREATIVIDAD</div>
+        <p style="font-size: 14.5px; line-height: 1.55; margin: 0; color: #d9d3c6">Al que se lució con arte, narrativa, diseño visual o dirección de arte.</p>
+      </div>
+      <div style="border: 3px solid #2b2823; background: #161512; padding: 20px">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 8px">✦ MAESTRÍA TÉCNICA</div>
+        <p style="font-size: 14.5px; line-height: 1.55; margin: 0; color: #d9d3c6">Código limpio, bien estructurado, que da gusto leer. El favorito del code-auditor.</p>
+      </div>
+      <div style="border: 3px solid #2b2823; background: #161512; padding: 20px">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 8px">✦ JUGABILIDAD LEGENDARIA</div>
+        <p style="font-size: 14.5px; line-height: 1.55; margin: 0; color: #d9d3c6">El juego más adictivo, divertido y pulido. El que no pudiste soltar.</p>
+      </div>
+      <div style="border: 3px solid #2b2823; background: #161512; padding: 20px">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 8px">✦ ESPÍRITU COLABORATIVO</div>
+        <p style="font-size: 14.5px; line-height: 1.55; margin: 0; color: #d9d3c6">A quien mejor entendió, respetó y elevó el juego que heredó en Fase 2.</p>
+      </div>
+      <div style="border: 3px solid #2b2823; background: #161512; padding: 20px">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 8px">✦ MENCIÓN ESPECIAL</div>
+        <p style="font-size: 14.5px; line-height: 1.55; margin: 0; color: #d9d3c6">Algo nos voló la cabeza y no entra en las otras categorías. Aquí va.</p>
+      </div>
+      <div style="border: 3px solid #2b2823; background: #161512; padding: 20px">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 8px">✦ EL QUE FLUSH-EÓ EL REPO</div>
+        <p style="font-size: 14.5px; line-height: 1.55; margin: 0; color: #d9d3c6">Hizo un <code style="background:#23211d;padding:1px 5px;font-size:12px">git push --force</code> y borró medio repo. Lo arregló. O no.</p>
+      </div>
+      <div style="border: 3px solid #2b2823; background: #161512; padding: 20px">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 8px">✦ MODO AVESTRUZ</div>
+        <p style="font-size: 14.5px; line-height: 1.55; margin: 0; color: #d9d3c6">Ignoró el error, siguió codeando, y de alguna manera funcionó. La consola llora, pero el juego corre.</p>
+      </div>
+    </div>
+  </section>
+
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 14px">
       <div style="border: 3px solid #2b2823; background: #161512; padding: clamp(20px, 5vw, 28px)">
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 16px">
@@ -530,7 +511,7 @@ Prohibido contenido erótico. Violencia: permitida.</p>
         </div>
       </div>
     </section>
-  
+
 
   <section style="position: relative; z-index: 1; max-width: 1040px; margin: clamp(40px, 8vw, 70px) auto 0; padding: 0 18px">
     <div style="border: 3px solid #f4f1e8; padding: clamp(28px, 6vw, 48px) clamp(20px, 5vw, 40px); text-align: center; background: var(--accent); color: #0e0d0b">
@@ -555,109 +536,6 @@ Prohibido contenido erótico. Violencia: permitida.</p>
 </div>
 <script>
 (function () {
-  'use strict';
-
-  // ---- BGM (Suno) + transient-reactive glow (time-domain) --------------
-  var bgm = document.getElementById('bgm');
-  var bgmBtn = document.getElementById('bgm-btn');
-  var audioCtx = null, analyser = null, dataArray = null;
-  var beatRaf = null;
-  var beatFlash = 0;           // 0..1 transient flash, decays fast
-  var rmsHistory = [];         // last N RMS samples for transient detection
-  var RMS_HISTORY_LEN = 12;
-  var framesSinceStart = 0;
-
-  function initAudioAnalyser() {
-    if (audioCtx) return;
-    try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 512;   // 512 → 256 time-domain samples
-      var src = audioCtx.createMediaElementSource(bgm);
-      src.connect(analyser);
-      analyser.connect(audioCtx.destination);
-      dataArray = new Uint8Array(analyser.frequencyBinCount);
-      startBeatLoop();
-    } catch(e) { /* audio analyser not available */ }
-  }
-
-  function startBeatLoop() {
-    if (beatRaf) return;
-    function loop() {
-      if (!analyser || bgm.paused) { beatRaf = requestAnimationFrame(loop); return; }
-      analyser.getByteTimeDomainData(dataArray);
-      framesSinceStart++;
-      // RMS energy of the waveform — captures any transient regardless of freq
-      var sum = 0;
-      for (var i = 0; i < dataArray.length; i++) {
-        var v = (dataArray[i] - 128) / 128;
-        sum += v * v;
-      }
-      var rms = Math.sqrt(sum / dataArray.length);
-      // Pre-fill history on first frame
-      if (framesSinceStart === 1) {
-        for (var i = 0; i < RMS_HISTORY_LEN; i++) rmsHistory.push(rms);
-      }
-      // Track recent average
-      rmsHistory.push(rms);
-      if (rmsHistory.length > RMS_HISTORY_LEN) rmsHistory.shift();
-      var avg = rmsHistory.reduce(function(a, b) { return a + b; }, 0) / rmsHistory.length;
-      // Transient: sharp energy spike above the recent average
-      // Skip first 8 frames to let history stabilize
-      if (framesSinceStart > 8 && rms > 0.06 && rms > avg * 1.4) {
-        beatFlash = Math.min(1, (rms - avg) * 12);
-      }
-      // Fast decay — snap back quickly
-      beatFlash *= 0.78;
-      if (beatFlash < 0.01) beatFlash = 0;
-
-      // Apply to backdrop aura
-      var accent = accentLive;
-      var auraIntensity = 0.08 + beatFlash * 0.5;
-      var aura = 'radial-gradient(1100px 620px at 50% -6%, ' + rgba(accent, auraIntensity) + ', transparent 68%)';
-      var img, size;
-      if (cycleIdx % 2) {
-        img = [aura].concat(SCANLINES); size = ['100% 100%', 'auto'];
-      } else {
-        img = [aura].concat(GRID); size = ['100% 100%', '32px 32px', '32px 32px'];
-      }
-      root.setProperty('--backdrop-image', img.join(', '));
-      root.setProperty('--backdrop-size', size.join(', '));
-
-      // Pulse the accent brightness hard on transient
-      var kickMul = 1 + beatFlash * 0.6;
-      var r = Math.min(255, Math.round(rgb(accent)[0] * kickMul));
-      var g = Math.min(255, Math.round(rgb(accent)[1] * kickMul));
-      var b = Math.min(255, Math.round(rgb(accent)[2] * kickMul));
-      var pulsed = 'rgb(' + r + ',' + g + ',' + b + ')';
-      root.setProperty('--accent', pulsed);
-      root.setProperty('--cta-shadow', '6px 6px 0 ' + shade(pulsed, 0.35));
-      // Pulse all accent glow layers on transient
-      var glowIntensity = 0.55 + beatFlash * 0.4;
-      var hazeIntensity = 0.28 + beatFlash * 0.4;
-      root.setProperty('--accent-glow', rgba(accent, Math.min(0.95, glowIntensity)));
-      root.setProperty('--accent-haze', rgba(accent, Math.min(0.68, hazeIntensity)));
-
-      // Big hero sprite glow on transient
-      if (!star && beatFlash > 0.05) {
-        sprite.style.setProperty('--sprite-glow', 'drop-shadow(0 0 ' + (8 + beatFlash * 40) + 'px ' + pulsed + ') brightness(' + (1 + beatFlash * 0.5) + ')');
-      }
-
-      beatRaf = requestAnimationFrame(loop);
-    }
-    beatRaf = requestAnimationFrame(loop);
-  }
-
-  window.toggleBGM = function () {
-    if (bgm.paused) {
-      initAudioAnalyser();
-      bgm.play();
-      bgmBtn.textContent = '⏸';
-    } else {
-      bgm.pause();
-      bgmBtn.textContent = '▶';
-    }
-  };
   'use strict';
 
   var PALETTE = ['#d8ff3e', '#b44dff', '#ff8a3d', '#4de2ff'];
@@ -871,6 +749,33 @@ Prohibido contenido erótico. Violencia: permitida.</p>
     });
   }, { passive: true });
 
+  // ---- BGM (Suno) -------------------------------------------------------
+  var bgm = document.getElementById('bgm');
+  var bgmBtn = document.getElementById('bgm-btn');
+  function toggleBGM() {
+    if (bgm.paused) {
+      initBeatDetection();
+      bgm.play();
+      bgmBtn.textContent = '⏸';
+    } else {
+      bgm.pause();
+      bgmBtn.textContent = '▶';
+    }
+  }
+  // Autoplay on first real user interaction
+  var startBGM = function() {
+    initBeatDetection();
+    bgm.play().then(function() {
+      bgmBtn.textContent = '⏸';
+    }).catch(function() {});
+    document.removeEventListener('click', startBGM);
+    document.removeEventListener('touchstart', startBGM);
+    document.removeEventListener('keydown', startBGM);
+  };
+  document.addEventListener('click', startBGM, { once: true });
+  document.addEventListener('touchstart', startBGM, { once: true });
+  document.addEventListener('keydown', startBGM, { once: true });
+
   // ---- copy prompt -------------------------------------------------------
   var promptText = document.getElementById('prompt-text').textContent;
   // One shared `copied` flag drives both buttons, as in the original — a
@@ -897,7 +802,6 @@ Prohibido contenido erótico. Violencia: permitida.</p>
   document.getElementById('copy-2').addEventListener('click', copy);
 })();
 </script>
-
-  <audio id="bgm" src="https://cdn1.suno.ai/9d4d71bd-d202-463e-8856-5bc973196992.mp3" preload="auto" loop style="display:none"></audio>
 </body>
 </html>
+  // ---- copy prompt -------------------------------------------------------

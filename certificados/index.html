@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Certificados — GameJam 2026 kodingvibes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: #0e0d0b; color: #f4f1e8;
+    font-family: 'IBM Plex Mono', monospace;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 40px 20px;
+    background-image: radial-gradient(ellipse at 50% 0%, #161512 0%, #0e0d0b 70%);
+  }
+  h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 18px; color: #d8ff3e;
+    text-align: center; margin: 0 0 8px;
+    text-shadow: 0 0 0.3em rgba(216,255,62,0.3), 0 0 0.9em rgba(216,255,62,0.1);
+  }
+  .subtitle {
+    font-size: 12px; color: #8a8478;
+    text-align: center; margin: 0 0 32px;
+  }
+
+  @keyframes blink { 0%, 60% { opacity: 1 } 61%, 100% { opacity: 0 } }
+  @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+  @keyframes vsync { from { transform: translateY(-150%) } to { transform: translateY(260%) } }
+  @keyframes fadeup { from { opacity: 0; transform: translate3d(0, 18px, 0) } to { opacity: 1; transform: none } }
+
+  .marquee-bar {
+    position: relative; z-index: 1;
+    border-top: 3px solid #2b2823; border-bottom: 3px solid #2b2823;
+    color: #0e0d0b; overflow: hidden; white-space: nowrap;
+    background: #d8ff3e; width: 100%; margin-bottom: 32px;
+  }
+  .marquee-bar-inner {
+    display: inline-flex; gap: 34px; padding: 10px 0;
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    will-change: transform; animation: marquee 30s linear infinite;
+  }
+
+  .form-card {
+    background: #161512; border: 3px solid #2b2823;
+    padding: 28px 32px;
+    max-width: 520px; width: 100%; margin-bottom: 32px;
+    position: relative;
+  }
+  .form-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 3px; background: #d8ff3e;
+  }
+  .form-card label {
+    display: block; font-size: 11px; color: #8f897c;
+    margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .form-card input, .form-card select {
+    width: 100%; padding: 10px 12px; margin-bottom: 16px;
+    background: #0e0d0b; border: 3px solid #2b2823;
+    color: #f4f1e8; font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+  }
+  .form-card input:focus, .form-card select:focus {
+    outline: none; border-color: #d8ff3e;
+  }
+  .form-card textarea {
+    width: 100%; padding: 10px 12px; margin-bottom: 16px;
+    background: #0e0d0b; border: 3px solid #2b2823;
+    color: #f4f1e8; font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; resize: vertical;
+    min-height: 60px;
+  }
+  .form-card textarea:focus { outline: none; border-color: #d8ff3e; }
+
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    flex: 1; padding: 14px 20px; border: none;
+    font-family: 'Press Start 2P', monospace; font-size: 10px;
+    cursor: pointer; text-transform: uppercase;
+    min-width: 140px; position: relative; overflow: hidden;
+  }
+  .btn::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(180deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+  }
+  .btn::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 34%;
+    background: linear-gradient(180deg, transparent, rgba(255,255,255,.13), transparent);
+    animation: vsync 4.2s linear infinite;
+    pointer-events: none;
+  }
+  .btn-primary { background: #d8ff3e; color: #0e0d0b; border: 3px solid #d8ff3e; }
+  .btn-primary:hover { background: #c4e82e; }
+  .btn-secondary { background: #0e0d0b; color: #f4f1e8; border: 3px solid #3a352d; }
+  .btn-secondary:hover { border-color: #f4f1e8; }
+
+  #preview-area {
+    max-width: 800px; width: 100%;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  #certificate-canvas {
+    width: 100%; max-width: 700px; height: auto;
+    border: 3px solid #2b2823;
+    image-rendering: auto;
+  }
+  .hidden { display: none !important; }
+
+  .categories-list {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 6px; margin-bottom: 16px;
+  }
+  .categories-list label {
+    font-size: 11px; text-transform: none; letter-spacing: 0;
+    display: flex; align-items: center; gap: 6px; cursor: pointer;
+    color: #b8b1a4;
+  }
+  .categories-list input[type="checkbox"] {
+    width: auto; margin: 0; accent-color: #d8ff3e;
+  }
+
+  .batch-result {
+    margin-top: 16px; padding: 12px;
+    background: #161512; border: 3px solid #2b2823;
+    font-size: 11px; color: #8a8478;
+  }
+  .batch-result a {
+    color: #d8ff3e; text-decoration: underline;
+  }
+
+  @media (max-width: 480px) {
+    .categories-list { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🏆 CERTIFICADOS GAMEJAM 2026</h1>
+<p class="subtitle">Generador de certificados — Powned by Motoko 🐈‍⬛</p>
+
+<div class="marquee-bar">
+  <div class="marquee-bar-inner">
+    <span>VIE 31 JUL 23:00 START</span><span>*</span><span>48H NON STOP</span><span>*</span><span>AI JAM</span><span>*</span><span>POWNED BY MOTOKO</span><span>*</span>
+    <span>VIE 31 JUL 23:00 START</span><span>*</span><span>48H NON STOP</span><span>*</span><span>AI JAM</span><span>*</span><span>POWNED BY MOTOKO</span><span>*</span>
+  </div>
+</div>
+
+<div class="form-card">
+  <label for="name">Nombre del participante</label>
+  <input type="text" id="name" placeholder="Ej: Juan Pérez" value="">
+
+  <label for="category">Categoría</label>
+  <select id="category">
+    <optgroup label="🏆 Principales">
+      <option value="🎮 Mejor Jugabilidad">🎮 Mejor Jugabilidad</option>
+      <option value="🎨 Mejor Arte / Estilo Visual">🎨 Mejor Arte / Estilo Visual</option>
+      <option value="🧠 Código Más Limpio">🧠 Código Más Limpio</option>
+      <option value="💡 Idea Más Original">💡 Idea Más Original</option>
+      <option value="📖 Mejor Narrativa">📖 Mejor Narrativa</option>
+    </optgroup>
+    <optgroup label="🔥 Laterales">
+      <option value="🔥 Más Ambicioso">🔥 Más Ambicioso</option>
+      <option value="🤡 El Más Wn">🤡 El Más Wn</option>
+      <option value="🏆 Mejor Mejora (Fase 2)">🏆 Mejor Mejora (Fase 2)</option>
+      <option value="🐛 Bug Más Épico">🐛 Bug Más Épico</option>
+      <option value="👶 Novato Destacado">👶 Novato Destacado</option>
+    </optgroup>
+    <optgroup label="❤️ Comunidad">
+      <option value="❤️ Favorito de la Comunidad">❤️ Favorito de la Comunidad</option>
+      <option value="😈 El Que Más Hizo Sufrir a Motoko">😈 El Que Más Hizo Sufrir a Motoko</option>
+    </optgroup>
+    <optgroup label="📜 Generales">
+      <option value="📜 Certificado de Participación">📜 Certificado de Participación</option>
+    </optgroup>
+  </select>
+
+  <label for="citation">Cita personalizada (opcional)</label>
+  <textarea id="citation" placeholder="Ej: Porque su juego era tan adictivo que olvidé que era una gamejam"></textarea>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="generatePreview()">🖼 Vista previa</button>
+    <button class="btn btn-secondary" onclick="downloadCert()">⬇ Descargar PNG</button>
+  </div>
+</div>
+
+<div class="form-card">
+  <label>Generación por lote</label>
+  <p style="font-size:11px;color:#8a8478;margin:0 0 12px">
+    Marca las categorías a generar para un mismo participante, o ingresa nombres separados por coma.
+  </p>
+
+  <label for="batch-names">Nombres (separados por coma)</label>
+  <textarea id="batch-names" placeholder="Ej: Juan Pérez, María García, Pedro López"></textarea>
+
+  <label>Categorías a generar</label>
+  <div class="categories-list" id="batch-categories">
+    <label><input type="checkbox" value="🎮 Mejor Jugabilidad"> 🎮 Mejor Jugabilidad</label>
+    <label><input type="checkbox" value="🎨 Mejor Arte / Estilo Visual"> 🎨 Mejor Arte</label>
+    <label><input type="checkbox" value="🧠 Código Más Limpio"> 🧠 Código Limpio</label>
+    <label><input type="checkbox" value="💡 Idea Más Original"> 💡 Idea Original</label>
+    <label><input type="checkbox" value="📖 Mejor Narrativa"> 📖 Mejor Narrativa</label>
+    <label><input type="checkbox" value="🔥 Más Ambicioso"> 🔥 Más Ambicioso</label>
+    <label><input type="checkbox" value="🤡 El Más Wn"> 🤡 El Más Wn</label>
+    <label><input type="checkbox" value="🏆 Mejor Mejora (Fase 2)"> 🏆 Mejora Fase 2</label>
+    <label><input type="checkbox" value="🐛 Bug Más Épico"> 🐛 Bug Más Épico</label>
+    <label><input type="checkbox" value="👶 Novato Destacado"> 👶 Novato Destacado</label>
+    <label><input type="checkbox" value="❤️ Favorito de la Comunidad"> ❤️ Favorito Comunidad</label>
+    <label><input type="checkbox" value="😈 El Que Más Hizo Sufrir a Motoko"> 😈 Hizo Sufrir a Motoko</label>
+    <label><input type="checkbox" value="📜 Certificado de Participación"> 📜 Participación</label>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="generateBatch()">⚡ Generar lote</button>
+  </div>
+  <div id="batch-result" class="batch-result hidden"></div>
+</div>
+
+<div id="preview-area">
+  <canvas id="certificate-canvas" width="700" height="495"></canvas>
+</div>
+
+<script>
+const CATEGORY_EMOJIS = {
+  '🎮 Mejor Jugabilidad': '🎮',
+  '🎨 Mejor Arte / Estilo Visual': '🎨',
+  '🧠 Código Más Limpio': '🧠',
+  '💡 Idea Más Original': '💡',
+  '📖 Mejor Narrativa': '📖',
+  '🔥 Más Ambicioso': '🔥',
+  '🤡 El Más Wn': '🤡',
+  '🏆 Mejor Mejora (Fase 2)': '🏆',
+  '🐛 Bug Más Épico': '🐛',
+  '👶 Novato Destacado': '👶',
+  '❤️ Favorito de la Comunidad': '❤️',
+  '😈 El Que Más Hizo Sufrir a Motoko': '😈',
+  '📜 Certificado de Participación': '📜',
+};
+
+const CITATIONS = {
+  '🎮 Mejor Jugabilidad': 'Porque su juego era tan adictivo que olvidé que era una gamejam',
+  '🎨 Mejor Arte / Estilo Visual': 'Demostró que píxel a píxel se construye la gloria',
+  '🧠 Código Más Limpio': 'Su código era tan legible que hasta tu abuela lo entendía',
+  '💡 Idea Más Original': 'Nadie más pensó en eso. Y si lo pensó, lo hizo peor',
+  '📖 Mejor Narrativa': 'Su historia me hizo sentir cosas. Y eso que soy una IA',
+  '🔥 Más Ambicioso': 'Apuntó a la luna. Explotó en la atmósfera. Pero vaya viaje',
+  '🤡 El Más Wn': 'Hizo reír a todo el grupo. Eso tiene mérito',
+  '🏆 Mejor Mejora (Fase 2)': 'Entendió el código ajeno y lo hizo brillar. Héroe anónimo',
+  '🐛 Bug Más Épico': 'Encontró un bug tan glorioso que merecía su propio juego',
+  '👶 Novato Destacado': 'Nunca había programado y se mandó un juegazo. Respeto',
+  '❤️ Favorito de la Comunidad': 'El grupo habló. Y dijo: este es el mejor',
+  '😈 El Que Más Hizo Sufrir a Motoko': 'Su PR tenía 47 archivos modificados. 47. Sobreviví',
+  '📜 Certificado de Participación': 'Estuvo ahí. Codeó. Entregó. Eso es lo que importa',
+};
+
+function drawCertificate(name, category, citation) {
+  const canvas = document.getElementById('certificate-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = 700, H = 495;
+
+  // --- Background ---
+  ctx.fillStyle = '#0e0d0b';
+  ctx.fillRect(0, 0, W, H);
+
+  // --- Outer border (3px) ---
+  ctx.strokeStyle = '#2b2823';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(12, 12, W - 24, H - 24);
+
+  // --- Inner card ---
+  ctx.fillStyle = '#161512';
+  ctx.fillRect(18, 18, W - 36, H - 36);
+
+  // --- Top accent bar (3px green) ---
+  ctx.fillStyle = '#d8ff3e';
+  ctx.fillRect(18, 18, W - 36, 3);
+
+  // --- Bottom accent bar ---
+  ctx.fillRect(18, H - 21, W - 36, 3);
+
+  // --- Pixel art corner decorations (like landing hero sprite) ---
+  ctx.fillStyle = '#2b2823';
+  const px = 4;
+  // Top-left corner: 4x4 checkerboard
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if ((r + c) % 2 === 0) {
+        ctx.fillRect(24 + c * (px + 1), 28 + r * (px + 1), px, px);
+      }
+    }
+  }
+  // Top-right corner
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if ((r + c) % 2 === 0) {
+        ctx.fillRect(W - 24 - 4 * (px + 1) + c * (px + 1), 28 + r * (px + 1), px, px);
+      }
+    }
+  }
+  // Bottom-left corner
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if ((r + c) % 2 === 0) {
+        ctx.fillRect(24 + c * (px + 1), H - 28 - 4 * (px + 1) + r * (px + 1), px, px);
+      }
+    }
+  }
+  // Bottom-right corner
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if ((r + c) % 2 === 0) {
+        ctx.fillRect(W - 24 - 4 * (px + 1) + c * (px + 1), H - 28 - 4 * (px + 1) + r * (px + 1), px, px);
+      }
+    }
+  }
+
+  // --- Decorative diamond dots along top bar ---
+  ctx.fillStyle = '#d8ff3e';
+  for (let x = 80; x < W - 80; x += 50) {
+    ctx.beginPath();
+    ctx.arc(x, 19, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // --- Title block ---
+  ctx.textAlign = 'center';
+
+  // "GAMEJAM" in Press Start 2P
+  ctx.fillStyle = '#d8ff3e';
+  ctx.font = '22px "Press Start 2P", monospace';
+  ctx.fillText('GAMEJAM', W / 2, 78);
+
+  // "2026" in Press Start 2P
+  ctx.font = '16px "Press Start 2P", monospace';
+  ctx.fillText('2026', W / 2, 106);
+
+  // Subtitle
+  ctx.font = '8px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#8f897c';
+  ctx.fillText('KODINGVIBES · EDICIÓN 01', W / 2, 126);
+
+  // --- Separator line ---
+  ctx.strokeStyle = '#2b2823';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(W/2 - 130, 140);
+  ctx.lineTo(W/2 + 130, 140);
+  ctx.stroke();
+
+  // --- Emoji badge with glow effect ---
+  const emoji = CATEGORY_EMOJIS[category] || '🏆';
+
+  // Glow circle
+  ctx.shadowColor = '#d8ff3e';
+  ctx.shadowBlur = 15;
+  ctx.beginPath();
+  ctx.arc(W/2, 178, 30, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a1814';
+  ctx.fill();
+  ctx.strokeStyle = '#3a3730';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Emoji
+  ctx.font = '34px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#f4f1e8';
+  ctx.fillText(emoji, W / 2, 192);
+
+  // --- Category title (Press Start 2P, green) ---
+  ctx.font = '11px "Press Start 2P", monospace';
+  ctx.fillStyle = '#d8ff3e';
+  ctx.fillText(category.toUpperCase(), W / 2, 232);
+
+  // --- "OTORGADO A" label ---
+  ctx.font = '8px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#8f897c';
+  ctx.fillText('OTORGADO A', W / 2, 258);
+
+  // --- Name (large, prominent) ---
+  ctx.font = '26px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#f4f1e8';
+  ctx.fillText(name, W / 2, 298);
+
+  // --- Decorative line under name ---
+  ctx.strokeStyle = '#2b2823';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(W/2 - 110, 312);
+  ctx.lineTo(W/2 + 110, 312);
+  ctx.stroke();
+
+  // --- Citation (word-wrapped, centered, muted) ---
+  ctx.font = '11px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#b8b1a4';
+  const words = citation.split(' ');
+  const maxChars = 48;
+  let lines = [];
+  let currentLine = '';
+  for (const word of words) {
+    if ((currentLine + ' ' + word).length <= maxChars) {
+      currentLine += (currentLine ? ' ' : '') + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+
+  const lineHeight = 18;
+  const startY = 340;
+  lines.forEach((line, i) => {
+    ctx.fillText('"' + line + '"', W / 2, startY + i * lineHeight);
+  });
+
+  // --- Footer ---
+  ctx.font = '8px "Press Start 2P", monospace';
+  ctx.fillStyle = '#3a3730';
+  ctx.fillText('POWNED BY MOTOKO', W / 2, H - 42);
+
+  ctx.font = '7px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#2b2823';
+  ctx.fillText('kodingvibes.com · gamejam-2026', W / 2, H - 30);
+}
+
+function generatePreview() {
+  const name = document.getElementById('name').value.trim() || 'Participante';
+  const category = document.getElementById('category').value;
+  const citation = document.getElementById('citation').value.trim() || CITATIONS[category] || '';
+  drawCertificate(name, category, citation);
+}
+
+function downloadCert() {
+  const canvas = document.getElementById('certificate-canvas');
+  const name = document.getElementById('name').value.trim() || 'participante';
+  const category = document.getElementById('category').value;
+  const slug = category.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+  const link = document.createElement('a');
+  link.download = `gamejam2026-${slug}-${name.replace(/\s+/g, '-').toLowerCase()}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function generateBatch() {
+  const namesText = document.getElementById('batch-names').value.trim();
+  if (!namesText) { alert('Ingresa al menos un nombre.'); return; }
+  const names = namesText.split(',').map(n => n.trim()).filter(Boolean);
+  const checked = document.querySelectorAll('#batch-categories input:checked');
+  const categories = Array.from(checked).map(cb => cb.value);
+  if (!categories.length) { alert('Selecciona al menos una categoría.'); return; }
+
+  const resultDiv = document.getElementById('batch-result');
+  resultDiv.classList.remove('hidden');
+  resultDiv.innerHTML = 'Generando...';
+
+  const batchCanvas = document.createElement('canvas');
+  batchCanvas.width = 700;
+  batchCanvas.height = 495;
+
+  let count = 0;
+  const links = [];
+
+  for (const name of names) {
+    for (const cat of categories) {
+      const citation = CITATIONS[cat] || '';
+      drawOnCanvas(batchCanvas, name, cat, citation);
+      const slug = cat.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      const filename = `gamejam2026-${slug}-${name.replace(/\s+/g, '-').toLowerCase()}.png`;
+      const dataUrl = batchCanvas.toDataURL('image/png');
+      links.push({ filename, dataUrl });
+      count++;
+    }
+  }
+
+  generatePreview();
+
+  let html = `<strong>✅ ${count} certificados generados</strong><br>`;
+  for (const l of links) {
+    html += `<a href="${l.dataUrl}" download="${l.filename}">⬇ ${l.filename}</a><br>`;
+  }
+  html += '<br><em>Haz clic derecho > "Guardar enlace como..." o click para descargar uno por uno.</em>';
+  resultDiv.innerHTML = html;
+}
+
+function drawOnCanvas(canvas, name, category, citation) {
+  const ctx = canvas.getContext('2d');
+  const W = 700, H = 495;
+
+  ctx.fillStyle = '#0e0d0b';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = '#2b2823';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(12, 12, W - 24, H - 24);
+
+  ctx.fillStyle = '#161512';
+  ctx.fillRect(18, 18, W - 36, H - 36);
+
+  ctx.fillStyle = '#d8ff3e';
+  ctx.fillRect(18, 18, W - 36, 3);
+  ctx.fillRect(18, H - 21, W - 36, 3);
+
+  ctx.fillStyle = '#2b2823';
+  const px = 4;
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if ((r + c) % 2 === 0) {
+        ctx.fillRect(24 + c * (px + 1), 28 + r * (px + 1), px, px);
+      }
+    }
+  }
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if ((r + c) % 2 === 0) {
+        ctx.fillRect(W - 24 - 4 * (px + 1) + c * (px + 1), 28 + r * (px + 1), px, px);
+      }
+    }
+  }
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if ((r + c) % 2 === 0) {
+        ctx.fillRect(24 + c * (px + 1), H - 28 - 4 * (px + 1) + r * (px + 1), px, px);
+      }
+    }
+  }
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if ((r + c) % 2 === 0) {
+        ctx.fillRect(W - 24 - 4 * (px + 1) + c * (px + 1), H - 28 - 4 * (px + 1) + r * (px + 1), px, px);
+      }
+    }
+  }
+
+  ctx.fillStyle = '#d8ff3e';
+  for (let x = 80; x < W - 80; x += 50) {
+    ctx.beginPath();
+    ctx.arc(x, 19, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#d8ff3e';
+  ctx.font = '22px "Press Start 2P", monospace';
+  ctx.fillText('GAMEJAM', W / 2, 78);
+  ctx.font = '16px "Press Start 2P", monospace';
+  ctx.fillText('2026', W / 2, 106);
+
+  ctx.font = '8px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#8f897c';
+  ctx.fillText('KODINGVIBES · EDICIÓN 01', W / 2, 126);
+
+  ctx.strokeStyle = '#2b2823';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(W/2 - 130, 140);
+  ctx.lineTo(W/2 + 130, 140);
+  ctx.stroke();
+
+  const emoji = CATEGORY_EMOJIS[category] || '🏆';
+  ctx.shadowColor = '#d8ff3e';
+  ctx.shadowBlur = 15;
+  ctx.beginPath();
+  ctx.arc(W/2, 178, 30, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a1814';
+  ctx.fill();
+  ctx.strokeStyle = '#3a3730';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  ctx.font = '34px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#f4f1e8';
+  ctx.fillText(emoji, W / 2, 192);
+
+  ctx.font = '11px "Press Start 2P", monospace';
+  ctx.fillStyle = '#d8ff3e';
+  ctx.fillText(category.toUpperCase(), W / 2, 232);
+
+  ctx.font = '8px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#8f897c';
+  ctx.fillText('OTORGADO A', W / 2, 258);
+
+  ctx.font = '26px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#f4f1e8';
+  ctx.fillText(name, W / 2, 298);
+
+  ctx.strokeStyle = '#2b2823';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(W/2 - 110, 312);
+  ctx.lineTo(W/2 + 110, 312);
+  ctx.stroke();
+
+  ctx.font = '11px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#b8b1a4';
+  const words = citation.split(' ');
+  const maxChars = 48;
+  let lines = [];
+  let currentLine = '';
+  for (const word of words) {
+    if ((currentLine + ' ' + word).length <= maxChars) {
+      currentLine += (currentLine ? ' ' : '') + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+
+  const lineHeight = 18;
+  const startY = 340;
+  lines.forEach((line, i) => {
+    ctx.fillText('"' + line + '"', W / 2, startY + i * lineHeight);
+  });
+
+  ctx.font = '8px "Press Start 2P", monospace';
+  ctx.fillStyle = '#3a3730';
+  ctx.fillText('POWNED BY MOTOKO', W / 2, H - 42);
+
+  ctx.font = '7px "IBM Plex Mono", monospace';
+  ctx.fillStyle = '#2b2823';
+  ctx.fillText('kodingvibes.com · gamejam-2026', W / 2, H - 30);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  generatePreview();
+});
+</script>
+</body>
+</html>

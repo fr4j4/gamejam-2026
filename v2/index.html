@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameJam 2026 — kodingvibes</title>
+  <meta name="description" content="GameJam organizada por kodingvibes. 48 horas, 2 fases, puro código y buena onda.">
+  <meta property="og:title" content="GameJam 2026 — kodingvibes">
+  <meta property="og:description" content="48 horas de desarrollo + mejora cruzada. Todos los niveles bienvenidos.">
+  <meta property="og:url" content="https://kodingvibes.github.io/gamejam-2026/v2/">
+  <meta name="theme-color" content="#7c3aed">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f8f7fc;
+      --surface: #ffffff;
+      --surface-hover: #f3f0ff;
+      --border: #e8e5f0;
+      --border-strong: #d4d0e0;
+      --accent: #7c3aed;
+      --accent-soft: #a78bfa;
+      --accent-bg: rgba(124, 58, 237, 0.06);
+      --accent-glow: rgba(124, 58, 237, 0.15);
+      --text: #1a1a2e;
+      --text-dim: #6b6b80;
+      --text-muted: #9a9ab0;
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+      --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Nav */
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-logo span {
+      background: var(--accent);
+      color: white;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent);
+    }
+
+    /* Hero — Bento style */
+    .hero-bento {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 60px 0 40px;
+    }
+
+    .bento-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .bento-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .bento-card.feature {
+      grid-column: 1 / -1;
+      padding: 48px 40px;
+      background: linear-gradient(135deg, var(--accent) 0%, #6d28d9 100%);
+      border-color: transparent;
+      color: white;
+    }
+
+    .bento-card.feature .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(4px);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .bento-card.feature h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+    }
+
+    .bento-card.feature p {
+      font-size: 1.05rem;
+      opacity: 0.9;
+      max-width: 500px;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .bento-card.feature .btn-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: all 0.15s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-white {
+      background: white;
+      color: var(--accent);
+    }
+
+    .btn-white:hover {
+      background: #f5f5f5;
+      transform: translateY(-1px);
+    }
+
+    .btn-outline-light {
+      background: transparent;
+      color: white;
+      border: 1.5px solid rgba(255,255,255,0.3);
+    }
+
+    .btn-outline-light:hover {
+      border-color: rgba(255,255,255,0.6);
+      background: rgba(255,255,255,0.05);
+    }
+
+    .bento-card.stat {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bento-card.stat .number {
+      font-family: 'DM Mono', monospace;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .bento-card.stat .label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    .bento-card.stat .sub {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .bento-card.info h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bento-card.info p {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    .bento-card.info .tag {
+      display: inline-block;
+      background: var(--accent-bg);
+      color: var(--accent);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+
+    /* Countdown */
+    .countdown-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 40px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .countdown-bar .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .countdown-items {
+      display: flex;
+      gap: 16px;
+    }
+
+    .countdown-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .countdown-item .num {
+      font-family: 'DM Mono', monospace;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .countdown-item .lbl {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-top: 4px;
+    }
+
+    .countdown-sep {
+      font-family: 'DM Mono', monospace;
+      color: var(--border-strong);
+      font-size: 1.2rem;
+      padding-top: 2px;
+    }
+
+    /* Sections */
+    .section {
+      padding: 50px 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .section-header h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .section-header .count {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    /* Timeline as horizontal bento */
+    .timeline-bento {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .tl-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .tl-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent), var(--shadow-sm);
+    }
+
+    .tl-card .phase {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      font-weight: 500;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .tl-card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .tl-card .date {
+      font-size: 0.75rem;
+      color: var(--accent-soft);
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .tl-card .desc {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    .tl-card .arrow {
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--border-strong);
+      font-size: 1.2rem;
+    }
+
+    /* Rules as bento grid */
+    .rules-bento {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .rule-bento {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 18px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+      font-size: 0.85rem;
+      transition: border-color 0.15s;
+    }
+
+    .rule-bento:hover {
+      border-color: var(--accent-soft);
+    }
+
+    .rule-bento .icon {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent-bg);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .rule-bento.danger .icon {
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    .rule-bento code {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      background: var(--accent-bg);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    /* Steps */
+    .steps-bento {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .step-bento {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .step-bento .num {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent);
+      color: white;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+
+    .step-bento h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+
+    .step-bento p {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    .step-bento code {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      background: var(--accent-bg);
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: var(--accent);
+    }
+
+    /* Criteria */
+    .criteria-bento {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .crit-bento {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+      font-size: 0.8rem;
+    }
+
+    .crit-bento .check {
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(16, 185, 129, 0.1);
+      border-radius: 6px;
+      color: var(--success);
+      font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+
+    .crit-bento .cross {
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(239, 68, 68, 0.1);
+      border-radius: 6px;
+      color: var(--danger);
+      font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Version badge */
+    .version-badge {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background: var(--accent);
+      color: white;
+      font-size: 0.6rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+      z-index: 100;
+      text-transform: uppercase;
+    }
+
+    .version-badge a {
+      color: white;
+      text-decoration: none;
+    }
+
+    .version-badge a:hover {
+      text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero-bento { grid-template-columns: 1fr; }
+      .timeline-bento { grid-template-columns: 1fr; }
+      .tl-card .arrow { display: none; }
+      .rules-bento { grid-template-columns: 1fr; }
+      .steps-bento { grid-template-columns: 1fr; }
+      .criteria-bento { grid-template-columns: 1fr; }
+      .countdown-bar { flex-direction: column; gap: 12px; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="version-badge"><a href="https://kodingvibes.github.io/gamejam-2026/">v1 (pixel)</a> · v2 (bento)</div>
+
+  <div class="container">
+    <!-- Nav -->
+    <nav class="nav">
+      <div class="nav-logo">
+        🎮 gamejam <span>2026</span>
+      </div>
+      <div class="nav-links">
+        <a href="#timeline">Timeline</a>
+        <a href="#rules">Reglas</a>
+        <a href="#steps">Cómo participar</a>
+        <a href="https://github.com/kodingvibes/gamejam-2026" target="_blank">GitHub</a>
+      </div>
+    </nav>
+
+    <!-- Hero Bento -->
+    <div class="hero-bento">
+      <div class="bento-card feature">
+        <div class="badge">kodingvibes · 48h gamejam</div>
+        <h1>Crea. Compite. Mejora.</h1>
+        <p>24h para desarrollar tu juego, 24h para mejorar el de otro. Todos los niveles bienvenidos. El único requisito: tener cuenta en kodingvibes.com</p>
+        <div class="btn-group">
+          <a href="https://github.com/kodingvibes/gamejam-2026" class="btn btn-white" target="_blank">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            Participar en GitHub
+          </a>
+          <a href="#steps" class="btn btn-outline-light">Cómo funciona</a>
+        </div>
+      </div>
+
+      <div class="bento-card stat">
+        <div class="number">48</div>
+        <div class="label">Horas totales</div>
+        <div class="sub">2 fases de 24h</div>
+      </div>
+
+      <div class="bento-card info">
+        <h3>📁 Fase 1 · Desarrollo</h3>
+        <p>Cada participante crea su juego dentro de <code>participantes/tu-nombre/</code>. Cualquier stack, cualquier género.</p>
+        <span class="tag">Vie 31 jul 23:00 → Sáb 1 ago 23:00</span>
+      </div>
+
+      <div class="bento-card info">
+        <h3>🔄 Fase 2 · Mejora cruzada</h3>
+        <p>Los juegos se reparten. Cada uno mejora el de otro: features, refactor, bugs. Aprendizaje cruzado real.</p>
+        <span class="tag">Sáb 1 ago 23:00 → Dom 2 ago 23:00</span>
+      </div>
+
+      <div class="bento-card info">
+        <h3>🤖 Revisión por @Motoko</h3>
+        <p>Una IA revisa cada PR. Si pasa los filtros (anti-slop, scope, funcionamiento), se mergea automáticamente.</p>
+        <span class="tag">Sin sesgo humano</span>
+      </div>
+    </div>
+
+    <!-- Countdown -->
+    <div class="countdown-bar">
+      <span class="label">Próxima edición</span>
+      <div class="countdown-items" id="countdown">
+        <div class="countdown-item">
+          <span class="num" id="days">--</span>
+          <span class="lbl">Días</span>
+        </div>
+        <span class="countdown-sep">:</span>
+        <div class="countdown-item">
+          <span class="num" id="hours">--</span>
+          <span class="lbl">Horas</span>
+        </div>
+        <span class="countdown-sep">:</span>
+        <div class="countdown-item">
+          <span class="num" id="minutes">--</span>
+          <span class="lbl">Min</span>
+        </div>
+        <span class="countdown-sep">:</span>
+        <div class="countdown-item">
+          <span class="num" id="seconds">--</span>
+          <span class="lbl">Seg</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <section class="section" id="timeline">
+      <div class="section-header">
+        <h2>⏱️ Timeline</h2>
+        <span class="count">3 fases</span>
+      </div>
+      <div class="timeline-bento">
+        <div class="tl-card active">
+          <div class="phase">Fase 1</div>
+          <h3>Desarrollo</h3>
+          <div class="date">Vie 31 jul 23:00 → Sáb 1 ago 23:00</div>
+          <div class="desc">Crea tu juego completo. Cualquier stack, cualquier género. Todo dentro de tu carpeta.</div>
+        </div>
+        <div class="tl-card">
+          <div class="phase">Fase 2</div>
+          <h3>Mejora cruzada</h3>
+          <div class="date">Sáb 1 ago 23:00 → Dom 2 ago 23:00</div>
+          <div class="desc">Te asignan el juego de otro. Agrega features, refactoriza, corrige bugs.</div>
+        </div>
+        <div class="tl-card">
+          <div class="phase">Fin</div>
+          <h3>Entrega final</h3>
+          <div class="date">Dom 2 ago 23:00</div>
+          <div class="desc">Se cierran los PRs. @Motoko revisa todo y anuncia resultados.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Rules -->
+    <section class="section" id="rules">
+      <div class="section-header">
+        <h2>📋 Reglas</h2>
+        <span class="count">6 reglas</span>
+      </div>
+      <div class="rules-bento">
+        <div class="rule-bento">
+          <span class="icon">🔑</span>
+          <span>Tener cuenta en <strong>kodingvibes.com</strong> — requisito obligatorio</span>
+        </div>
+        <div class="rule-bento">
+          <span class="icon">📁</span>
+          <span>Trabajar solo dentro de <code>participantes/tu-nombre/</code></span>
+        </div>
+        <div class="rule-bento">
+          <span class="icon">🚫</span>
+          <span>No tocar archivos fuera de tu carpeta (README, .gitignore, etc.)</span>
+        </div>
+        <div class="rule-bento">
+          <span class="icon">🔀</span>
+          <span>Fase 1: PR con tu juego. Fase 2: PR con mejoras al juego de otro</span>
+        </div>
+        <div class="rule-bento">
+          <span class="icon">🤖</span>
+          <span>@Motoko revisa y mergea todos los PRs automáticamente</span>
+        </div>
+        <div class="rule-bento danger">
+          <span class="icon">🚨</span>
+          <span>No juegos eróticos. Violencia extrema: bienvenida. Sangre, gore, desmembramiento, todo bien.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Steps -->
+    <section class="section" id="steps">
+      <div class="section-header">
+        <h2>🚀 Cómo participar</h2>
+        <span class="count">5 pasos</span>
+      </div>
+      <div class="steps-bento">
+        <div class="step-bento">
+          <span class="num">1</span>
+          <div>
+            <h3>Fork del repo</h3>
+            <p>Forkea <code>kodingvibes/gamejam-2026</code> a tu cuenta de GitHub.</p>
+          </div>
+        </div>
+        <div class="step-bento">
+          <span class="num">2</span>
+          <div>
+            <h3>Clona y crea tu rama</h3>
+            <p><code>git clone</code> tu fork, luego <code>git checkout -b participante/tu-nombre</code></p>
+          </div>
+        </div>
+        <div class="step-bento">
+          <span class="num">3</span>
+          <div>
+            <h3>Codea tu juego</h3>
+            <p>Crea <code>participantes/tu-nombre/</code> y desarrolla todo ahí. HTML, Phaser, Python — lo que quieras.</p>
+          </div>
+        </div>
+        <div class="step-bento">
+          <span class="num">4</span>
+          <div>
+            <h3>Sube tu rama y haz PR</h3>
+            <p><code>git push origin participante/tu-nombre</code> y crea un PR hacia <code>kodingvibes/gamejam-2026:main</code></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Criteria -->
+    <section class="section">
+      <div class="section-header">
+        <h2>✅ Validación</h2>
+        <span class="count">6 criterios</span>
+      </div>
+      <div class="criteria-bento">
+        <div class="crit-bento">
+          <span class="check">✓</span>
+          Código solo en tu carpeta
+        </div>
+        <div class="crit-bento">
+          <span class="check">✓</span>
+          El juego debe funcionar
+        </div>
+        <div class="crit-bento">
+          <span class="check">✓</span>
+          Nada de código copiado sin entender
+        </div>
+        <div class="crit-bento">
+          <span class="check">✓</span>
+          npm permitido, sin <code>node_modules/</code>
+        </div>
+        <div class="crit-bento">
+          <span class="cross">✗</span>
+          No juegos eróticos
+        </div>
+        <div class="crit-bento">
+          <span class="check">✓</span>
+          Violencia extrema: bienvenida
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Organizado por <a href="https://github.com/kodingvibes" target="_blank">kodingvibes</a> · Repo: <a href="https://github.com/kodingvibes/gamejam-2026" target="_blank">gamejam-2026</a> · PRs revisados por <strong>@Motoko</strong></p>
+      <p style="margin-top: 6px; font-size: 0.7rem;">v2 · Diseño Bento Grid · UI UX Pro Max</p>
+    </footer>
+  </div>
+
+  <script>
+    const target = new Date('2026-07-31T23:00:00-04:00');
+
+    function updateCountdown() {
+      const now = new Date();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        ['days','hours','minutes','seconds'].forEach(id => document.getElementById(id).textContent = '00');
+        return;
+      }
+
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff / 3600000) % 24);
+      const m = Math.floor((diff / 60000) % 60);
+      const s = Math.floor((diff / 1000) % 60);
+
+      document.getElementById('days').textContent = String(d).padStart(2,'0');
+      document.getElementById('hours').textContent = String(h).padStart(2,'0');
+      document.getElementById('minutes').textContent = String(m).padStart(2,'0');
+      document.getElementById('seconds').textContent = String(s).padStart(2,'0');
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+  </script>
+</body>
+</html>

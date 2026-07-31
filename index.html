@@ -863,6 +863,91 @@ changed or session end.
 The shortest path to done is the right path.</pre>
         </details>
       </div>
+      <div style="border: 3px solid #2b2823; background: #161512; padding: 22px 20px">
+        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 10px">✦ PHASER ARCADE PHYSICS</div>
+        <p style="font-size: 14.5px; line-height: 1.55; margin: 0 0 10px; color: #d9d3c6">Skill oficial de Phaser 4 para física arcade: gravedad, colisiones, solapamientos, grupos físicos, cuerpos estáticos, velocidad, aceleración y rebotes. Todo lo que necesitas para que tu juego se sienta como un juego.</p>
+        <div style="font-size: 12px; color: #8f897c; border-top: 2px solid #2b2823; padding-top: 10px">Para qué sirve: que tu personaje caiga, rebote, choque y se mueva como dios manda sin escribir física desde cero.</div>
+        <details style="margin-top: 12px; border-top: 2px solid #2b2823; padding-top: 10px">
+          <summary style="font-size: 12px; color: var(--accent); cursor: pointer; font-family: 'Press Start 2P', monospace; letter-spacing: 0.5px">VER SKILL COMPLETO</summary>
+          <pre style="font-size: 11px; line-height: 1.5; color: #b8b1a4; background: #0e0d0b; padding: 14px; margin: 10px 0 0; overflow-x: auto; white-space: pre-wrap; word-break: break-word; border: 1px solid #2b2823; border-radius: 4px"># Arcade Physics
+> Setting up and using Arcade Physics in Phaser 4 -- enabling physics in GameConfig, creating physics-enabled sprites/images/groups, velocity, acceleration, gravity, collisions (collide/overlap), world bounds, body properties, and collision categories.
+
+**Source:** https://github.com/phaserjs/phaser/tree/master/skills/physics-arcade
+
+## Quick Start
+
+```js
+class GameScene extends Phaser.Scene {
+    create() {
+        this.player = this.physics.add.sprite(100, 300, 'player');
+        this.player.setCollideWorldBounds(true);
+        this.player.setBounce(0.2);
+
+        this.platforms = this.physics.add.staticGroup();
+        this.platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+
+        this.physics.add.collider(this.player, this.platforms);
+        this.cursors = this.input.keyboard.createCursorKeys();
+    }
+
+    update() {
+        if (this.cursors.left.isDown) this.player.setVelocityX(-160);
+        else if (this.cursors.right.isDown) this.player.setVelocityX(160);
+        else this.player.setVelocityX(0);
+    }
+}
+
+const config = {
+    type: Phaser.AUTO, width: 800, height: 600,
+    physics: { default: 'arcade', arcade: { gravity: { y: 300 }, debug: false } },
+    scene: GameScene
+};
+const game = new Phaser.Game(config);
+```
+
+## Core Concepts
+
+### World (`this.physics.world`)
+- **gravity** -- Vector2 applied to all dynamic bodies each step.
+- **bounds** -- Rectangle defining the world boundary (defaults to canvas size).
+- **colliders** -- ProcessQueue of registered Collider objects.
+- **fps** -- Physics steps per second (default 60).
+- **isPaused** -- Toggle via `world.pause()` / `world.resume()`.
+- **useTree** -- true (default) uses RTree spatial index. Disable for 5000+ bodies.
+
+### Bodies (`Body`)
+- **velocity** -- Vector2, px/s | **acceleration** -- Vector2, px/s²
+- **drag** -- Vector2, deceleration | **gravity** -- Vector2, per-body gravity
+- **bounce** -- Vector2, rebound factor | **mass** -- default 1
+- **immovable** -- false; if true, never moved by collisions
+- **enable** -- true; false removes from simulation
+- **collideWorldBounds** -- false
+- **setCircle(radius)** -- circular body shape
+
+### Static Bodies (`StaticBody`)
+- Created via `this.physics.add.staticGroup()` or `this.physics.add.existing(obj, true)`.
+- After changing position/scale, call `refreshBody()` to sync.
+
+## Common Patterns
+
+```js
+// Collide and Overlap
+this.physics.add.collider(player, platforms);
+this.physics.add.overlap(player, coins, collectCoin, null, this);
+
+// Physics Groups
+const bullets = this.physics.add.group({
+    classType: Phaser.Physics.Arcade.Sprite,
+    maxSize: 20, collideWorldBounds: true,
+    velocityX: 200, allowGravity: false
+});
+
+// Enable physics on existing objects
+this.physics.add.existing(mySprite);           // dynamic body
+this.physics.add.existing(mySprite, true);     // static body
+```</pre>
+        </details>
+      </div>
     </div>
     <div style="border: 3px solid #2b2823; background: #0e0d0b; margin-top: 14px; padding: 20px">
       <p style="font-size: 14.5px; line-height: 1.55; margin: 0; color: #d9d3c6">

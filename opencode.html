@@ -128,18 +128,14 @@
 
 <a href="/gamejam-2026/" class="back-link">← Volver al GameJam</a>
 
-<h1>OpenCode + Ollama</h1>
-<p class="subtitle">Usa tu agente local con OpenCode para programar tu juego sin depender de APIs externas.</p>
+<h1>OpenCode + Ollama Cloud</h1>
+<p class="subtitle">Usa la API remota de Ollama con OpenCode para programar tu juego. Gratis, sin GPU, sin instalaciones pesadas.</p>
 
 <div class="step">
   <div class="step-num">PASO 1</div>
-  <div class="step-title">Instalar Ollama</div>
-  <p>Descarga e instala <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> para tu sistema operativo.</p>
-  <p>Luego descarga un modelo. Para programar juegos en JavaScript/Phaser, recomendamos:</p>
-  <pre>ollama pull qwen2.5-coder:7b
-<span class="comment"># o si tienes buena GPU:</span>
-ollama pull qwen2.5-coder:14b</pre>
-  <p>Otros modelos que funcionan bien: <code>codestral:latest</code>, <code>deepseek-coder:6.7b</code>, <code>llama3.1:8b</code>.</p>
+  <div class="step-title">Crear cuenta en Ollama Cloud</div>
+  <p>Regístrate gratis en <a href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a>. La capa gratuita incluye crédito suficiente para programar tu juego durante la gamejam sin costo.</p>
+  <p>Una vez registrado, genera tu API key desde el panel de configuración. La vas a necesitar para conectar OpenCode.</p>
 </div>
 
 <div class="step">
@@ -156,17 +152,19 @@ opencode</pre>
 
 <div class="step">
   <div class="step-num">PASO 3</div>
-  <div class="step-title">Configurar OpenCode para usar Ollama</div>
+  <div class="step-title">Configurar OpenCode para usar Ollama Cloud</div>
   <p>Crea o edita el archivo de configuración de OpenCode (normalmente <code>~/.config/opencode/config.json</code> o <code>opencode.json</code> en tu proyecto):</p>
   <pre>{
   "provider": "ollama",
   "ollama": {
-    "model": "qwen2.5-coder:7b",
-    "baseUrl": "http://localhost:11434"
+    "model": "minimax/m2.5",
+    "baseUrl": "https://api.ollama.com/v1",
+    "apiKey": "tu-api-key-de-ollama"
   },
   "systemPrompt": "Eres un desarrollador experto en Phaser 4 y JavaScript. Escribe código limpio, modular y funcional. Responde en español."
 }</pre>
-  <p>Si quieres usar un modelo diferente, cambia el nombre del modelo en <code>ollama.model</code>.</p>
+  <p>Reemplazá <code>tu-api-key-de-ollama</code> con la API key que generaste en ollama.com.</p>
+  <p>El modelo recomendado es <code>minimax/m2.5</code> — corre en los servidores de Ollama, no necesita GPU local y tiene buena calidad para código. Podés cambiarlo por cualquier modelo disponible en Ollama Cloud.</p>
 </div>
 
 <div class="step">
@@ -199,16 +197,14 @@ opencode</pre>
 </div>
 
 <div class="tip">
-  <strong>Modelos locales vs APIs:</strong> Los modelos locales (7B-14B) son más lentos pero gratuitos y funcionan offline. Si tenés acceso a APIs como Claude o GPT-4, los resultados serán mejores — pero para un juego de gamejam un modelo local de 7B alcanza bien.
+  <strong>Ollama Cloud es gratis:</strong> La capa gratuita de Ollama te da crédito inicial sin necesidad de tarjeta. Con <code>minimax/m2.5</code> vas a tener respuestas rápidas y de calidad sin ocupar tu GPU ni consumir recursos locales.
 </div>
 
 <hr>
 
 <h2>¿Problemas?</h2>
-<p>Si OpenCode no encuentra Ollama, verificá que Ollama esté corriendo:</p>
-<pre>ollama list
-<span class="comment"># Si no aparece tu modelo, descargalo con ollama pull &lt;modelo&gt;</span></pre>
-<p>Si el modelo responde pero lento, probá con un modelo más chico (<code>qwen2.5-coder:1.5b</code> o <code>llama3.2:3b</code>).</p>
+<p>Si la API key no funciona, verificá que la hayas copiado bien desde <a href="https://ollama.com" target="_blank" rel="noopener">ollama.com</a> y que tu cuenta tenga crédito disponible en la capa gratuita.</p>
+<p>Si querés usar otro modelo, revisá los disponibles en la documentación de Ollama Cloud y cambialo en la config.</p>
 <p>Para más ayuda: <a href="https://github.com/kodingvibes/gamejam-2026" target="_blank" rel="noopener">abrí un issue en el repo</a>.</p>
 
 </div>

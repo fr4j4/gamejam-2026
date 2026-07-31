@@ -18,7 +18,7 @@ Te dan el juego de otro participante. Le agregas cosas, le arreglas bugs, lo hac
 
 ## 📋 Reglas (léelas, son pocas)
 
-1. **Ten una cuenta en kodingvibes.com** — si no tienes, no puedes participar
+1. **Ten una cuenta en late.kodingvibes.com** — si no tienes, no puedes participar
 2. **Trabaja solo dentro de tu carpeta** — creas una carpeta que se llama `participantes/tu-nombre/` y todo lo que hagas va ahí adentro. No toques nada fuera de esa carpeta
 3. **No muevas ni cambies archivos de otros** — nada de README, .gitignore, ni archivos que no sean tuyos
 4. **Para entregar tu juego, haces un Pull Request (PR)** — no te asustes, más abajo te explico cómo

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenCode + Ollama — GameJam IA 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent: #d8ff3e;
+    --accent-glow: rgba(216,255,62,0.25);
+    --accent-haze: rgba(216,255,62,0.08);
+    --bg: #0e0d0b;
+    --surface: #161512;
+    --border: #2b2823;
+    --text: #d9d3c6;
+    --text-dim: #8f897c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15.5px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 18px 60px;
+  }
+  h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(16px, 4vw, 24px);
+    line-height: 1.4;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-bottom: 32px;
+  }
+  h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    margin: 36px 0 12px;
+    letter-spacing: 0.5px;
+  }
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f4f1e8;
+    margin: 24px 0 8px;
+  }
+  p { margin-bottom: 14px; color: var(--text); }
+  a { color: var(--accent); font-weight: 500; }
+  a:hover { text-decoration: none; }
+  code, pre {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    background: #0a0908;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  code { padding: 2px 6px; color: var(--accent); }
+  pre {
+    padding: 16px;
+    overflow-x: auto;
+    line-height: 1.5;
+    color: #b8b1a4;
+    margin: 12px 0 18px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  pre .comment { color: #6b7280; font-style: italic; }
+  pre .keyword { color: #f472b6; }
+  pre .string { color: var(--accent); }
+  pre .func { color: #60a5fa; }
+  .step {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 20px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+  }
+  .step-num {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .step-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f4f1e8;
+    margin-bottom: 8px;
+  }
+  .back-link {
+    display: inline-block;
+    margin-bottom: 24px;
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .back-link:hover { color: var(--accent); }
+  hr { border: none; border-top: 2px solid var(--border); margin: 32px 0; }
+  .tip {
+    border-left: 3px solid var(--accent);
+    background: rgba(216,255,62,0.04);
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+  .tip strong { color: var(--accent); }
+  @media (max-width: 600px) {
+    .container { padding: 24px 14px 40px; }
+    pre { font-size: 12px; padding: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<a href="/gamejam-2026/" class="back-link">← Volver al GameJam</a>
+
+<h1>OpenCode + Ollama</h1>
+<p class="subtitle">Usa tu agente local con OpenCode para programar tu juego sin depender de APIs externas.</p>
+
+<div class="step">
+  <div class="step-num">PASO 1</div>
+  <div class="step-title">Instalar Ollama</div>
+  <p>Descarga e instala <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> para tu sistema operativo.</p>
+  <p>Luego descarga un modelo. Para programar juegos en JavaScript/Phaser, recomendamos:</p>
+  <pre>ollama pull qwen2.5-coder:7b
+<span class="comment"># o si tienes buena GPU:</span>
+ollama pull qwen2.5-coder:14b</pre>
+  <p>Otros modelos que funcionan bien: <code>codestral:latest</code>, <code>deepseek-coder:6.7b</code>, <code>llama3.1:8b</code>.</p>
+</div>
+
+<div class="step">
+  <div class="step-num">PASO 2</div>
+  <div class="step-title">Instalar OpenCode</div>
+  <p><a href="https://opencode.kodingvibes.com" target="_blank" rel="noopener">OpenCode</a> es un asistente de código que se conecta a Ollama (u otros proveedores).</p>
+  <pre><span class="comment"># Con npm / npx:</span>
+npx opencode@latest
+
+<span class="comment"># O instalación global:</span>
+npm install -g opencode
+opencode</pre>
+</div>
+
+<div class="step">
+  <div class="step-num">PASO 3</div>
+  <div class="step-title">Configurar OpenCode para usar Ollama</div>
+  <p>Crea o edita el archivo de configuración de OpenCode (normalmente <code>~/.config/opencode/config.json</code> o <code>opencode.json</code> en tu proyecto):</p>
+  <pre>{
+  "provider": "ollama",
+  "ollama": {
+    "model": "qwen2.5-coder:7b",
+    "baseUrl": "http://localhost:11434"
+  },
+  "systemPrompt": "Eres un desarrollador experto en Phaser 4 y JavaScript. Escribe código limpio, modular y funcional. Responde en español."
+}</pre>
+  <p>Si quieres usar un modelo diferente, cambia el nombre del modelo en <code>ollama.model</code>.</p>
+</div>
+
+<div class="step">
+  <div class="step-num">PASO 4</div>
+  <div class="step-title">¡A programar!</div>
+  <p>Dentro de la carpeta de tu juego, ejecuta OpenCode y empieza a pedirle cosas:</p>
+  <pre>cd participantes/tu-nombre/
+opencode</pre>
+  <p>Ejemplos de prompts para tu juego:</p>
+  <pre>"Crea un juego de plataformas con Phaser 4 donde el personaje salte entre plataformas y recolecte monedas."
+"Agrega un sistema de puntuación que se muestre en pantalla."
+"Haz que el fondo tenga un efecto parallax con 3 capas."
+"Agrega un enemigo que patrulle horizontalmente."</pre>
+</div>
+
+<hr>
+
+<h2>Tips para mejores resultados</h2>
+
+<div class="tip">
+  <strong>Contexto es clave:</strong> Al empezar una sesión, pídele a OpenCode que lea los archivos existentes de tu juego antes de pedir cambios. Así entiende lo que ya tienes.
+</div>
+
+<div class="tip">
+  <strong>Sé específico:</strong> En vez de "haz un juego", probá con "Crea un juego con Phaser 4 donde el jugador controle una nave que esquiva asteroides. La nave se mueve con las flechas y dispara con espacio."
+</div>
+
+<div class="tip">
+  <strong>Iterá:</strong> No esperes que el juego salga perfecto de una. Pedí features de a uno, probá, y después pedí mejoras.
+</div>
+
+<div class="tip">
+  <strong>Modelos locales vs APIs:</strong> Los modelos locales (7B-14B) son más lentos pero gratuitos y funcionan offline. Si tenés acceso a APIs como Claude o GPT-4, los resultados serán mejores — pero para un juego de gamejam un modelo local de 7B alcanza bien.
+</div>
+
+<hr>
+
+<h2>¿Problemas?</h2>
+<p>Si OpenCode no encuentra Ollama, verificá que Ollama esté corriendo:</p>
+<pre>ollama list
+<span class="comment"># Si no aparece tu modelo, descargalo con ollama pull &lt;modelo&gt;</span></pre>
+<p>Si el modelo responde pero lento, probá con un modelo más chico (<code>qwen2.5-coder:1.5b</code> o <code>llama3.2:3b</code>).</p>
+<p>Para más ayuda: <a href="https://github.com/kodingvibes/gamejam-2026" target="_blank" rel="noopener">abrí un issue en el repo</a>.</p>
+
+</div>
+</body>
+</html>

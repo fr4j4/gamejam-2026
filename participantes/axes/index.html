@@ -3,17 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Axes · GameJam 2026</title>
-    <style>
-      html, body { margin: 0; min-height: 100%; background: #090b14; color: #f4f1e8; }
-      body { display: grid; place-items: center; font: 16px system-ui, sans-serif; }
-      #game { width: min(96vw, 960px); height: min(86vh, 640px); }
-      canvas { border: 2px solid #4f46e5; border-radius: 8px; box-shadow: 0 0 40px #312e8155; }
-    </style>
+    <title>Timbiriche</title>
+    <link rel="stylesheet" href="./css/styles.css" />
   </head>
   <body>
-    <main id="game" aria-label="Juego Phaser 4 de axes"></main>
+    <main id="game" aria-label="Timbiriche">
+      <p class="loading">Cargando Timbiriche…</p>
+    </main>
+
+    <!-- Phaser 4.2.1: versión estable disponible desde CDN. -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.js"></script>
-    <script src="./game.js"></script>
+    <script src="./js/utils/Constants.js"></script>
+    <script src="./js/utils/GameLogic.js"></script>
+    <script src="./js/utils/AudioManager.js"></script>
+    <script src="./js/objects/Dot.js"></script>
+    <script src="./js/objects/Line.js"></script>
+    <script src="./js/objects/Box.js"></script>
+    <script src="./js/ui/HUD.js"></script>
+    <script src="./js/ui/GameOverPanel.js"></script>
+    <script src="./js/objects/Board.js"></script>
+    <script src="./js/scenes/BootScene.js"></script>
+    <script src="./js/scenes/MenuScene.js"></script>
+    <script src="./js/scenes/GameScene.js"></script>
+    <script src="./js/main.js"></script>
   </body>
 </html>

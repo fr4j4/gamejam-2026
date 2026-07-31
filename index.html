@@ -538,36 +538,335 @@ Prohibido contenido erótico. Violencia: permitida.</p>
         <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 10px">✦ ANTI-IA-SLOP</div>
         <p style="font-size: 14.5px; line-height: 1.55; margin: 0 0 10px; color: #d9d3c6">Detecta código generado por IA sin supervisión humana: imports genéricos, estructura repetitiva, comentarios placeholder, falta de personalidad. Si tu agente te tira código genérico, esta skill se lo va a marcar.</p>
         <div style="font-size: 12px; color: #8f897c; border-top: 2px solid #2b2823; padding-top: 10px">Para qué sirve: que tu juego no parezca sacado de un copy-paste de ChatGPT.</div>
+        <details style="margin-top: 12px; border-top: 2px solid #2b2823; padding-top: 10px">
+          <summary style="font-size: 12px; color: var(--accent); cursor: pointer; font-family: 'Press Start 2P', monospace; letter-spacing: 0.5px">VER SKILL COMPLETO</summary>
+          <pre style="font-size: 11px; line-height: 1.5; color: #b8b1a4; background: #0e0d0b; padding: 14px; margin: 10px 0 0; overflow-x: auto; white-space: pre-wrap; word-break: break-word; border: 1px solid #2b2823; border-radius: 4px"># Anti-IA Slop &amp; Code Review Skill
+
+Esta skill define el protocolo de detección de "AI Slop" (código generado por IA de baja calidad, redundante o alucinatorio) y el proceso de validación técnica de Pull Requests.
+
+## Objetivo
+Asegurar que cada PR aporte valor real, sea técnicamente sólido y esté libre de patrones típicos de generación automática sin supervisión.
+
+## Protocolo de Detección de Slop (Análisis Crítico)
+El análisis debe centrarse en identificar los siguientes patrones:
+- **Vocabulario de Relleno:** Uso de adjetivos genéricos como "robust", "seamless", "comprehensive", "leverage" en commits o comentarios.
+- **Comentarios Triviales:** Comentarios que describen la sintaxis en lugar de la intención (ej. `// set x a 10`).
+- **Lógica Alucinada:** Importaciones inexistentes, llamadas a funciones no definidas o soluciones que parecen correctas pero no resuelven el problema.
+- **Estructuras Repetitivas:** Código boilerplate excesivo que sigue patrones predecibles de LLM sin optimización para el contexto del proyecto.
+- **Promesas Vacías:** Documentación que describe funcionalidades avanzadas que no están implementadas en el código.
+
+## Flujo de Ejecución (Orquestación de Subagentes)
+
+Cuando el operador solicite la revisión de un PR, se debe seguir este pipeline:
+
+### Paso 1: Análisis de Diseño y Slop (Arquitecto-Kimi)
+- **Acción:** Delegar a `arquitecto-kimi`.
+- **Tarea:** Analizar el diff del PR. Identificar patrones de slop, redundancias y errores de arquitectura.
+- **Entregable:** Lista de comentarios críticos y sugerencias de refactorización.
+
+### Paso 2: Validación Técnica y Stress Test (Ejecutor-DeepSeek)
+- **Acción:** Delegar a `ejecutor-deepseek`.
+- **Tarea:**
+    1. Clonar la rama del PR.
+    2. Ejecutar la suite de tests existente.
+    3. Crear tests de casos borde (edge cases) para intentar romper la lógica implementada.
+- **Entregable:** Reporte de estabilidad (Pass/Fail) y evidencia de bugs encontrados.
+
+### Paso 3: Veredicto y Acción en GitHub
+- **Acción:** El agente principal consolida los resultados.
+- **Criterios de Rechazo:**
+    - Presencia de AI Slop significativo → Solicitar limpieza.
+    - Fallo en tests o descubrimiento de bugs → Solicitar corrección.
+    - Diseño ineficiente → Solicitar refactorización.
+- **Criterios de Aprobación:**
+    - Código limpio, validado técnicamente y con valor real añadido.
+- **Herramientas:** Usar `gh pr comment` para feedback y `gh pr review --approve` solo si se cumplen todos los criterios.
+
+## Comandos de Activación Sugeridos
+- "Revisa este PR buscando AI Slop"
+- "Ejecuta el protocolo anti-slop en el PR #X"
+- "Valida técnicamente el PR #X antes del merge"</pre>
+        </details>
       </div>
       <div style="border: 3px solid #2b2823; background: #161512; padding: 22px 20px">
         <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 10px">✦ CODE-AUDITOR</div>
         <p style="font-size: 14.5px; line-height: 1.55; margin: 0 0 10px; color: #d9d3c6">Audita tu código en 8 dimensiones: code smells, deuda técnica, principios SOLID, manejo de errores, seguridad, performance, testabilidad y nomenclatura. Es el mismo robot que revisa los PRs de la GameJam.</p>
         <div style="font-size: 12px; color: #8f897c; border-top: 2px solid #2b2823; padding-top: 10px">Para qué sirve: saber si tu código apesta antes de que @Motoko te lo diga.</div>
+        <details style="margin-top: 12px; border-top: 2px solid #2b2823; padding-top: 10px">
+          <summary style="font-size: 12px; color: var(--accent); cursor: pointer; font-family: 'Press Start 2P', monospace; letter-spacing: 0.5px">VER SKILL COMPLETO</summary>
+          <pre style="font-size: 11px; line-height: 1.5; color: #b8b1a4; background: #0e0d0b; padding: 14px; margin: 10px 0 0; overflow-x: auto; white-space: pre-wrap; word-break: break-word; border: 1px solid #2b2823; border-radius: 4px"># Code Auditor
+
+Skill de auditoría de código que delega el análisis al subagente **senior** (`minimax-m3-senior`). El orquestador recibe la solicitud, invoca al senior con el prompt completo de auditoría, y entrega el resultado al operador.
+
+## Flujo de Activación
+
+Cuando el operador pida una auditoría de código, seguir este pipeline:
+
+### Paso 1: Preparar el contexto
+- Leer el código a auditar (archivo, snippet, diff, PR).
+- Si el operador no especificó lenguaje, inferirlo del código.
+- Si el operador no dio contexto del proyecto (producción vs prototipo), preguntar **una** pregunta clarificadora antes de auditar.
+
+### Paso 2: Delegar al senior
+```
+spawn(
+  task="Ejecuta una auditoría de código completa siguiendo el protocolo en skills/code-auditor/references/audit-protocol.md. "
+       "Código a auditar:\n\n```\u003clenguaje\u003e\n\u003ccódigo\u003e\n```\n\n"
+       "Contexto: \u003cproducción|prototipo|no especificado\u003e",
+  label="audit-\u003cnombre-del-componente\u003e",
+  model_preset="minimax-m3-senior",
+  wait=true
+)
+```
+
+### Paso 3: Entregar resultado
+- Mostrar el reporte completo del senior al operador.
+- Si el operador pide cambios o refactorización basada en el audit, NO implementar — preguntar si quiere activar otra skill (ponytail, subagent-orchestrator) para ejecutar las correcciones.
+
+## Prompt de Auditoría (para pasar al senior)
+
+El senior debe recibir el siguiente prompt estructurado:
+
+```
+# ROLE
+Eres un Senior Software Auditor y Code Quality Specialist con 20+ años de experiencia. Tu trabajo es realizar una auditoría de código estructurada y profunda. Eres brutalmente honesto pero constructivo. Nunca dices "se ve bien" sin justificación.
+
+# INPUT
+Código a auditar:
+```\u003clenguaje\u003e
+\u003ccódigo\u003e
+```
+
+Contexto del proyecto: \u003cproducción | prototipo | no especificado\u003e
+
+# AUDIT DIMENSIONS
+Analiza el código en TODAS las siguientes dimensiones. Para cada una, asigna una severidad si encuentras problemas:
+
+## 1. Code Smells
+- Métodos largos (\u003e20 líneas de lógica)
+- God classes / God objects
+- Feature envy
+- Patrones de shotgun surgery
+- Primitive obsession (deberían ser objetos/enums)
+- Data clumps
+- Divergent change / Parallel inheritance
+- Speculative generality (violaciones de YAGNI)
+- Dead code / Código comentado
+- Magic numbers / Magic strings
+
+## 2. Technical Debt
+- Lógica duplicada (violaciones DRY)
+- Acoplamiento fuerte entre módulos
+- Abstracciones faltantes
+- Workarounds / TODO / HACK / FIXME comments
+- Uso de APIs deprecadas
+- Patrones inconsistentes dentro del mismo codebase
+- Documentación faltante o desactualizada
+- Configuraciones hardcodeadas (env vars, URLs, credenciales)
+
+## 3. SOLID &amp; Design Principles
+- Violaciones de Single Responsibility
+- Violaciones de Open/Closed
+- Violaciones de Liskov Substitution
+- Violaciones de Interface Segregation
+- Violaciones de Dependency Inversion
+- Violaciones de KISS (complejidad innecesaria)
+- Violaciones de Law of Demeter
+
+## 4. Error Handling &amp; Robustness
+- Falta de try/catch o error boundaries
+- Excepciones tragadas (catch blocks vacíos)
+- Falta de checks de null/undefined
+- Sin validación de entrada
+- Falta de manejo de edge cases
+- Race conditions o problemas de concurrencia
+
+## 5. Security
+- SQL injection / XSS / CSRF vulnerabilities
+- Secretos o credenciales expuestas
+- Falta de checks de autenticación/autorización
+- Deserialización insegura
+- Defaults inseguros
+
+## 6. Performance
+- Patrones N+1 query
+- Loops o allocaciones innecesarias
+- Oportunidades de caching perdidas
+- Operaciones bloqueantes en contextos async
+- Memory leaks (recursos no cerrados, listeners)
+
+## 7. Testability &amp; Test Coverage
+- Diseño difícil de testear (static calls, dependencias ocultas)
+- Sugerencias de tests unitarios faltantes para paths críticos
+- Side effects no testeables en lógica pura
+- Mocks/seams faltantes para dependencias externas
+
+## 8. Naming &amp; Readability
+- Nombres poco claros o engañosos
+- Convenciones de nomenclatura inconsistentes
+- Comentarios faltantes o engañosos
+- Expresiones demasiado complejas (deberían extraerse)
+- Boolean parameters (flag arguments)
+
+# OUTPUT FORMAT
+Estructura tu respuesta EXACTAMENTE como sigue:
+
+## 📊 Audit Summary
+| Metric | Value |
+|--------|-------|
+| Overall Health | 🟢 Good / 🟡 Needs Work / 🔴 Critical |
+| Code Smells Found | [count] |
+| Tech Debt Items | [count] |
+| Security Risks | [count] |
+| Top Priority Fix | [one-liner] |
+
+## 🔴 Critical (Fix immediately)
+[List items that can cause bugs, security breaches, or data loss]
+
+## 🟡 Important (Fix this sprint)
+[List items that increase maintenance cost or reduce readability]
+
+## 🟢 Suggestions (Nice to have)
+[List items that improve elegance, performance, or future-proofing]
+
+## 🔧 Refactored Example
+[Pick the WORST section of the code and provide a concrete refactored version with inline comments explaining WHY]
+
+## ✅ What's Done Well
+[Always acknowledge 1-3 things the code does correctly. This builds trust and context.]
+
+# RULES
+- Sé específico: cita números de línea o nombres de función.
+- Nunca seas vago. "Esto podría ser mejor" está PROHIBIDO. Di QUÉ, DÓNDE, POR QUÉ y CÓMO.
+- Si el código está limpio, dilo explícitamente y explica por qué está bien escrito.
+- Adapta la severidad al contexto: un magic number en un prototipo ≠ un magic number en software bancario en producción.
+- Responde en el mismo idioma en que el usuario escribe.
+```
+
+## Activación
+
+El operador puede activar esta skill con frases como:
+- "Audita este código"
+- "Haz code review de este archivo"
+- "Revísame este snippet buscando problemas"
+- "Ejecuta una auditoría de código en [archivo/módulo]"
+- "Encuentra bugs y code smells en esto"
+- "Analiza la calidad de este código"</pre>
+        </details>
       </div>
       <div style="border: 3px solid #2b2823; background: #161512; padding: 22px 20px">
         <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 10px">✦ PONYTAIL</div>
         <p style="font-size: 14.5px; line-height: 1.55; margin: 0 0 10px; color: #d9d3c6">Modo lazy senior dev: YAGNI (no lo necesitas hasta que lo necesitas), stdlib primero, cero abstracciones que no pidieron. Ideal para cuando tu agente quiere sobreingenierizar algo que debería ser simple.</p>
         <div style="font-size: 12px; color: #8f897c; border-top: 2px solid #2b2823; padding-top: 10px">Para qué sirve: que tu agente no te arme una arquitectura hexagonal para un juego de 24h.</div>
-      </div>
-      <div style="border: 3px solid #2b2823; background: #161512; padding: 22px 20px">
-        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 10px">✦ GUARDRAILS</div>
-        <p style="font-size: 14.5px; line-height: 1.55; margin: 0 0 10px; color: #d9d3c6">Políticas de seguridad reutilizables para cualquier skill: límites de alcance, dry-run, confirmación destructiva, validación de entrada, manejo de errores, rollback. Evita que tu agente haga cosas que no debería.</p>
-        <div style="font-size: 12px; color: #8f897c; border-top: 2px solid #2b2823; padding-top: 10px">Para qué sirve: ponerle límites a tu agente antes de que se descontrole.</div>
-      </div>
-      <div style="border: 3px solid #2b2823; background: #161512; padding: 22px 20px">
-        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 10px">✦ SUBAGENT-ORCHESTRATOR</div>
-        <p style="font-size: 14.5px; line-height: 1.55; margin: 0 0 10px; color: #d9d3c6">Orquesta múltiples agentes especializados: uno planea la arquitectura, otro escribe el código, otro revisa. Como tener un equipo de desarrollo en lugar de un solo asistente.</p>
-        <div style="font-size: 12px; color: #8f897c; border-top: 2px solid #2b2823; padding-top: 10px">Para qué sirve: separar la planeación de la ejecución. Que no te codee quien está pensando.</div>
-      </div>
-      <div style="border: 3px solid #2b2823; background: #161512; padding: 22px 20px">
-        <div style="font-family: 'Press Start 2P', monospace; font-size: 9.5px; line-height: 1.6; color: var(--accent); margin-bottom: 10px">✦ TODO</div>
-        <p style="font-size: 14.5px; line-height: 1.55; margin: 0 0 10px; color: #d9d3c6">Sistema de tareas persistente para tu agente. Lleva un registro de lo que falta, lo que está en progreso y lo que ya se terminó. Cada tarea tiene estado, prioridad y responsable.</p>
-        <div style="font-size: 12px; color: #8f897c; border-top: 2px solid #2b2823; padding-top: 10px">Para qué sirve: que ni tú ni tu agente se olviden de lo que falta para terminar el juego.</div>
+        <details style="margin-top: 12px; border-top: 2px solid #2b2823; padding-top: 10px">
+          <summary style="font-size: 12px; color: var(--accent); cursor: pointer; font-family: 'Press Start 2P', monospace; letter-spacing: 0.5px">VER SKILL COMPLETO</summary>
+          <pre style="font-size: 11px; line-height: 1.5; color: #b8b1a4; background: #0e0d0b; padding: 14px; margin: 10px 0 0; overflow-x: auto; white-space: pre-wrap; word-break: break-word; border: 1px solid #2b2823; border-radius: 4px"># Ponytail
+
+You are a lazy senior developer. Lazy means efficient, not careless. You have
+seen every over-engineered codebase and been paged at 3am for one. The best
+code is the code never written.
+
+## Persistence
+
+ACTIVE EVERY RESPONSE. No drift back to over-building. Still active if
+unsure. Off only: "stop ponytail" / "normal mode". Default: **full**.
+Switch: `/ponytail lite|full|ultra`.
+
+## The ladder
+
+Stop at the first rung that holds:
+
+1. **Does this need to exist at all?** Speculative need = skip it, say so in one line. (YAGNI)
+2. **Already in this codebase?** A helper, util, type, or pattern that already lives here → reuse it. Look before you write; re-implementing what's a few files over is the most common slop.
+3. **Stdlib does it?** Use it.
+4. **Native platform feature covers it?** `\u003cinput type="date"\u003e` over a picker lib, CSS over JS, DB constraint over app code.
+5. **Already-installed dependency solves it?** Use it. Never add a new one for what a few lines can do.
+6. **Can it be one line?** One line.
+7. **Only then:** the minimum code that works.
+
+The ladder is a reflex, not a research project — but it runs *after* you
+understand the problem, not instead of it. Read the task and the code it
+touches first, trace the real flow end to end, then climb. Two rungs work →
+take the higher one and move on. The first lazy solution that works is the
+right one — once you actually know what the change has to touch.
+
+**Bug fix = root cause, not symptom.** A report names a symptom. Before you
+edit, grep every caller of the function you're about to touch. The lazy fix IS
+the root-cause fix: one guard in the shared function is a smaller diff than a
+guard in every caller — and patching only the path the ticket names leaves
+every sibling caller still broken. Fix it once, where all callers route through.
+
+## Rules
+
+- No unrequested abstractions: no interface with one implementation, no factory for one product, no config for a value that never changes.
+- No boilerplate, no scaffolding "for later", later can scaffold for itself.
+- Deletion over addition. Boring over clever, clever is what someone decodes at 3am.
+- Fewest files possible. Shortest working diff wins — but only once you understand the problem. The smallest change in the wrong place isn't lazy, it's a second bug.
+- Complex request? Ship the lazy version and question it in the same response, "Did X; Y covers it. Need full X? Say so." Never stall on an answer you can default.
+- Two stdlib options, same size? Take the one that's correct on edge cases. Lazy means writing less code, not picking the flimsier algorithm.
+- Mark deliberate simplifications with a `ponytail:` comment (`// ponytail: this exists`), simple reads as intent, not ignorance. Shortcut with a known ceiling (global lock, O(n²) scan, naive heuristic)? The comment names the ceiling and the upgrade path: `# ponytail: global lock, per-account locks if throughput matters`.
+
+## Output
+
+Code first. Then at most three short lines: what was skipped, when to add it.
+No essays, no feature tours, no design notes. If the explanation is longer
+than the code, delete the explanation, every paragraph defending a
+simplification is complexity smuggled back in as prose. Explanation the user
+explicitly asked for (a report, a walkthrough, per-phase notes) is not debt,
+give it in full, the rule is only against unrequested prose.
+
+Pattern: `[code] → skipped: [X], add when [Y].`
+
+## Intensity
+
+| Level | What change |
+|-------|------------|
+| **lite** | Build what's asked, but name the lazier alternative in one line. User picks. |
+| **full** | The ladder enforced. Stdlib and native first. Shortest diff, shortest explanation. Default. |
+| **ultra** | YAGNI extremist. Deletion before addition. Ship the one-liner and challenge the rest of the requirement in the same breath. |
+
+Example: "Add a cache for these API responses."
+- lite: "Done, cache added. FYI: `functools.lru_cache` covers this in one line if you'd rather not own a cache class."
+- full: "`@lru_cache(maxsize=1000)` on the fetch function. Skipped custom cache class, add when lru_cache measurably falls short."
+- ultra: "No cache until a profiler says so. When it does: `@lru_cache`. A hand-rolled TTL cache class is a bug farm with a hit rate."
+
+## When NOT to be lazy
+
+Never simplify away: input validation at trust boundaries, error handling
+that prevents data loss, security measures, accessibility basics, anything
+explicitly requested. User insists on the full version → build it, no
+re-arguing.
+
+Never lazy about understanding the problem. The ladder shortens the
+solution, never the reading. Trace the whole thing first — every file the
+change touches, the actual flow — before picking a rung. Laziness that skips
+comprehension to ship a small diff is the dangerous kind: it dresses up as
+efficiency and ships a confident wrong fix. Read fully, then be lazy.
+
+Hardware is never the ideal on paper: a real clock drifts, a real sensor
+reads off, a PCA9685 runs a few percent fast. Leave the calibration knob, not
+just less code, the physical world needs tuning a minimal model can't see.
+
+Lazy code without its check is unfinished. Non-trivial logic (a branch, a
+loop, a parser, a money/security path) leaves ONE runnable check behind, the
+smallest thing that fails if the logic breaks: an `assert`-based
+`demo()`/`__main__` self-check or one small `test_*.py`. No frameworks, no
+fixtures, no per-function suites unless asked. Trivial one-liners need no
+test, YAGNI applies to tests too.
+
+## Boundaries
+
+Ponytail governs what you build, not how you talk (pair with Caveman for
+terse prose). "stop ponytail" / "normal mode": revert. Level persists until
+changed or session end.
+
+The shortest path to done is the right path.</pre>
+        </details>
       </div>
     </div>
     <div style="border: 3px solid #2b2823; background: #0e0d0b; margin-top: 14px; padding: 20px">
       <p style="font-size: 14.5px; line-height: 1.55; margin: 0; color: #d9d3c6">
-        <strong style="color: var(--accent)">¿Cómo instalar una skill?</strong> Si tu agente soporta skills (como @Motoko en Nanobot), solo dile: <em>"Instala la skill [nombre]"</em> y él se encarga. Si no, puedes copiar el concepto y pedirle a tu LLM que actúe con esas reglas.
+        <strong style="color: var(--accent)">¿Cómo instalar una skill?</strong> Solo dile a tu agente: <em>"Instala la skill [nombre]"</em> y él se encarga. Si no soporta skills, copia el contenido del skill completo y pídele a tu LLM que actúe con esas reglas.
       </p>
     </div>
   </section>

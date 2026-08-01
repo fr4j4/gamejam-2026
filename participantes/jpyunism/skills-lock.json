@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "loop-architect": {
+      "source": "fabricioctelles/skills",
+      "sourceType": "github",
+      "skillPath": "skills/loop-architect/SKILL.md",
+      "computedHash": "1cc4dc5c1b4288221f0f46627c5b721acc66c59995a1f2c74728ce67cd5621d7"
+    },
+    "okf-open-knowledge-format": {
+      "source": "fabricioctelles/skills",
+      "sourceType": "github",
+      "skillPath": "skills/okf-open-knowledge-format/SKILL.md",
+      "computedHash": "c1bef46f79261cf136953f1eee5cade526a0e026b7a498beaf0f282a085276e9"
+    },
+    "phaser": {
+      "source": "opusgamelabs/game-creator",
+      "sourceType": "github",
+      "skillPath": "skills/phaser/SKILL.md",
+      "computedHash": "2e8bd40c41fc4b367678e86f02b0eb4ba7aaa1770ad42cfe30b7ce74c4913364"
+    },
+    "phaser-best-practices": {
+      "source": "onmax/nuxt-skills",
+      "sourceType": "github",
+      "skillPath": "skills/phaser-best-practices/SKILL.md",
+      "computedHash": "a539e2e870871576e32d4c85f3b09823615ea158e4ae65d28494f34eeac79de8"
+    }
+  }
+}

@@ -1,0 +1,76 @@
+schema: spec-driven
+
+context: |
+  GameJam 2026 multi-tenant repo: each participant builds a game under
+  `participantes/<username>/`. Examples in `participantes/ejemplos/` show the
+  recommended Phaser 3 + TypeScript + React (TSX) pattern via a `GameMeta`
+  registry (`PhaserGameFactory = (parent: HTMLElement) => Phaser.Game`).
+  Repo-level stack is a static HTML landing page (`index.html`,
+  `opencode.html`, `og-image.html`) plus the `participantes/` subtree.
+  Top-level has no package.json, no tsconfig, no CI, no test runner —
+  tooling lives inside each participant folder.
+
+rules:
+  proposal:
+    - "Hard constraint: every change MUST stay inside `participantes/jpyunism/` (jpyunism is a GameJam participant, not a repo maintainer)."
+    - "Reuse the `participantes/ejemplos/` registry pattern unless the participant intentionally picks a different stack (HTML/CSS/JS, Python, COBOL, etc.)."
+    - "Include rollback plan when adding files that other contributors may import."
+  specs:
+    - "Use Given/When/Then for scenarios."
+    - "Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)."
+    - "Specs describe the jpyunism game only, not the repo landing page."
+  design:
+    - "Include sequence diagrams for game-loop and input flows."
+    - "Document architecture decisions with rationale (Phaser scene, ECS, FSM, etc.)."
+  tasks:
+    - "Group by phase (setup -> core loop -> polish), use hierarchical numbering."
+    - "Keep tasks completable in one ~1h session for the 48h jam window."
+  apply:
+    guidelines:
+      - "Follow the `participantes/ejemplos/` convention when using Phaser + TS."
+      - "Add a README.md inside `participantes/jpyunism/` explaining how to run the game (required for @Motoko PR review)."
+    tdd: false
+    test_command: ""
+    build_command: ""
+  verify:
+    test_command: ""
+    build_command: ""
+    coverage_threshold: 0
+    manual_checks:
+      - "The game can be opened/run by another participant with only the folder."
+      - "No file was added or modified outside `participantes/jpyunism/`."
+      - "If npm is used, node_modules/ is NOT committed (.gitignore covers it)."
+  archive:
+    - "Warn before merging destructive deltas."
+    - "Never propose archiving until jpyunism's PR is merged upstream."
+
+testing:
+  strict_tdd: false
+  reason: "No test runner detected at repo level. Repo policy is 'must run, must be self-contained per participant folder', not 'must have automated tests'. Participants MAY add their own test runner inside `participantes/<name>/`, but repo-level TDD is not enforced."
+  test_runner:
+    command: ""
+    framework: ""
+  layers:
+    unit:
+      available: false
+      tool: ""
+    integration:
+      available: false
+      tool: ""
+    e2e:
+      available: false
+      tool: ""
+  coverage:
+    available: false
+    command: ""
+  quality:
+    linter:
+      available: false
+      command: ""
+    type_checker:
+      available: false
+      command: ""
+    formatter:
+      available: false
+      command: ""
+  detected_on: "2026-08-01"

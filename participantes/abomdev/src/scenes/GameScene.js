@@ -10,6 +10,11 @@ const HIT_INVULN_MS = 500;
 const SPAWN_DELAY_MIN = 300;
 const DIFFICULTY_RAMP_MS = 12000;
 
+const ENEMY_TYPES = {
+  normal: { texture: 'enemy', color: 0xff5566, baseHp: 20, hpPerMin: 10, baseSpeed: 80, speedPerMin: 8, damage: 10 },
+  fast: { texture: 'enemyFast', color: 0xffaa33, baseHp: 8, hpPerMin: 4, baseSpeed: 160, speedPerMin: 12, damage: 6 },
+};
+
 const UPGRADE_POOL = [
   { key: 'damage', label: '+5 Daño', apply: (s) => { s.damage += 5; } },
   { key: 'fireRate', label: '+15% Cadencia de ataque', apply: (s) => { s.fireRate = Math.round(s.fireRate * 0.85); } },
@@ -73,6 +78,15 @@ export default class GameScene extends Phaser.Scene {
     this.attackTimer.paused = true;
     this.difficultyTimer.paused = true;
 
+    this.deathEmitter = this.add.particles(0, 0, 'spark', {
+      speed: { min: 80, max: 220 },
+      lifespan: 350,
+      scale: { start: 1.4, end: 0 },
+      quantity: 0,
+      emitting: false,
+    });
+    this.deathEmitter.setDepth(20);
+
     this.buildLevelUpUI();
     this.buildHud();
     this.buildStartScreen();
@@ -105,6 +119,18 @@ export default class GameScene extends Phaser.Scene {
     xp.fillCircle(6, 6, 6);
     xp.generateTexture('xp', 12, 12);
     xp.destroy();
+
+    const enemyFast = this.add.graphics();
+    enemyFast.fillStyle(0xffaa33, 1);
+    enemyFast.fillTriangle(8, 0, 16, 16, 0, 16);
+    enemyFast.generateTexture('enemyFast', 16, 16);
+    enemyFast.destroy();
+
+    const spark = this.add.graphics();
+    spark.fillStyle(0xffffff, 1);
+    spark.fillCircle(3, 3, 3);
+    spark.generateTexture('spark', 6, 6);
+    spark.destroy();
   }
 
   buildStartScreen() {
@@ -210,10 +236,15 @@ export default class GameScene extends Phaser.Scene {
     const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * SPAWN_RADIUS, 20, WORLD_SIZE - 20);
 
     const minutes = this.elapsed / 60000;
-    const enemy = this.enemies.create(x, y, 'enemy');
-    enemy.setData('hp', Math.round(20 + minutes * 10));
-    enemy.setData('speed', Math.round(80 + minutes * 8));
-    enemy.setData('damage', 10);
+    const fastChance = Math.min(0.5, minutes * 0.15);
+    const typeKey = Math.random() < fastChance ? 'fast' : 'normal';
+    const type = ENEMY_TYPES[typeKey];
+
+    const enemy = this.enemies.create(x, y, type.texture);
+    enemy.setData('type', typeKey);
+    enemy.setData('hp', Math.round(type.baseHp + minutes * type.hpPerMin));
+    enemy.setData('speed', Math.round(type.baseSpeed + minutes * type.speedPerMin));
+    enemy.setData('damage', type.damage);
   }
 
   rampDifficulty() {
@@ -251,10 +282,15 @@ export default class GameScene extends Phaser.Scene {
 
     const hp = enemy.getData('hp') - damage;
     if (hp <= 0) {
+      const color = ENEMY_TYPES[enemy.getData('type')].color;
+      this.deathEmitter.setParticleTint(color);
+      this.deathEmitter.emitParticleAt(enemy.x, enemy.y, 10);
       this.spawnXpOrb(enemy.x, enemy.y);
       enemy.destroy();
     } else {
       enemy.setData('hp', hp);
+      enemy.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+      this.time.delayedCall(60, () => enemy.active && enemy.clearTint());
     }
   }
 
@@ -280,6 +316,10 @@ export default class GameScene extends Phaser.Scene {
     this.lastHitAt = now;
 
     this.stats.hp -= enemy.getData('damage');
+    this.cameras.main.shake(150, 0.008);
+    this.player.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+    this.time.delayedCall(80, () => this.player.active && this.player.clearTint());
+
     if (this.stats.hp <= 0) {
       this.stats.hp = 0;
       this.onGameOver();

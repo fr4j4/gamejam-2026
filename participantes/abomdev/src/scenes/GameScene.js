@@ -17,6 +17,10 @@ const ENEMY_KNOCKBACK_SPEED = 220;
 const ENEMY_KNOCKBACK_MS = 150;
 const PLAYER_KNOCKBACK_SPEED = 260;
 const PLAYER_KNOCKBACK_MS = 150;
+const PORTAL_SPAWN_RADIUS = 350;
+const PORTAL_TRIGGER_RADIUS = 40;
+const STAGE_BOSS_MULTIPLIER = 1.15;
+const STAGE_PORTAL_MULTIPLIER = 1.5;
 
 const ENEMY_TYPES = {
   normal: { texture: 'enemy', color: 0xff5566, baseHp: 20, hpPerMin: 10, baseSpeed: 80, speedPerMin: 8, damage: 10 },
@@ -86,6 +90,9 @@ export default class GameScene extends Phaser.Scene {
     this.isBossAlive = false;
     this.currentBoss = null;
     this.playerKnockbackUntil = 0;
+    this.stage = 1;
+    this.stageMultiplier = 1;
+    this.portal = null;
 
     this.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
 
@@ -190,6 +197,16 @@ export default class GameScene extends Phaser.Scene {
     orbit.fillCircle(6, 6, 6);
     orbit.generateTexture('orbit', 12, 12);
     orbit.destroy();
+
+    const portal = this.add.graphics();
+    portal.fillStyle(0x8855ff, 0.35);
+    portal.fillCircle(32, 32, 32);
+    portal.fillStyle(0xaa88ff, 0.7);
+    portal.fillCircle(32, 32, 20);
+    portal.fillStyle(0xffffff, 0.9);
+    portal.fillCircle(32, 32, 8);
+    portal.generateTexture('portal', 64, 64);
+    portal.destroy();
   }
 
   buildStartScreen() {
@@ -279,7 +296,7 @@ export default class GameScene extends Phaser.Scene {
 
     const xpRatio = Phaser.Math.Clamp(this.xp / this.xpToNext, 0, 1);
     this.xpBarFill.width = 198 * xpRatio;
-    this.levelText.setText(`Nivel ${this.level}`);
+    this.levelText.setText(`Nivel ${this.level}   Etapa ${this.stage}`);
 
     this.timerText.setText(this.formatTime(this.elapsed));
   }
@@ -341,6 +358,13 @@ export default class GameScene extends Phaser.Scene {
     this.updateWeapons(time);
     this.updateMinimap();
 
+    if (this.portal) {
+      const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.portal.x, this.portal.y);
+      if (d < PORTAL_TRIGGER_RADIUS) {
+        this.enterPortal();
+      }
+    }
+
     if (this.isBossAlive && this.currentBoss && this.currentBoss.active) {
       const ratio = Phaser.Math.Clamp(this.currentBoss.getData('hp') / this.currentBoss.getData('maxHp'), 0, 1);
       this.bossBarFill.width = this.bossBarMaxWidth * ratio;
@@ -397,9 +421,9 @@ export default class GameScene extends Phaser.Scene {
 
     const enemy = this.enemies.create(x, y, type.texture);
     enemy.setData('type', typeKey);
-    enemy.setData('hp', Math.round(type.baseHp + minutes * type.hpPerMin));
+    enemy.setData('hp', Math.round((type.baseHp + minutes * type.hpPerMin) * this.stageMultiplier));
     enemy.setData('speed', Math.round(type.baseSpeed + minutes * type.speedPerMin));
-    enemy.setData('damage', type.damage);
+    enemy.setData('damage', Math.round(type.damage * this.stageMultiplier));
   }
 
   warnBoss() {
@@ -430,7 +454,7 @@ export default class GameScene extends Phaser.Scene {
 
     const minutes = this.elapsed / 60000;
     const type = ENEMY_TYPES.boss;
-    const maxHp = Math.round(type.baseHp + minutes * type.hpPerMin);
+    const maxHp = Math.round((type.baseHp + minutes * type.hpPerMin) * this.stageMultiplier);
 
     const boss = this.enemies.create(x, y, type.texture);
     boss.setData('type', 'boss');
@@ -438,7 +462,7 @@ export default class GameScene extends Phaser.Scene {
     boss.setData('hp', maxHp);
     boss.setData('maxHp', maxHp);
     boss.setData('speed', Math.round(type.baseSpeed + minutes * type.speedPerMin));
-    boss.setData('damage', type.damage);
+    boss.setData('damage', Math.round(type.damage * this.stageMultiplier));
     boss.setDepth(11);
 
     this.isBossAlive = true;
@@ -496,14 +520,16 @@ export default class GameScene extends Phaser.Scene {
       this.deathEmitter.emitParticleAt(enemy.x, enemy.y, isBoss ? 30 : 10);
 
       if (isBoss) {
-        for (let i = 0; i < 5; i++) {
-          this.spawnXpOrb(enemy.x + Phaser.Math.Between(-20, 20), enemy.y + Phaser.Math.Between(-20, 20));
-        }
         this.isBossAlive = false;
         this.currentBoss = null;
         this.bossLabel.setVisible(false);
         this.bossBarBg.setVisible(false);
         this.bossBarFill.setVisible(false);
+
+        this.stageMultiplier *= STAGE_BOSS_MULTIPLIER;
+        this.spawnPortal();
+        this.level += 1;
+        this.startLevelUp();
       } else {
         this.spawnXpOrb(enemy.x, enemy.y);
       }
@@ -539,6 +565,37 @@ export default class GameScene extends Phaser.Scene {
 
   spawnXpOrb(x, y) {
     this.xpOrbs.create(x, y, 'xp');
+  }
+
+  spawnPortal() {
+    if (this.portal) this.portal.destroy();
+
+    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    const x = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * PORTAL_SPAWN_RADIUS, 20, WORLD_SIZE - 20);
+    const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * PORTAL_SPAWN_RADIUS, 20, WORLD_SIZE - 20);
+
+    this.portal = this.add.image(x, y, 'portal').setDepth(6);
+    this.tweens.add({ targets: this.portal, angle: 360, duration: 3000, repeat: -1 });
+  }
+
+  enterPortal() {
+    this.stage += 1;
+    this.stageMultiplier *= STAGE_PORTAL_MULTIPLIER;
+    this.portal.destroy();
+    this.portal = null;
+
+    const text = this.add.text(400, 300, `ETAPA ${this.stage}`, {
+      fontFamily: 'monospace', fontSize: '32px', color: '#aa88ff',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(250);
+
+    this.tweens.add({
+      targets: text,
+      alpha: 0,
+      y: 260,
+      duration: 1200,
+      delay: 400,
+      onComplete: () => text.destroy(),
+    });
   }
 
   onPlayerPickupXp(player, orb) {

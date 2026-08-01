@@ -31,6 +31,7 @@ La partida comienza en una pantalla breve de objetivo y controles; la física y 
 
 ## Zonas interactivas
 
+- **Raspadores voluntarios:** aparecen 300–500 px antes de varios pasos exigentes. El rodillo elevado se alcanza con pulso y torque; cada contacto sostenido puede arrancar varias piezas con una pausa controlada entre ellas. Cada pieza perdida también quita su valor y frena a Mr. Lastre. La calle inferior queda libre para ignorarlos y después hay un tramo sin chatarra para recuperar velocidad.
 - **Zona de obra (500–700 m):** una grúa sostiene una carga Matter real. El arco rojo anticipa su trayectoria; el golpe desestabiliza y cuesta terreno, pero no mata ni desprende piezas por regla especial.
 - **Superimán (antes de 800 m):** activa durante 6 segundos un radio de imantado de 120 px. La chatarra viaja hacia la parte más cercana del compuesto y solo entonces se incorpora.
 - **Campo electromagnético (800–950 m):** paneles de techo atraen hacia arriba. La fuerza escala con la raíz de la masa, así que un Mr. Lastre pesado se suspende menos.
@@ -62,3 +63,4 @@ Cada zona tiene señal de entrada, un tramo de desarrollo y una salida limpia. L
 - `?qa=construction` — posiciona jugador y cámara frente a la grúa.
 - `?qa=boost` — posiciona al jugador sobre el pickup para inspeccionar su aura y atracción.
 - `?qa=field` — posiciona al jugador dentro del campo electromagnético.
+- `?qa=scraper` — posiciona al jugador antes de un raspador, mostrando la ruta inferior opcional y el tramo de recuperación. Combinar con `&grow=7` permite probar una descarga múltiple.

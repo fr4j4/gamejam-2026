@@ -18,10 +18,13 @@ Mr. Lastre es un electroimán perdido que atraviesa una ciudad industrial para e
 4. Detectar un paso angosto.
 5. Raspar el lado sobrante contra piedra: perder masa y también tiempo.
 
+Antes de los pasos más difíciles aparecen **raspadores voluntarios**: un rodillo elevado al que se llega con pulso y torque. Permite corregir la forma con anticipación, sin convertir el mismo cuello de botella en la única herramienta de descarga. La ruta baja siempre queda abierta para quien prefiera conservar valor.
+
 ## Reglas que deben entenderse sin texto
 
 - **Blando se pega.** Más volumen implica más inercia y peor rodadura.
 - **Piedra arranca.** El contacto desprende la parte del lado golpeado.
+- **El raspador prepara.** Puede arrancar varias piezas durante un contacto sostenido, con pausa entre cortes; cada corte frena y elimina el valor de esa pieza.
 - **El borde izquierdo mata.** Ningún obstáculo produce muerte instantánea.
 - **A/D o ←/→ aplican torque.** Espacio produce un hop bajo que pierde altura con la masa.
 - **Toda la masa sigue imantada.** El núcleo y cualquier pieza ya adherida pueden capturar chatarra nueva.
@@ -29,6 +32,8 @@ Mr. Lastre es un electroimán perdido que atraviesa una ciudad industrial para e
 ## Riesgo, recompensa y entrega
 
 La chatarra no vale solamente por cantidad: forma y tamaño tienen un valor visible. Llegar cargado aumenta la puntuación, pero una forma grande y asimétrica pone en riesgo el tiempo y la supervivencia. Rasparse resuelve un problema físico a cambio de perder exactamente el valor de la pieza desprendida.
+
+Las estaciones están separadas del siguiente obstáculo por un tramo de recuperación sin chatarra. Así la decisión sucede antes de que la forma sea irreversible: descargar ofrece margen, pero consume puntuación y terreno contra la cámara.
 
 La pantalla final desglosa tiempo, bonus de tiempo, valor de chatarra entregada y total. El bonus vale 10 puntos por cada segundo restante hasta 180 segundos. Así, el jugador puede comprender el resultado y decidir en la siguiente partida si le conviene cargar más o llegar antes.
 

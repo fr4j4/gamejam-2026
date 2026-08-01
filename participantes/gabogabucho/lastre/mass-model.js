@@ -20,10 +20,14 @@
     return left ? -strength : strength;
   }
 
-  function choosePartToShed(parts, centerX, impactX) {
-    const candidates = parts.filter(part => !part.isCore && (impactX < centerX ? part.x < centerX : part.x >= centerX));
+  function choosePartToShed(parts, impactX, impactY) {
+    const candidates = parts.filter(part => !part.isCore);
     if (candidates.length === 0) return null;
-    candidates.sort((a, b) => Math.abs(b.x - centerX) - Math.abs(a.x - centerX));
+    candidates.sort((a, b) => {
+      const distanceA = Math.hypot(a.x - impactX, a.y - impactY);
+      const distanceB = Math.hypot(b.x - impactX, b.y - impactY);
+      return distanceA - distanceB;
+    });
     return candidates[0].id;
   }
 

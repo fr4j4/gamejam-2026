@@ -39,17 +39,27 @@ test('dos teclas producen torque opuesto y se cancelan juntas', () => {
   assert.equal(torqueForInput(true, true, 0.04), 0);
 });
 
-test('el raspado desprende la parte externa del lado golpeado', () => {
+test('el raspado desprende la pieza mas cercana al punto real de contacto', () => {
   const parts = [
-    { id: 'core', x: 100, isCore: true },
-    { id: 'leftNear', x: 85 },
-    { id: 'leftFar', x: 60 },
-    { id: 'right', x: 140 }
+    { id: 'core', x: 100, y: 100, isCore: true },
+    { id: 'top', x: 102, y: 60 },
+    { id: 'left', x: 60, y: 99 },
+    { id: 'bottom', x: 101, y: 142 }
   ];
 
-  assert.equal(choosePartToShed(parts, 100, 70), 'leftFar');
-  assert.equal(choosePartToShed(parts, 100, 150), 'right');
-  assert.equal(choosePartToShed([parts[0]], 100, 150), null);
+  assert.equal(choosePartToShed(parts, 100, 55), 'top');
+  assert.equal(choosePartToShed(parts, 55, 100), 'left');
+  assert.equal(choosePartToShed(parts, 100, 150), 'bottom');
+});
+
+test('el raspado nunca desprende el nucleo aunque sea lo mas cercano', () => {
+  const parts = [
+    { id: 'core', x: 100, y: 100, isCore: true },
+    { id: 'scrap', x: 140, y: 100 }
+  ];
+
+  assert.equal(choosePartToShed(parts, 100, 100), 'scrap');
+  assert.equal(choosePartToShed([parts[0]], 100, 100), null);
 });
 
 test('el pulso aumenta sublinealmente: más masa recibe menos aceleración', () => {

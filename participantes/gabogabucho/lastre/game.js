@@ -30,7 +30,8 @@ const COLORS = {
   steel: 0x87918f,
   rust: 0x8f4e32,
   danger: 0xff5263,
-  sign: 0xf1c75b
+  sign: 0xf1c75b,
+  scraper: 0xf29b38
 };
 
 class LastreScene extends Phaser.Scene {
@@ -46,12 +47,16 @@ class LastreScene extends Phaser.Scene {
     this.ignoreJumpUntilRelease = false;
     this.dead = false;
     this.shedCooldown = 0;
+    this.scraperCooldown = 0;
+    this.scrapeNoticeMs = 0;
+    this.scrapeLostValue = 0;
     this.jumpCooldown = 0;
     this.boostMs = 0;
     this.boostRadius = 120;
     this.collected = new Set();
     this.finished = false;
     this.trackLength = 14000;
+    this.scraperPositions = [4050, 6900, 8550, 10300, 12200];
 
     this.makeBackdrop();
     this.dangerLine = this.add.rectangle(20, this.H / 2, 4, this.H, COLORS.danger, 0.72)
@@ -61,6 +66,7 @@ class LastreScene extends Phaser.Scene {
     this.makeBlob();
     this.makeSoftMatter();
     this.makeStoneGates();
+    this.makeScrapers();
 
     this.keys = this.input.keyboard.addKeys({
       leftA: Phaser.Input.Keyboard.KeyCodes.A,
@@ -109,11 +115,13 @@ class LastreScene extends Phaser.Scene {
     }
     if (qs.has('shed')) {
       const side = qs.get('shed') === 'left' ? -1 : 1;
-      this.shedAt(this.blob.position.x + side * 100);
+      this.shedAt({ x: this.blob.position.x + side * 100, y: this.blob.position.y });
     }
     const qa = qs.get('qa');
     if (qa) {
-      const targets = { construction: [5650, 5400], boost: [7575, 7200], field: [8150, 7920] };
+      const targets = {
+        construction: [5650, 5400], boost: [7575, 7200], field: [8150, 7920], scraper: [3850, 3650]
+      };
       const target = targets[qa];
       if (target) {
         this.matter.body.setPosition(this.blob, { x: target[0], y: 330 });
@@ -379,6 +387,7 @@ class LastreScene extends Phaser.Scene {
     let id = 0;
     for (let x = 480; x < this.trackLength - 500; x += 145) {
       if (x % 870 < 120) continue;
+      if (this.scraperPositions.some(stationX => x >= stationX - 80 && x <= stationX + 350)) continue;
       const y = 352 - ((id * 29) % 48);
       const spec = scrapSpecForIndex(id);
       const body = this.createScrapBody(x, y, spec, true);
@@ -444,6 +453,53 @@ class LastreScene extends Phaser.Scene {
     });
   }
 
+  makeScrapers() {
+    this.scrapers = [];
+    this.scraperPositions.forEach((x, index) => {
+      const y = index % 2 === 0 ? 300 : 292;
+      const radius = 26;
+      const body = this.matter.bodies.circle(x, y, radius, {
+        isStatic: true, label: 'scraper', friction: 0.98, restitution: 0.08
+      });
+      body.plugin.isScraper = true;
+      this.matter.world.add(body);
+
+      const frame = this.add.graphics().setDepth(10);
+      frame.fillStyle(0x343b3d, 1);
+      frame.fillRect(x - 5, 212, 10, y - radius - 212);
+      frame.fillRect(x - 42, 208, 84, 9);
+      frame.lineStyle(3, COLORS.scraper, 0.9);
+      frame.lineBetween(x - 44, 219, x - 44, 345);
+      frame.lineBetween(x - 44, 345, x - 34, 335);
+
+      const view = this.add.graphics().setPosition(x, y).setDepth(12);
+      view.fillStyle(0x3e4849, 1);
+      view.fillCircle(0, 0, radius);
+      view.lineStyle(4, COLORS.scraper, 1);
+      view.strokeCircle(0, 0, radius - 2);
+      view.lineStyle(5, 0x1d2426, 1);
+      for (let spoke = 0; spoke < 8; spoke++) {
+        const angle = spoke * Math.PI / 4;
+        view.lineBetween(
+          Math.cos(angle) * 8, Math.sin(angle) * 8,
+          Math.cos(angle) * 20, Math.sin(angle) * 20
+        );
+      }
+      view.fillStyle(COLORS.scraper, 1);
+      view.fillCircle(0, 0, 7);
+
+      this.add.text(x - 74, 238, 'RASPADOR\nVOLUNTARIO', {
+        fontFamily: 'Courier New', fontSize: '11px', color: '#f29b38', align: 'center', fontStyle: 'bold',
+        backgroundColor: '#202728', padding: { x: 6, y: 4 }
+      }).setOrigin(0.5).setDepth(13);
+      this.add.text(x + 82, 342, 'RECUPERACION  →', {
+        fontFamily: 'Courier New', fontSize: '10px', color: '#99aaa9', fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(9);
+      this.add.rectangle(x + 185, 374, 270, 3, COLORS.scraper, 0.42).setDepth(6);
+      this.scrapers.push({ body, view });
+    });
+  }
+
   onCollision(event, allowStone) {
     for (const pair of event.pairs) {
       const a = pair.bodyA;
@@ -460,7 +516,10 @@ class LastreScene extends Phaser.Scene {
       if (other.plugin && other.plugin.softId !== undefined) this.collectSoft(other.plugin.softId, contact);
       if (other.plugin && other.plugin.isBoost) this.activateBoost();
       if (allowStone && other.plugin && other.plugin.isStone && this.shedCooldown <= 0) {
-        this.shedAt(contact.x);
+        this.shedAt(contact, 'stone');
+      }
+      if (other.plugin && other.plugin.isScraper && this.scraperCooldown <= 0) {
+        this.shedAt(contact, 'scraper');
       }
     }
   }
@@ -605,25 +664,56 @@ class LastreScene extends Phaser.Scene {
     this.rebuildBlob([...this.blob.parts.slice(1), part]);
   }
 
-  shedAt(impactX) {
+  shedAt(contact, source = 'stone') {
     const children = this.blob.parts.slice(1);
     const candidates = children.map(part => ({
       id: part.id,
       x: part.position.x,
+      y: part.position.y,
       isCore: Boolean(part.plugin && part.plugin.isCore)
     }));
-    const shedId = choosePartToShed(candidates, this.blob.position.x, impactX);
-    if (shedId === null) return;
+    const shedId = choosePartToShed(candidates, contact.x, contact.y);
+    if (shedId === null) return false;
     const shed = children.find(part => part.id === shedId);
+    const lostValue = (shed.plugin && shed.plugin.value) || 0;
     this.rebuildBlob(children.filter(part => part.id !== shedId));
-    this.shedCooldown = 320;
+    if (source === 'scraper') {
+      this.scraperCooldown = 460;
+      this.scrapeNoticeMs = 900;
+      this.scrapeLostValue = lostValue;
+    } else {
+      this.shedCooldown = 320;
+    }
     this.matter.body.setVelocity(this.blob, {
-      x: Math.max(0.35, this.blob.velocity.x * 0.68),
+      x: Math.max(0.35, this.blob.velocity.x * (source === 'scraper' ? 0.76 : 0.68)),
       y: this.blob.velocity.y
     });
     const fragment = this.add.graphics().setDepth(24);
     this.paintScrap(fragment, shed, 0.95);
     this.tweens.add({ targets: fragment, y: fragment.y - 24, alpha: 0, scale: 0.45, duration: 650, onComplete: () => fragment.destroy() });
+    if (source === 'scraper') this.showScrapeFeedback(contact, lostValue);
+    return true;
+  }
+
+  showScrapeFeedback(contact, lostValue) {
+    const cost = this.add.text(contact.x, contact.y - 24, `DESCARGA -$${lostValue}`, {
+      fontFamily: 'Courier New', fontSize: '13px', color: '#f29b38', fontStyle: 'bold',
+      stroke: '#111820', strokeThickness: 4
+    }).setOrigin(0.5).setDepth(30);
+    this.tweens.add({ targets: cost, y: cost.y - 30, alpha: 0, duration: 850, onComplete: () => cost.destroy() });
+    for (let i = 0; i < 7; i++) {
+      const angle = -Math.PI * 0.8 + i * 0.27;
+      const spark = this.add.circle(contact.x, contact.y, 2 + i % 2, i % 2 ? COLORS.sign : COLORS.scraper)
+        .setDepth(29);
+      this.tweens.add({
+        targets: spark,
+        x: contact.x + Math.cos(angle) * (24 + i * 3),
+        y: contact.y + Math.sin(angle) * (18 + i * 2),
+        alpha: 0,
+        duration: 300 + i * 35,
+        onComplete: () => spark.destroy()
+      });
+    }
   }
 
   polygonPath(graphics, vertices) {
@@ -775,7 +865,10 @@ class LastreScene extends Phaser.Scene {
     if (!this.started) return;
     if (this.dead || this.finished) return;
     this.shedCooldown = Math.max(0, this.shedCooldown - delta);
+    this.scraperCooldown = Math.max(0, this.scraperCooldown - delta);
+    this.scrapeNoticeMs = Math.max(0, this.scrapeNoticeMs - delta);
     this.jumpCooldown = Math.max(0, this.jumpCooldown - delta);
+    for (const scraper of this.scrapers) scraper.view.rotation += delta * 0.0045;
 
     const left = this.keys.leftA.isDown || this.keys.leftArrow.isDown;
     const right = this.keys.rightD.isDown || this.keys.rightArrow.isDown;
@@ -817,7 +910,10 @@ class LastreScene extends Phaser.Scene {
     const boostMessage = this.boostMs > 0
       ? `SUPERIMÁN ${Math.ceil(this.boostMs / 1000)} s · RADIO ${this.boostRadius}`
       : '';
-    this.zoneHud.setText([zoneMessage, boostMessage].filter(Boolean).join('  ·  '));
+    const scrapeMessage = this.scrapeNoticeMs > 0
+      ? `DESCARGA VOLUNTARIA -$${this.scrapeLostValue} · PERDISTE VELOCIDAD`
+      : '';
+    this.zoneHud.setText([zoneMessage, boostMessage, scrapeMessage].filter(Boolean).join('  ·  '));
   }
 }
 

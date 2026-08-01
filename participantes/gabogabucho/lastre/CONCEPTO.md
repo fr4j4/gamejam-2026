@@ -35,6 +35,14 @@ La chatarra no vale solamente por cantidad: forma y tamaño tienen un valor visi
 
 Las estaciones están separadas del siguiente obstáculo por un tramo de recuperación sin chatarra. Así la decisión sucede antes de que la forma sea irreversible: descargar ofrece margen, pero consume puntuación y terreno contra la cámara.
 
+## Distrito Mecánico · Nivel 2
+
+Entre 950 y 1250 metros el recorrido deja de presentar piezas aisladas y propone secuencias rítmicas. Una prensa vertical enseña primero a esperar una apertura completa; luego un barredor rotatorio enseña a leer una vuelta; finalmente ambas familias se encadenan con una puerta y descansos intermedios.
+
+La referencia de cadencia es Geometry Dash, no su castigo: cada máquina muestra toda su trayectoria al menos una oscilación antes del contacto y ninguna produce muerte instantánea. Una colisión solo frena y cambia la rotación de Mr. Lastre. Las prensas y barredores tampoco desprenden piezas porque no son piedra ni raspadores claramente marcados.
+
+La geometría móvil siempre vuelve a una fase segura. El desafío consiste en observar, elegir cuándo entrar y recuperar control después del golpe; no en adivinar ni atravesar un bloqueo permanente.
+
 La pantalla final desglosa tiempo, bonus de tiempo, valor de chatarra entregada y total. El bonus vale 10 puntos por cada segundo restante hasta 180 segundos. Así, el jugador puede comprender el resultado y decidir en la siguiente partida si le conviene cargar más o llegar antes.
 
 ## Dirección conceptual: chatarra magnética

@@ -18,7 +18,10 @@ const {
   zoneInfluence,
   magneticFieldForce,
   boostDurationAfterPickup,
-  attractionStrength
+  attractionStrength,
+  oscillatorPhase,
+  pistonYAt,
+  rotorAngleAt
 } = require('./mass-model.js');
 
 test('la cámara acelera suavemente y tiene un límite', () => {
@@ -131,7 +134,10 @@ test('las zonas tienen entradas y salidas sin solaparse', () => {
   assert.equal(zoneAt(6999), 'construction');
   assert.equal(zoneAt(7000), 'city');
   assert.equal(zoneAt(8000), 'electromagnetic');
-  assert.equal(zoneAt(9500), 'city');
+  assert.equal(zoneAt(9500), 'mechanical');
+  assert.equal(zoneAt(9600), 'mechanical');
+  assert.equal(zoneAt(12499), 'mechanical');
+  assert.equal(zoneAt(12500), 'city');
 });
 
 test('el campo entra y sale con rampas legibles', () => {
@@ -159,4 +165,26 @@ test('el potenciador renueva duracion y su atraccion termina en el radio', () =>
   assert.equal(attractionStrength(60, 120), 0.5);
   assert.equal(attractionStrength(120, 120), 0);
   assert.equal(attractionStrength(140, 120), 0);
+});
+
+test('la fase mecanica es periodica y queda normalizada', () => {
+  assert.equal(oscillatorPhase(0, 2000, 0), 0);
+  assert.equal(oscillatorPhase(500, 2000, 0), 0.25);
+  assert.equal(oscillatorPhase(2000, 2000, 0), 0);
+  assert.equal(oscillatorPhase(2500, 2000, 0.25), 0.5);
+});
+
+test('el piston respeta extremos, centro y periodicidad', () => {
+  assert.equal(pistonYAt(0, 100, 40, 2000), 100);
+  assert.equal(pistonYAt(500, 100, 40, 2000), 140);
+  assert.equal(pistonYAt(1000, 100, 40, 2000), 100);
+  assert.equal(pistonYAt(1500, 100, 40, 2000), 60);
+  assert.equal(pistonYAt(2500, 100, 40, 2000), 140);
+});
+
+test('el barredor rota en forma periodica con fase configurable', () => {
+  assert.equal(rotorAngleAt(0, 2400, 0), 0);
+  assert.equal(rotorAngleAt(600, 2400, 0), Math.PI / 2);
+  assert.equal(rotorAngleAt(2400, 2400, 0), 0);
+  assert.equal(rotorAngleAt(0, 2400, 0.5), Math.PI);
 });

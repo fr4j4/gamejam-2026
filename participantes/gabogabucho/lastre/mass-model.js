@@ -79,6 +79,7 @@
   function zoneAt(worldX) {
     if (worldX >= 5000 && worldX < 7000) return 'construction';
     if (worldX >= 8000 && worldX < 9500) return 'electromagnetic';
+    if (worldX >= 9500 && worldX < 12500) return 'mechanical';
     return 'city';
   }
 
@@ -101,6 +102,20 @@
     return Math.max(0, Math.min(1, 1 - distance / radius));
   }
 
+  function oscillatorPhase(elapsedMs, periodMs, phaseOffset) {
+    if (periodMs <= 0) return 0;
+    const phase = elapsedMs / periodMs + (phaseOffset || 0);
+    return ((phase % 1) + 1) % 1;
+  }
+
+  function pistonYAt(elapsedMs, centerY, amplitude, periodMs, phaseOffset) {
+    return centerY + Math.sin(oscillatorPhase(elapsedMs, periodMs, phaseOffset) * Math.PI * 2) * amplitude;
+  }
+
+  function rotorAngleAt(elapsedMs, periodMs, phaseOffset) {
+    return oscillatorPhase(elapsedMs, periodMs, phaseOffset) * Math.PI * 2;
+  }
+
   return {
     cameraSpeed,
     screenX,
@@ -118,6 +133,9 @@
     zoneInfluence,
     magneticFieldForce,
     boostDurationAfterPickup,
-    attractionStrength
+    attractionStrength,
+    oscillatorPhase,
+    pistonYAt,
+    rotorAngleAt
   };
 });

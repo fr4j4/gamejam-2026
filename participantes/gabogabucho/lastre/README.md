@@ -35,6 +35,7 @@ La partida comienza en una pantalla breve de objetivo y controles; la física y 
 - **Zona de obra (500–700 m):** una grúa sostiene una carga Matter real. El arco rojo anticipa su trayectoria; el golpe desestabiliza y cuesta terreno, pero no mata ni desprende piezas por regla especial.
 - **Superimán (antes de 800 m):** activa durante 6 segundos un radio de imantado de 120 px. La chatarra viaja hacia la parte más cercana del compuesto y solo entonces se incorpora.
 - **Campo electromagnético (800–950 m):** paneles de techo atraen hacia arriba. La fuerza escala con la raíz de la masa, así que un Mr. Lastre pesado se suspende menos.
+- **Distrito Mecánico · Nivel 2 (950–1250 m):** la dificultad escala con prensas verticales y barredores rotatorios Matter. Primero se presenta cada familia sola y después se encadenan, con trayectoria visible y ventanas de recuperación. Los golpes quitan velocidad y desestabilizan, pero nunca matan directamente ni desprenden chatarra.
 
 Cada zona tiene señal de entrada, un tramo de desarrollo y una salida limpia. Las instrucciones están en la ciudad para no alargar la pantalla inicial.
 
@@ -53,7 +54,8 @@ Cada zona tiene señal de entrada, un tramo de desarrollo y una salida limpia. L
 - [x] Corte 3: identidad de Mr. Lastre y taxonomía procedural de chatarra física.
 - [x] Onboarding, valores de chatarra, magnetismo periférico y puntuación de entrega.
 - [x] Corte 4: zonas sistémicas con péndulo, campo vertical y superimán temporal.
-- [ ] Corte 5: sonido y ajuste de ritmo tras pruebas con jugadores.
+- [x] Corte 5: Distrito Mecánico con secuencias rítmicas de prensas y barredores.
+- [ ] Corte 6: sonido y ajuste de ritmo tras pruebas con jugadores.
 
 ## Verificación técnica
 
@@ -64,3 +66,6 @@ Cada zona tiene señal de entrada, un tramo de desarrollo y una salida limpia. L
 - `?qa=boost` — posiciona al jugador sobre el pickup para inspeccionar su aura y atracción.
 - `?qa=field` — posiciona al jugador dentro del campo electromagnético.
 - `?qa=scraper` — posiciona al jugador antes de un raspador, mostrando la ruta inferior opcional y el tramo de recuperación. Combinar con `&grow=7` permite probar una descarga múltiple.
+- `?qa=mechanical` — entrada y señal del Distrito Mecánico.
+- `?qa=piston` — secuencia inicial que enseña la prensa y su ventana segura.
+- `?qa=rotor` — secuencia del barredor y la puerta cercana.

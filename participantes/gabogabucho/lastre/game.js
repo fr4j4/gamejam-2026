@@ -14,7 +14,9 @@ const {
   zoneInfluence,
   magneticFieldForce,
   boostDurationAfterPickup,
-  attractionStrength
+  attractionStrength,
+  pistonYAt,
+  rotorAngleAt
 } = LastreModel;
 
 const COLORS = {
@@ -50,6 +52,8 @@ class LastreScene extends Phaser.Scene {
     this.scraperCooldown = 0;
     this.scrapeNoticeMs = 0;
     this.scrapeLostValue = 0;
+    this.mechanicalHitCooldown = 0;
+    this.mechanicalNoticeMs = 0;
     this.jumpCooldown = 0;
     this.boostMs = 0;
     this.boostRadius = 120;
@@ -67,6 +71,7 @@ class LastreScene extends Phaser.Scene {
     this.makeSoftMatter();
     this.makeStoneGates();
     this.makeScrapers();
+    this.makeMechanicalDistrict();
 
     this.keys = this.input.keyboard.addKeys({
       leftA: Phaser.Input.Keyboard.KeyCodes.A,
@@ -120,7 +125,8 @@ class LastreScene extends Phaser.Scene {
     const qa = qs.get('qa');
     if (qa) {
       const targets = {
-        construction: [5650, 5400], boost: [7575, 7200], field: [8150, 7920], scraper: [3850, 3650]
+        construction: [5650, 5400], boost: [7575, 7200], field: [8150, 7920], scraper: [3850, 3650],
+        mechanical: [9560, 9300], piston: [9660, 9000], rotor: [10940, 10680]
       };
       const target = targets[qa];
       if (target) {
@@ -500,6 +506,112 @@ class LastreScene extends Phaser.Scene {
     });
   }
 
+  makeMechanicalDistrict() {
+    this.mechanicalPistons = [];
+    this.mechanicalRotors = [];
+    this.mechanicalPaint = this.add.graphics().setDepth(16);
+    this.makeZoneSign(9550, 'DISTRITO MECANICO', 'NIVEL 2 · MIRA EL RITMO', 0xff775f);
+
+    const decor = this.add.graphics().setDepth(5);
+    decor.fillStyle(0x2e292c, 0.95);
+    decor.fillRect(9500, 365, 3000, 15);
+    decor.lineStyle(3, 0xff775f, 0.28);
+    for (let x = 9600; x < 12500; x += 160) {
+      decor.lineBetween(x, 368, x + 44, 368);
+      decor.lineBetween(x + 56, 368, x + 100, 368);
+    }
+
+    this.add.text(9780, 196, '1 · PRENSA\nESPERA LA APERTURA', {
+      fontFamily: 'Courier New', fontSize: '11px', color: '#ff9b88', align: 'center', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(9);
+    this.addPiston(9780, 205, 120, 2400, 0);
+
+    this.add.text(10980, 182, '2 · BARREDOR\nLEE UNA VUELTA', {
+      fontFamily: 'Courier New', fontSize: '11px', color: '#ffd26f', align: 'center', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(9);
+    this.addRotor(10980, 286, 2600, 0.12);
+
+    this.add.text(11580, 124, '3 · CADENA DE MAQUINAS', {
+      fontFamily: 'Courier New', fontSize: '12px', color: '#f7fbff', fontStyle: 'bold',
+      backgroundColor: '#39292d', padding: { x: 8, y: 5 }
+    }).setOrigin(0.5).setDepth(9);
+    this.addPiston(11440, 202, 112, 2200, 0.5);
+    this.addRotor(11760, 286, 2300, 0.58);
+
+    for (const x of [10180, 11210, 12010]) {
+      this.add.text(x, 350, 'RECUPERA  →', {
+        fontFamily: 'Courier New', fontSize: '10px', color: '#93a4a5', fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(8);
+    }
+  }
+
+  addPiston(x, centerY, amplitude, period, phase) {
+    const body = this.matter.bodies.rectangle(x, centerY, 104, 34, {
+      isStatic: true, label: 'mechanicalPiston', friction: 0.72, restitution: 0.34
+    });
+    body.plugin.isMechanical = true;
+    this.matter.world.add(body);
+    this.mechanicalPistons.push({ body, x, centerY, amplitude, period, phase });
+
+    const guide = this.add.graphics().setDepth(7);
+    guide.lineStyle(2, 0xff775f, 0.42);
+    guide.lineBetween(x, centerY - amplitude - 22, x, centerY + amplitude + 22);
+    guide.strokeRect(x - 58, centerY - amplitude - 20, 116, amplitude * 2 + 40);
+    for (let y = centerY - amplitude; y <= centerY + amplitude; y += 30) {
+      guide.fillStyle(0xff775f, 0.55);
+      guide.fillTriangle(x - 66, y - 5, x - 66, y + 5, x - 58, y);
+    }
+  }
+
+  addRotor(x, y, period, phase) {
+    const body = this.matter.bodies.rectangle(x, y, 150, 18, {
+      isStatic: true, label: 'mechanicalRotor', friction: 0.68, restitution: 0.48
+    });
+    body.plugin.isMechanical = true;
+    this.matter.world.add(body);
+    this.mechanicalRotors.push({ body, x, y, period, phase });
+
+    const guide = this.add.graphics().setDepth(7);
+    guide.lineStyle(2, 0xf1c75b, 0.38);
+    guide.strokeCircle(x, y, 75);
+    guide.fillStyle(0xf1c75b, 0.7);
+    guide.fillTriangle(x + 68, y - 30, x + 82, y - 27, x + 73, y - 17);
+  }
+
+  drawMechanicalBody(graphics, body, fill, edge) {
+    const vertices = body.vertices;
+    graphics.fillStyle(fill, 1);
+    graphics.lineStyle(3, edge, 1);
+    graphics.beginPath();
+    graphics.moveTo(vertices[0].x, vertices[0].y);
+    for (let i = 1; i < vertices.length; i++) graphics.lineTo(vertices[i].x, vertices[i].y);
+    graphics.closePath();
+    graphics.fillPath();
+    graphics.strokePath();
+  }
+
+  updateMechanicalDistrict(time) {
+    this.mechanicalPaint.clear();
+    for (const piston of this.mechanicalPistons) {
+      const y = pistonYAt(time, piston.centerY, piston.amplitude, piston.period, piston.phase);
+      this.matter.body.setPosition(piston.body, { x: piston.x, y });
+      this.drawMechanicalBody(this.mechanicalPaint, piston.body, 0x713d3d, 0xff9b88);
+      this.mechanicalPaint.fillStyle(0x2a3032, 1);
+      this.mechanicalPaint.fillRect(piston.x - 34, y - 10, 68, 20);
+      this.mechanicalPaint.lineStyle(3, 0xffc0b4, 0.8);
+      this.mechanicalPaint.lineBetween(piston.x - 24, y, piston.x + 24, y);
+    }
+    for (const rotor of this.mechanicalRotors) {
+      const angle = rotorAngleAt(time, rotor.period, rotor.phase);
+      this.matter.body.setAngle(rotor.body, angle);
+      this.drawMechanicalBody(this.mechanicalPaint, rotor.body, 0x6c5830, 0xffd26f);
+      this.mechanicalPaint.fillStyle(0x242a2c, 1);
+      this.mechanicalPaint.fillCircle(rotor.x, rotor.y, 13);
+      this.mechanicalPaint.lineStyle(3, 0xffd26f, 1);
+      this.mechanicalPaint.strokeCircle(rotor.x, rotor.y, 13);
+    }
+  }
+
   onCollision(event, allowStone) {
     for (const pair of event.pairs) {
       const a = pair.bodyA;
@@ -520,6 +632,16 @@ class LastreScene extends Phaser.Scene {
       }
       if (other.plugin && other.plugin.isScraper && this.scraperCooldown <= 0) {
         this.shedAt(contact, 'scraper');
+      }
+      if (allowStone && other.plugin && other.plugin.isMechanical && this.mechanicalHitCooldown <= 0) {
+        this.mechanicalHitCooldown = 650;
+        this.mechanicalNoticeMs = 950;
+        this.matter.body.setVelocity(this.blob, {
+          x: Math.max(0.3, this.blob.velocity.x * 0.58),
+          y: this.blob.velocity.y
+        });
+        const side = this.blob.position.x < other.position.x ? -1 : 1;
+        this.matter.body.setAngularVelocity(this.blob, this.blob.angularVelocity + side * 0.085);
       }
     }
   }
@@ -867,6 +989,8 @@ class LastreScene extends Phaser.Scene {
     this.shedCooldown = Math.max(0, this.shedCooldown - delta);
     this.scraperCooldown = Math.max(0, this.scraperCooldown - delta);
     this.scrapeNoticeMs = Math.max(0, this.scrapeNoticeMs - delta);
+    this.mechanicalHitCooldown = Math.max(0, this.mechanicalHitCooldown - delta);
+    this.mechanicalNoticeMs = Math.max(0, this.mechanicalNoticeMs - delta);
     this.jumpCooldown = Math.max(0, this.jumpCooldown - delta);
     for (const scraper of this.scrapers) scraper.view.rotation += delta * 0.0045;
 
@@ -882,6 +1006,7 @@ class LastreScene extends Phaser.Scene {
     this.blob.force.x += 0.00042;
     if (this.blob.velocity.x > 4.2) this.matter.body.setVelocity(this.blob, { x: 4.2, y: this.blob.velocity.y });
     const fieldInfluence = this.updateWorldZones(time);
+    this.updateMechanicalDistrict(time);
     this.updateBoost(delta, time);
 
     const elapsed = (time - this.startedAt) / 1000;
@@ -906,14 +1031,19 @@ class LastreScene extends Phaser.Scene {
       ? '⚠ ZONA DE OBRA · EVITÁ LA CARGA'
       : zone === 'electromagnetic'
         ? `↑ CAMPO ACTIVO ${Math.round(fieldInfluence * 100)}%`
-        : '';
+        : zone === 'mechanical'
+          ? '⚙ DISTRITO MECANICO · NIVEL 2 · LEE EL RITMO'
+          : '';
     const boostMessage = this.boostMs > 0
       ? `SUPERIMÁN ${Math.ceil(this.boostMs / 1000)} s · RADIO ${this.boostRadius}`
       : '';
     const scrapeMessage = this.scrapeNoticeMs > 0
       ? `DESCARGA VOLUNTARIA -$${this.scrapeLostValue} · PERDISTE VELOCIDAD`
       : '';
-    this.zoneHud.setText([zoneMessage, boostMessage, scrapeMessage].filter(Boolean).join('  ·  '));
+    const mechanicalMessage = this.mechanicalNoticeMs > 0
+      ? 'IMPACTO MECANICO · PERDISTE VELOCIDAD'
+      : '';
+    this.zoneHud.setText([zoneMessage, boostMessage, scrapeMessage, mechanicalMessage].filter(Boolean).join('  ·  '));
   }
 }
 

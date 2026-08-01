@@ -1,0 +1,264 @@
+import Phaser from "phaser";
+import { PowerUpOption } from "../systems/LevelUpManager";
+
+/**
+ * Modal power-up selection panel. Pauses the scene (caller's responsibility),
+ * shows three stacked cards, listens for 1/2/3, and resolves a promise with
+ * the chosen option (or null if the player dismissed without picking).
+ *
+ * Visual style: cyberpunk neon — dark panel, cyan accents, magenta borders,
+ * monospace label typography. Each card highlights the selected one (the
+ * card the player is currently pointing at with 1/2/3) with a brighter
+ * border and brighter text.
+ */
+export class PowerUpSelect {
+  /**
+   * Shows the panel. The caller must have already called `scene.scene.pause()`;
+   * we'll resume nothing — the caller is also responsible for resuming the
+   * scene after the promise resolves.
+   */
+  public static show(
+    scene: Phaser.Scene,
+    choices: PowerUpOption[],
+    level: number,
+  ): Promise<PowerUpOption | null> {
+    return new Promise((resolve) => {
+      const { width, height } = scene.scale;
+      const container = scene.add.container(0, 0);
+      container.setDepth(2000);
+      container.setScrollFactor(0);
+
+      // Backdrop.
+      const overlay = scene.add.rectangle(
+        width / 2,
+        height / 2,
+        width,
+        height,
+        0x000000,
+        0.7,
+      );
+      overlay.setScrollFactor(0);
+
+      // Title.
+      const title = scene.add.text(
+        width / 2,
+        height / 2 - 200,
+        `LEVEL ${level} — Pick a power-up`,
+        {
+          fontFamily: "monospace",
+          fontSize: "26px",
+          color: "#00ffff",
+          stroke: "#003344",
+          strokeThickness: 3,
+        },
+      );
+      title.setOrigin(0.5);
+      title.setScrollFactor(0);
+
+      // Hint.
+      const hint = scene.add.text(
+        width / 2,
+        height / 2 - 165,
+        "Press 1, 2 or 3 to choose",
+        {
+          fontFamily: "monospace",
+          fontSize: "12px",
+          color: "#888888",
+        },
+      );
+      hint.setOrigin(0.5);
+      hint.setScrollFactor(0);
+
+      // Card geometry.
+      const cardW = 420;
+      const cardH = 90;
+      const cardGap = 18;
+      const totalH = choices.length * cardH + (choices.length - 1) * cardGap;
+      const top = height / 2 - totalH / 2 + 20;
+      const left = width / 2 - cardW / 2;
+
+      const palette = [0x00ffff, 0xff00ff, 0xffd700];
+      const slots: {
+        bg: Phaser.GameObjects.Graphics;
+        border: Phaser.GameObjects.Graphics;
+        keyLabel: Phaser.GameObjects.Text;
+        nameLabel: Phaser.GameObjects.Text;
+        descLabel: Phaser.GameObjects.Text;
+      }[] = [];
+
+      choices.forEach((choice, i) => {
+        const y = top + i * (cardH + cardGap);
+        const accent = palette[i % palette.length] ?? 0x00ffff;
+
+        const bg = scene.add.graphics();
+        bg.fillStyle(0x0a0a1a, 0.92);
+        bg.fillRect(left, y, cardW, cardH);
+        bg.setScrollFactor(0);
+
+        const border = scene.add.graphics();
+        border.lineStyle(2, accent, 1);
+        border.strokeRect(left, y, cardW, cardH);
+        border.setScrollFactor(0);
+
+        const keyLabel = scene.add.text(left + 16, y + cardH / 2, `[${i + 1}]`, {
+          fontFamily: "monospace",
+          fontSize: "22px",
+          color: "#" + accent.toString(16).padStart(6, "0"),
+        });
+        keyLabel.setOrigin(0, 0.5);
+        keyLabel.setScrollFactor(0);
+
+        const nameLabel = scene.add.text(
+          left + 80,
+          y + 28,
+          choice.name,
+          {
+            fontFamily: "monospace",
+            fontSize: "18px",
+            color: "#ffffff",
+          },
+        );
+        nameLabel.setOrigin(0, 0.5);
+        nameLabel.setScrollFactor(0);
+
+        const descLabel = scene.add.text(
+          left + 80,
+          y + 58,
+          choice.description,
+          {
+            fontFamily: "monospace",
+            fontSize: "12px",
+            color: "#aaaaaa",
+          },
+        );
+        descLabel.setOrigin(0, 0.5);
+        descLabel.setScrollFactor(0);
+
+        slots.push({ bg, border, keyLabel, nameLabel, descLabel });
+      });
+
+      container.add([overlay, title, hint, ...slots.flatMap((s) => [s.bg, s.border, s.keyLabel, s.nameLabel, s.descLabel])]);
+
+      let highlighted: number | null = null;
+      const highlight = (idx: number | null) => {
+        if (highlighted === idx) {
+          return;
+        }
+        // Restore previous.
+        if (highlighted !== null) {
+          const prev = slots[highlighted];
+          if (prev) {
+            const accent =
+              palette[highlighted % palette.length] ?? 0x00ffff;
+            prev.border.clear();
+            prev.border.lineStyle(2, accent, 1);
+            prev.border.strokeRect(left, top + highlighted * (cardH + cardGap), cardW, cardH);
+            prev.bg.clear();
+            prev.bg.fillStyle(0x0a0a1a, 0.92);
+            prev.bg.fillRect(
+              left,
+              top + highlighted * (cardH + cardGap),
+              cardW,
+              cardH,
+            );
+            prev.nameLabel.setColor("#ffffff");
+            prev.descLabel.setColor("#aaaaaa");
+          }
+        }
+        highlighted = idx;
+        if (idx === null) {
+          return;
+        }
+        const curr = slots[idx];
+        if (!curr) {
+          return;
+        }
+        const y = top + idx * (cardH + cardGap);
+        curr.border.clear();
+        curr.border.lineStyle(3, 0xffffff, 1);
+        curr.border.strokeRect(left, y, cardW, cardH);
+        // Glow backing using a slightly oversized fill.
+        curr.bg.clear();
+        curr.bg.fillStyle(0x112233, 0.95);
+        curr.bg.fillRect(left, y, cardW, cardH);
+        curr.nameLabel.setColor("#00ffff");
+        curr.descLabel.setColor("#cccccc");
+      };
+
+      const pick = (idx: number) => {
+        const choice = choices[idx];
+        cleanup();
+        resolve(choice ?? null);
+      };
+
+      const onKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "1") {
+          highlight(0);
+          pick(0);
+        } else if (event.key === "2") {
+          highlight(1);
+          pick(1);
+        } else if (event.key === "3") {
+          highlight(2);
+          pick(2);
+        } else if (event.key === "Escape") {
+          cleanup();
+          resolve(null);
+        }
+      };
+
+      const onPointerMove = (
+        pointer: Phaser.Input.Pointer,
+        _gameObjects: Phaser.GameObjects.GameObject[],
+      ) => {
+        void _gameObjects;
+        const px = pointer.x;
+        const py = pointer.y;
+        let found: number | null = null;
+        for (let i = 0; i < choices.length; i++) {
+          const y = top + i * (cardH + cardGap);
+          if (px >= left && px <= left + cardW && py >= y && py <= y + cardH) {
+            found = i;
+            break;
+          }
+        }
+        highlight(found);
+      };
+
+      const onPointerDown = (
+        pointer: Phaser.Input.Pointer,
+        gameObjects: Phaser.GameObjects.GameObject[],
+      ) => {
+        for (let i = 0; i < choices.length; i++) {
+          const y = top + i * (cardH + cardGap);
+          if (
+            pointer.x >= left &&
+            pointer.x <= left + cardW &&
+            pointer.y >= y &&
+            pointer.y <= y + cardH
+          ) {
+            void gameObjects;
+            pick(i);
+            return;
+          }
+        }
+        // Click outside the cards: treat as cancel.
+        cleanup();
+        resolve(null);
+      };
+
+      const cleanup = () => {
+        window.removeEventListener("keydown", onKeyDown);
+        scene.input.off("pointermove", onPointerMove);
+        scene.input.off("pointerdown", onPointerDown);
+        if (container.active) {
+          container.destroy();
+        }
+      };
+
+      window.addEventListener("keydown", onKeyDown);
+      scene.input.on("pointermove", onPointerMove);
+      scene.input.on("pointerdown", onPointerDown);
+    });
+  }
+}

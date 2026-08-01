@@ -1,6 +1,6 @@
 # MR. LASTRE
 
-Auto-runner físico lateral hecho con **Phaser 4.2.1 + Matter**. Mr. Lastre es un pequeño electroimán que cruza la ciudad industrial buscando el basurero municipal.
+Auto-runner físico lateral hecho con **Phaser 4.2.1 + Matter**. Mr. Lastre es un pequeño electroimán que cruza la **Ciudad** hasta el basurero municipal y después atraviesa el **Distrito Mecánico** hasta el centro de reciclaje, en una campaña de dos niveles.
 
 ## Ejecutar
 
@@ -19,7 +19,8 @@ Abrir:
 - **A / ←** — torque antihorario.
 - **D / →** — torque horario.
 - **Espacio** — pulso magnético corto. Cuanta más masa, menor altura.
-- **Enter** — iniciar partida y avanzar al Nivel 2 al completar el Nivel 1.
+- **↑ / ↓ (o W / S)** — navegar el menú de inicio.
+- **Enter** — confirmar el menú e iniciar partida; avanzar al Nivel 2 al completar el Nivel 1.
 - **R** — reiniciar el nivel actual.
 
 ## Campaña
@@ -39,7 +40,7 @@ Llegar al destino mientras la cámara empuja. Engranajes, chapas y tuercas se pe
 
 Cada pieza dibujada tiene la misma forma que su collider Matter y, al adherirse, pasa a ser parte del único cuerpo compuesto de Mr. Lastre.
 
-La partida comienza en una pantalla breve de objetivo y controles; la física y el cronómetro esperan hasta que el jugador pulse **Espacio**, **Enter** o haga click. Toda la chatarra adherida conserva el magnetismo: una pieza de la periferia también puede capturar otra.
+El juego comienza en el **menú de inicio**; la física y el cronómetro esperan hasta que el jugador confirme la partida. Toda la chatarra adherida conserva el magnetismo: una pieza de la periferia también puede capturar otra.
 
 ## Zonas interactivas (Nivel 1)
 
@@ -49,6 +50,15 @@ La partida comienza en una pantalla breve de objetivo y controles; la física y 
 - **Campo electromagnético (800–950 m):** paneles de techo atraen hacia arriba. La fuerza escala con la raíz de la masa, así que un Mr. Lastre pesado se suspende menos.
 
 Cada zona tiene señal de entrada, un tramo de desarrollo y una salida limpia. Las instrucciones están en la ciudad para no alargar la pantalla inicial.
+
+## Zonas interactivas (Nivel 2 · Distrito Mecánico)
+
+- **Prensa vertical:** una prensa cae desde el techo y vuelve a subir en ciclos regulares. Cada golpe reduce la velocidad y cuesta terreno, pero **nunca mata ni desprende piezas**. La ventana segura se aprende mirando el ritmo.
+- **Barredor rotatorio:** un rodillo atraviesa la calle de lado a lado. El contacto prolongado arranca chatarra con una pausa controlada (cooldown propio) y frena a Mr. Lastre; superarlo a tiempo evita la pérdida.
+- **Progresión rítmica:** primero una prensa sola, luego un barredor solo, después combinaciones de ambos, y un tramo de recuperación limpio antes del centro de reciclaje.
+- **Recuperación y meta:** después de las máquinas hay un tramo sin obstáculos para recuperar velocidad; la meta es el **Centro de Reciclaje** con cartel de llegada propio.
+
+En el Nivel 2 solo mata el borde izquierdo: las máquinas desestabilizan y frenan, pero no eliminan ni sueltan piezas.
 
 ## Puntuación
 

@@ -41,7 +41,7 @@ const WEAPON_UPGRADES = {
   orbit: {
     unlock: {
       key: 'orbitUnlock', label: 'Nueva arma: Orbe giratorio',
-      apply: (s) => { s.hasOrbit = true; s.orbitDamage = 8; s.orbitRadius = 70; s.orbitSpeed = 2.2; s.orbitCount = 1; },
+      apply: (s) => { s.hasOrbit = true; s.orbitDamage = 8; s.orbitRadius = 70; s.orbitSpeed = 2.2; s.orbitCount = 2; },
     },
     upgrades: [
       { key: 'orbitDamage', label: '+Orbe: daño', apply: (s) => { s.orbitDamage += 5; } },
@@ -583,6 +583,7 @@ export default class GameScene extends Phaser.Scene {
   startLevelUp() {
     this.isLevelingUp = true;
     this.player.setVelocity(0, 0);
+    this.physics.world.pause();
 
     this.levelUpChoices = Phaser.Utils.Array.Shuffle(this.getAvailableUpgrades()).slice(0, 4);
     this.levelUpChoices.forEach((choice, i) => {
@@ -603,6 +604,8 @@ export default class GameScene extends Phaser.Scene {
     this.levelUpTitle.setVisible(false);
     this.levelUpTexts.forEach((t) => t.setVisible(false));
     this.isLevelingUp = false;
+    this.physics.world.resume();
+    this.lastHitAt = this.time.now;
   }
 
   syncWeapons() {

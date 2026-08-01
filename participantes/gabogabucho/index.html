@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi juego — GameJam 2026 (gabogabucho)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    background: #0d0d0d;
+    color: #f4f1e8;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  #game-container {
+    width: 100%;
+    max-width: 960px;
+  }
+  #hint {
+    margin-top: 10px;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: #8f897c;
+  }
+</style>
+</head>
+<body>
+<div id="game-container"></div>
+<div id="hint">GAMEOJAM 2026 &middot; PARTICIPANTE: gabogabucho &middot; PHASER 4</div>
+
+<!-- Phaser 4.2.1 (UMD build, CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

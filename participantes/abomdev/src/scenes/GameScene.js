@@ -17,16 +17,21 @@ import {
 } from '../config/upgrades.js';
 import { FONT_SIZE, RARITY_WEIGHT, STAGE_THEMES, TEXT } from '../config/theme.js';
 import { generateTextures } from '../assets/textures.js';
+import { preloadIcons } from '../assets/icons.js';
 import Hud from '../ui/Hud.js';
 import Minimap from '../ui/Minimap.js';
 import StartScreen from '../ui/StartScreen.js';
-import PauseMenu, { buildStatLines } from '../ui/PauseMenu.js';
+import PauseMenu, { buildStatRows } from '../ui/PauseMenu.js';
 import LevelUpMenu from '../ui/LevelUpMenu.js';
 import { getBestTime, showEndScreen } from '../ui/EndScreen.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
     super('game');
+  }
+
+  preload() {
+    preloadIcons(this);
   }
 
   create() {
@@ -220,7 +225,7 @@ export default class GameScene extends Phaser.Scene {
     this.player.setVelocity(0, 0);
     this.physics.world.pause();
     this.setTimersPaused(true);
-    this.pauseMenu.show(buildStatLines(this.stats, this.stage, this.stageMultiplier));
+    this.pauseMenu.show(buildStatRows(this.stats, this.stage, this.stageMultiplier));
   }
 
   resumeGame() {
@@ -431,6 +436,8 @@ export default class GameScene extends Phaser.Scene {
     const type = ENEMY_TYPES[typeKey];
 
     const enemy = this.enemies.create(x, y, type.texture);
+    // Los iconos se cargan en blanco: el color de cada tipo se aplica por tint.
+    enemy.setTint(type.color);
     enemy.setData('type', typeKey);
     enemy.setData('hp', Math.round((type.baseHp + minutes * type.hpPerMin) * this.stageMultiplier));
     enemy.setData('speed', Math.round(type.baseSpeed + minutes * type.speedPerMin));
@@ -466,6 +473,7 @@ export default class GameScene extends Phaser.Scene {
     const maxHp = Math.round((type.baseHp + minutes * type.hpPerMin) * this.stageMultiplier);
 
     const boss = this.enemies.create(x, y, type.texture);
+    boss.setTint(type.color);
     boss.setData('type', bossTypeKey);
     boss.setData('isBoss', true);
     boss.setData('hp', maxHp);
@@ -638,9 +646,15 @@ export default class GameScene extends Phaser.Scene {
     enemy.destroy();
   }
 
+  // Flash blanco al recibir daño. Al terminar restaura el tint del tipo en vez de
+  // limpiarlo, porque ese tint es lo que le da color al icono.
   flashEnemy(enemy) {
     enemy.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
-    this.time.delayedCall(60, () => enemy.active && enemy.clearTint());
+    this.time.delayedCall(60, () => {
+      if (!enemy.active) return;
+      enemy.setTintMode(Phaser.TintModes.MULTIPLY);
+      enemy.setTint(ENEMY_TYPES[enemy.getData('type')].color);
+    });
   }
 
   knockbackEnemy(enemy) {
@@ -699,7 +713,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.isGameOver || this.isLevelingUp || this.chest) return;
 
     const { x, y } = this.randomPointNear(this.chestSpawnRadius);
-    this.chest = this.add.image(x, y, 'chest').setDepth(6);
+    this.chest = this.add.image(x, y, 'pickup-chest').setTint(0xffcc44).setDepth(6);
     this.tweens.add({ targets: this.chest, y: y - 6, duration: 500, yoyo: true, repeat: -1 });
   }
 

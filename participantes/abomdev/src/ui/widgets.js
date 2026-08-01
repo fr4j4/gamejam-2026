@@ -41,6 +41,16 @@ export function bar(scene, { width, height, color, depth, inset = 1 }) {
   return { track, fill, maxWidth, inset };
 }
 
+// Icono de lucide. Las texturas se cargan en blanco, así que el color se da por tint.
+export function icon(scene, key, { size, color, depth, origin = 0.5 }) {
+  return scene.add.image(0, 0, key)
+    .setDisplaySize(size, size)
+    .setTint(color)
+    .setOrigin(origin)
+    .setScrollFactor(0)
+    .setDepth(depth);
+}
+
 export function divider(scene, { width, depth }) {
   return scene.add.rectangle(0, 0, width, 2, UI.divider)
     .setOrigin(0).setScrollFactor(0).setDepth(depth);

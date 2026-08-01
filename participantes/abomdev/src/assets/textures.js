@@ -12,14 +12,15 @@ function bake(scene, key, width, height, draw) {
 export function generateTextures(scene) {
   if (scene.textures.exists('player')) return;
 
-  bake(scene, 'player', 32, 32, (g) => {
+  // Jugador: halo suave + disco sólido + borde claro, para que se distinga siempre
+  // del enjambre de enemigos aunque la pantalla esté llena.
+  bake(scene, 'player', 36, 36, (g) => {
+    g.fillStyle(0x66ffcc, 0.22);
+    g.fillCircle(18, 18, 18);
     g.fillStyle(0x66ffcc, 1);
-    g.fillCircle(16, 16, 16);
-  });
-
-  bake(scene, 'enemy', 24, 24, (g) => {
-    g.fillStyle(0xff5566, 1);
-    g.fillRect(0, 0, 24, 24);
+    g.fillCircle(18, 18, 13);
+    g.lineStyle(2, 0xffffff, 0.85);
+    g.strokeCircle(18, 18, 13);
   });
 
   bake(scene, 'projectile', 10, 10, (g) => {
@@ -32,40 +33,14 @@ export function generateTextures(scene) {
     g.fillCircle(6, 6, 6);
   });
 
-  bake(scene, 'enemyFast', 16, 16, (g) => {
-    g.fillStyle(0xffaa33, 1);
-    g.fillTriangle(8, 0, 16, 16, 0, 16);
-  });
-
   bake(scene, 'spark', 6, 6, (g) => {
     g.fillStyle(0xffffff, 1);
     g.fillCircle(3, 3, 3);
   });
 
-  bake(scene, 'boss', 44, 44, (g) => {
-    g.fillStyle(0x220022, 1);
-    g.fillRect(0, 0, 44, 44);
-    g.lineStyle(3, 0xff33aa, 1);
-    g.strokeRect(1.5, 1.5, 41, 41);
-  });
-
   bake(scene, 'orbit', 12, 12, (g) => {
     g.fillStyle(0x55ddff, 1);
     g.fillCircle(6, 6, 6);
-  });
-
-  bake(scene, 'enemyTank', 28, 28, (g) => {
-    g.fillStyle(0x335522, 1);
-    g.fillRect(0, 0, 28, 28);
-    g.lineStyle(2, 0x88cc44, 1);
-    g.strokeRect(1, 1, 26, 26);
-  });
-
-  bake(scene, 'bossRanged', 44, 44, (g) => {
-    g.fillStyle(0x002233, 1);
-    g.fillRect(0, 0, 44, 44);
-    g.lineStyle(3, 0x33ccff, 1);
-    g.strokeRect(1.5, 1.5, 41, 41);
   });
 
   bake(scene, 'pierce', 20, 10, (g) => {
@@ -85,14 +60,5 @@ export function generateTextures(scene) {
     g.fillCircle(32, 32, 20);
     g.fillStyle(0xffffff, 0.9);
     g.fillCircle(32, 32, 8);
-  });
-
-  bake(scene, 'chest', 28, 28, (g) => {
-    g.fillStyle(0x8b5a2b, 1);
-    g.fillRect(0, 8, 28, 20);
-    g.fillStyle(0xffcc44, 1);
-    g.fillRect(0, 8, 28, 6);
-    g.lineStyle(2, 0x442200, 1);
-    g.strokeRect(0, 8, 28, 20);
   });
 }

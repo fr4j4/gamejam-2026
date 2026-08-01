@@ -154,6 +154,42 @@ export const WEAPON_UPGRADES = {
 
 export const WEAPON_KEYS = ['aura', 'orbit', 'pierce', 'burst', 'nova'];
 
+// Icono por mejora, para que la card se lea de un vistazo sin depender solo del texto.
+// La clave es la `key` de la mejora; las de arma comparten el icono de su arma.
+export const UPGRADE_ICONS = {
+  damage: 'icon-swords',
+  fireRate: 'icon-gauge',
+  moveSpeed: 'icon-footprints',
+  maxHp: 'icon-heart',
+  magnet: 'icon-magnet',
+  hpRegen: 'icon-heart-pulse',
+  lifesteal: 'icon-droplet',
+  dodge: 'icon-wind',
+  shield: 'icon-shield',
+
+  auraUnlock: 'icon-circle-dot',
+  auraDamage: 'icon-circle-dot',
+  auraRadius: 'icon-circle-dot',
+
+  orbitUnlock: 'icon-orbit',
+  orbitDamage: 'icon-orbit',
+  orbitCount: 'icon-orbit',
+  orbitSpeed: 'icon-orbit',
+
+  pierceUnlock: 'icon-crosshair',
+  pierceDamage: 'icon-crosshair',
+  pierceRate: 'icon-crosshair',
+
+  burstUnlock: 'icon-swords',
+  burstDamage: 'icon-swords',
+  burstCount: 'icon-swords',
+  burstRate: 'icon-swords',
+
+  novaUnlock: 'icon-waves',
+  novaDamage: 'icon-waves',
+  novaRadius: 'icon-waves',
+};
+
 // Escalado pasivo: +1% (o -1% en cadencias) en cada level-up, ademas de la mejora elegida.
 export const LEVEL_SCALE_UP = 1.01;
 export const LEVEL_SCALE_DOWN = 0.99;

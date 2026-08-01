@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "lucide-static": "^1.28.0",
     "phaser": "^4.2.1"
   },
   "devDependencies": {

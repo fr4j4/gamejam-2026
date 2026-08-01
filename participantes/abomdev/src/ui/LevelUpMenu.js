@@ -2,14 +2,16 @@
 // Se elige con clic sobre la card o con las teclas 1-4.
 
 import { FONT_SIZE, RARITY_COLOR, RARITY_COLOR_NUM, RARITY_LABEL, TEXT, UI } from '../config/theme.js';
-import { panel, setVisible, text } from './widgets.js';
+import { UPGRADE_ICONS } from '../config/upgrades.js';
+import { icon, panel, setVisible, text } from './widgets.js';
 
 const DEPTH = 100;
 const CARD_W = 320;
-const CARD_H = 130;
+const CARD_H = 150;
 const GAP_X = 24;
 const GAP_Y = 20;
-const GRID_TOP = 160;
+const GRID_TOP = 150;
+const ICON_SIZE = 34;
 
 export default class LevelUpMenu {
   // onChoose(index) lo provee la escena: aplica la mejora y cierra el menú.
@@ -31,12 +33,13 @@ export default class LevelUpMenu {
 
       const keyText = text(scene, `[${i + 1}]`, { size: '13px', color: TEXT.dim, depth: DEPTH + 1 }).setVisible(false);
       const rarityText = text(scene, '', { size: FONT_SIZE.tiny, color: TEXT.primary, depth: DEPTH + 1, origin: [1, 0] }).setVisible(false);
+      const cardIcon = icon(scene, 'icon-swords', { size: ICON_SIZE, color: 0xffffff, depth: DEPTH + 1 }).setVisible(false);
       const label = text(scene, '', {
         size: FONT_SIZE.body, color: TEXT.accent, depth: DEPTH + 1, origin: 0.5,
         align: 'center', wordWrapWidth: CARD_W - 36,
       }).setVisible(false);
 
-      return { bg, keyText, rarityText, label };
+      return { bg, keyText, rarityText, cardIcon, label };
     });
 
     ['ONE', 'TWO', 'THREE', 'FOUR'].forEach((keyName, i) => {
@@ -55,7 +58,8 @@ export default class LevelUpMenu {
       card.bg.setPosition(x, y);
       card.keyText.setPosition(x + 10, y + 8);
       card.rarityText.setPosition(x + CARD_W - 10, y + 8);
-      card.label.setPosition(x + CARD_W / 2, y + CARD_H / 2 + 6);
+      card.cardIcon.setPosition(x + CARD_W / 2, y + 52);
+      card.label.setPosition(x + CARD_W / 2, y + CARD_H - 42);
     });
   }
 
@@ -71,6 +75,11 @@ export default class LevelUpMenu {
       card.bg.setData('rarityColor', RARITY_COLOR_NUM[rarity]).setStrokeStyle(3, RARITY_COLOR_NUM[rarity]).setVisible(true);
       card.keyText.setVisible(true);
       card.rarityText.setText(RARITY_LABEL[rarity]).setColor(RARITY_COLOR[rarity]).setVisible(true);
+      // setTexture puede reajustar el tamaño al de la textura nueva, así que lo re-fijamos.
+      card.cardIcon.setTexture(UPGRADE_ICONS[choice.key] || 'icon-swords')
+        .setDisplaySize(ICON_SIZE, ICON_SIZE)
+        .setTint(RARITY_COLOR_NUM[rarity])
+        .setVisible(true);
       card.label.setText(choice.describe(stats, after)).setColor(RARITY_COLOR[rarity]).setVisible(true);
     });
     this.title.setVisible(true);
@@ -78,6 +87,6 @@ export default class LevelUpMenu {
 
   hide() {
     this.title.setVisible(false);
-    this.cards.forEach((card) => setVisible([card.bg, card.keyText, card.rarityText, card.label], false));
+    this.cards.forEach((card) => setVisible([card.bg, card.keyText, card.rarityText, card.cardIcon, card.label], false));
   }
 }

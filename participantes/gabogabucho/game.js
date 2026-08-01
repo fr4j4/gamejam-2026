@@ -53,7 +53,7 @@ const BUBBLE_IMG = {
   ciencia: 'estado_01_16x23'
 };
 
-const { advanceWalker } = ApocryphaMovement;
+const { advanceWalker, villagerAppearance } = ApocryphaMovement;
 
 // ---- utilidades ----
 function lerp(a, b, t) { return a + (b - a) * t; }
@@ -88,13 +88,11 @@ class ApocryphaScene extends Phaser.Scene {
   preload() {
     // arte real del usuario (assets/)
     const img = (key, file) => this.load.image(key, 'assets/' + file);
-    // aldeanos: 6 variantes
-    img('aldeano0', 'aldeano_00_25x46.png');
-    img('aldeano1', 'aldeano_01_26x45.png');
-    img('aldeano2', 'aldeano_02_25x43.png');
-    img('aldeano3', 'aldeano_03_24x43.png');
-    img('aldeano4', 'aldeano_04_38x41.png');
-    img('aldeano5', 'aldeano_05_24x41.png');
+    // pueblo variado: aldeanos, trabajadores, soldados, sacerdotes y un erudito
+    for (let i = 0; i < 9; i++) {
+      const appearance = villagerAppearance(i);
+      img(appearance.key, appearance.file);
+    }
     // Estructuras 1 (CONFIRMADO por el usuario):
     // estructura_03 = choza, estructura_02 = casa, estructura_01 = templo, estructura_00 = catedral
     img('choza', 'estructura_03_101x91.png');
@@ -231,7 +229,8 @@ class ApocryphaScene extends Phaser.Scene {
 
   // aldeano real: silueta + burbuja de estado sobre la cabeza
   makeVillager(x, i) {
-    const img = this.add.image(x, this.groundY, 'aldeano' + (i % 6)).setOrigin(0.5, 1).setScale(1.25);
+    const appearance = villagerAppearance(i);
+    const img = this.add.image(x, this.groundY, appearance.key).setOrigin(0.5, 1).setScale(appearance.scale);
 
     // estado inicial: el pueblo arranca con hambre y miedo
     const start = Math.random() < 0.5 ? 'hambre' : (Math.random() < 0.6 ? 'miedo' : 'duda');
@@ -240,6 +239,7 @@ class ApocryphaScene extends Phaser.Scene {
       homeX: x,
       direction: i % 2 === 0 ? 1 : -1,
       speed: 4 + (i % 3) * 1.5,
+      role: appearance.role,
       img: img,
       state: start,
       stateCd: 2000 + Math.random() * 4000,

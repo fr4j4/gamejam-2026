@@ -35,6 +35,7 @@ python -m http.server 8080
 - [x] Corte 2: estados emocionales (miedo/fe/hambre/duda/ciencia) que migran solos
 - [x] Corte 3: bucle jugable — Atención como recurso, victoria (Catedral) / derrota (olvidado) + reinicio
 - [x] Pulido: aldeanos caminando en carriles cortos sin solapar sus burbujas
+- [x] Pulido: variedad visual con trabajadores, soldados, sacerdotes y un erudito
 - [ ] Pulido: balance de Atención, feedback visual de la Catedral, sonido
 
 ## Debug

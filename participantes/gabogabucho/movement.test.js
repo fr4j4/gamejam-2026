@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { advanceWalker } = require('./movement.js');
+const { advanceWalker, villagerAppearance } = require('./movement.js');
 
 test('avanza de forma independiente del framerate', () => {
   const walker = { x: 100, direction: 1, speed: 8 };
@@ -31,4 +31,14 @@ test('conserva el exceso de recorrido al rebotar', () => {
     direction: -1,
     speed: 20
   });
+});
+
+test('distribuye oficios legibles entre los nueve habitantes', () => {
+  const appearances = Array.from({ length: 9 }, (_, index) => villagerAppearance(index));
+
+  assert.deepEqual(appearances.map(({ role }) => role), [
+    'aldeano', 'trabajador', 'soldado', 'sacerdote', 'erudito',
+    'aldeano', 'trabajador', 'soldado', 'sacerdote'
+  ]);
+  assert.ok(appearances.every(({ scale }) => scale >= 1.05 && scale <= 1.3));
 });

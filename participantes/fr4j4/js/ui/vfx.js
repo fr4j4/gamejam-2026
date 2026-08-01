@@ -1,6 +1,14 @@
 // VFX — shared visual helpers for the CRT/arcade identity
 // All helpers take `scene` as the first argument and add objects to `container`.
 
+window.UI = {
+  text(scene, x, y, content, style) {
+    const t = scene.add.text(x, y, content, style || {});
+    if (t.setResolution) t.setResolution(2);
+    return t;
+  }
+};
+
 window.VFX = {
   _add(container, obj) {
     if (Array.isArray(obj)) { obj.forEach(o => this._add(container, o)); return; }
@@ -18,9 +26,9 @@ window.VFX = {
     for (let i = 0; i < h; i += 2) g.fillRect(x - w / 2, y - h / 2 + i, w, 1);
     this._add(container, g);
     if (label) {
-      const t = scene.add.text(x, y - h / 2 + 5, label, {
-        fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#555570'
-      }).setOrigin(0.5, 0);
+    const t = UI.text(scene, x, y - h / 2 + 5, label, {
+      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#555570'
+    }).setOrigin(0.5, 0);
       this._add(container, t);
     }
     return g;
@@ -35,7 +43,7 @@ window.VFX = {
     const lo = scene.add.rectangle(x, y + h / 2 - 1, w - 2, 1, 0x050510).setOrigin(0.5, 1);
     const led = scene.add.circle(x - w / 2 + 10, y, 3, c);
     if (Phaser.BlendModes && Phaser.BlendModes.ADD) led.setBlendMode(Phaser.BlendModes.ADD);
-    const txt = scene.add.text(x - w / 2 + 18, y, label, {
+    const txt = UI.text(scene, x - w / 2 + 18, y, label, {
       fontFamily: '"Press Start 2P"', fontSize: '7px',
       color: '#' + c.toString(16).padStart(6, '0')
     }).setOrigin(0, 0.5);
@@ -59,7 +67,7 @@ window.VFX = {
     g.strokeCircle(x, y, radius);
     g.lineStyle(1, active ? color : 0x3a3a5e, active ? 0.8 : 0.4);
     g.strokeCircle(x, y, radius - 3);
-    const t = scene.add.text(x, y, iconStr, { fontSize: Math.floor(radius * 0.85) + 'px' }).setOrigin(0.5);
+    const t = UI.text(scene, x, y, iconStr, { fontSize: Math.floor(radius * 0.85) + 'px' }).setOrigin(0.5);
     this._add(container, [g, t]);
     return g;
   },
@@ -102,14 +110,14 @@ window.VFX = {
 
     const titleX = (titleStartX + (W - 30)) / 2;
     const titleW = W - 30 - titleStartX;
-    const titleObj = scene.add.text(titleX, H / 2, title, {
+    const titleObj = UI.text(scene, titleX, H / 2, title, {
       fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#8892a0',
       wordWrap: { width: titleW }, align: 'center'
     }).setOrigin(0.5, 0.5);
     this._add(container, titleObj);
 
     if (options.showFullscreen) {
-      const fs = scene.add.text(W - 8, H / 2, '⛶', {
+      const fs = UI.text(scene, W - 8, H / 2, '⛶', {
         fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#8892a0'
       }).setOrigin(1, 0.5).setInteractive({ useHandCursor: true });
       fs.on('pointerover', () => fs.setColor('#faba72'));
@@ -153,7 +161,7 @@ window.VFX = {
     for (let i = 1; i < 6; i++) g.lineTo(pts[i].x, pts[i].y);
     g.closePath(); g.fillPath();
     g.lineStyle(2, color, 1); g.strokePath();
-    const t = scene.add.text(x, y, `${value}`, {
+    const t = UI.text(scene, x, y, `${value}`, {
       fontFamily: '"Press Start 2P"', fontSize: '8px',
       color: '#' + color.toString(16).padStart(6, '0')
     }).setOrigin(0.5);
@@ -164,16 +172,16 @@ window.VFX = {
   titleMarquee(scene, container, x, y, text, accentColorHex) {
     const color = Phaser.Display.Color.HexStringToColor(accentColorHex).color;
     const c = scene.add.container(x, y);
-    const base = scene.add.text(0, 0, text, {
+    const base = UI.text(scene, 0, 0, text, {
       fontFamily: '"Press Start 2P"', fontSize: '40px', color: '#ffffff'
-    }).setOrigin(0.5).setResolution(2);
-    const glow = scene.add.text(0, 0, text, {
+    }).setOrigin(0.5);
+    const glow = UI.text(scene, 0, 0, text, {
       fontFamily: '"Press Start 2P"', fontSize: '40px', color: accentColorHex
-    }).setOrigin(0.5).setAlpha(0.35).setResolution(2);
+    }).setOrigin(0.5).setAlpha(0.35);
     if (Phaser.BlendModes && Phaser.BlendModes.ADD) glow.setBlendMode(Phaser.BlendModes.ADD);
-    const shadow = scene.add.text(4, 4, text, {
+    const shadow = UI.text(scene, 4, 4, text, {
       fontFamily: '"Press Start 2P"', fontSize: '40px', color: '#050510'
-    }).setOrigin(0.5).setAlpha(0.7).setResolution(2);
+    }).setOrigin(0.5).setAlpha(0.7);
     c.add([shadow, glow, base]);
     scene.tweens.add({
       targets: glow, alpha: 0.6, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
@@ -184,9 +192,9 @@ window.VFX = {
 
   glitchTitle(scene, container, x, y, text, accentColorHex) {
     const c = scene.add.container(x, y);
-    const measure = scene.add.text(0, 0, text, {
+    const measure = UI.text(scene, 0, 0, text, {
       fontFamily: '"Press Start 2P"', fontSize: '40px'
-    }).setOrigin(0.5).setResolution(2);
+    }).setOrigin(0.5);
     const charW = measure.width / text.length;
     measure.destroy();
 
@@ -198,12 +206,12 @@ window.VFX = {
 
     chars.forEach((ch, i) => {
       const lx = startX + i * charW;
-      const shadow = scene.add.text(lx + 3, 3, ch, {
+      const shadow = UI.text(scene, lx + 3, 3, ch, {
         fontFamily: '"Press Start 2P"', fontSize: '40px', color: '#050510'
-      }).setOrigin(0.5).setAlpha(0.6).setResolution(2);
-      const letter = scene.add.text(lx, 0, ch, {
+      }).setOrigin(0.5).setAlpha(0.6);
+      const letter = UI.text(scene, lx, 0, ch, {
         fontFamily: '"Press Start 2P"', fontSize: '40px', color: '#ffffff'
-      }).setOrigin(0.5).setResolution(2);
+      }).setOrigin(0.5);
       shadows.push(shadow);
       letters.push(letter);
       c.add([shadow, letter]);
@@ -213,12 +221,12 @@ window.VFX = {
     c.shadows = shadows;
 
     const glyphs = ['$', '%', '#', '!', '?', '0', '1', '×', '¤', '¶'];
-    const red = scene.add.text(0, 0, '', {
+    const red = UI.text(scene, 0, 0, '', {
       fontFamily: '"Press Start 2P"', fontSize: '40px', color: '#ff6b6b'
-    }).setOrigin(0.5).setAlpha(0).setResolution(2);
-    const cyan = scene.add.text(0, 0, '', {
+    }).setOrigin(0.5).setAlpha(0);
+    const cyan = UI.text(scene, 0, 0, '', {
       fontFamily: '"Press Start 2P"', fontSize: '40px', color: '#9fcafd'
-    }).setOrigin(0.5).setAlpha(0).setResolution(2);
+    }).setOrigin(0.5).setAlpha(0);
     c.add([red, cyan]);
 
     function triggerGlitch() {
@@ -269,11 +277,11 @@ window.VFX = {
   terminalFooter(scene, container, x, y, text) {
     const full = text;
     const style = { fontFamily: '"VT323"', fontSize: '13px', color: '#9fcafd' };
-    const measure = scene.add.text(0, 0, full, style).setResolution(2);
+    const measure = UI.text(scene, 0, 0, full, style);
     const finalW = measure.width;
     measure.destroy();
-    const t = scene.add.text(x - finalW, y, '', style).setOrigin(0, 1);
-    const cursor = scene.add.text(x - finalW, y, '▌', style).setOrigin(0, 1).setAlpha(0);
+    const t = UI.text(scene, x - finalW, y, '', style).setOrigin(0, 1);
+    const cursor = UI.text(scene, x - finalW, y, '▌', style).setOrigin(0, 1).setAlpha(0);
     this._add(container, [t, cursor]);
 
     let shown = '';
@@ -341,7 +349,7 @@ window.VFX = {
     g.strokeCircle(0, 0, radius);
     g.lineStyle(1, color, 0.08);
     g.strokeCircle(0, 0, radius - 4);
-    const t = scene.add.text(0, 0, iconStr, {
+    const t = UI.text(scene, 0, 0, iconStr, {
       fontSize: Math.floor(radius * 0.8) + 'px', color: colorHex
     }).setOrigin(0.5).setAlpha(0.12);
     c.add([g, t]);

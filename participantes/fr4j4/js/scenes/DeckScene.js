@@ -123,15 +123,15 @@ class DeckScene extends Phaser.Scene {
       bg.on('pointerdown', () => { this.selectedClass = cl.id; this.activeSlot = 0; this.showStep(1); });
       c.add(bg);
       VFX.classSeal(this, c, leftX + 30, y, 18, cl.icon, cl.colorHex, active);
-      c.add(this.add.text(leftX + 58, y - 5, cl.name.toUpperCase(), {
+      c.add(UI.text(this, leftX + 58, y - 5, cl.name.toUpperCase(), {
         fontFamily: '"Press Start 2P"', fontSize: '8px',
         color: active ? cl.colorHex : '#e0e0e0'
       }).setOrigin(0, 0.5));
-      c.add(this.add.text(leftX + 58, y + 8, cl.style, {
+      c.add(UI.text(this, leftX + 58, y + 8, cl.style, {
         fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#8892a0'
       }).setOrigin(0, 0.5));
       if (active) {
-        c.add(this.add.text(leftX + leftW - 14, y, '>', {
+        c.add(UI.text(this, leftX + leftW - 14, y, '>', {
           fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#faba72'
         }).setOrigin(1, 0.5));
       }
@@ -140,28 +140,28 @@ class DeckScene extends Phaser.Scene {
     // Right panel — class details
     VFX.lcdPanel(this, c, rightX + rightW / 2, rightY + rightH / 2, rightW, rightH);
     VFX.classSeal(this, c, rightX + rightW / 2, rightY + 46, 36, selectedCls.icon, selectedCls.colorHex, true);
-    c.add(this.add.text(rightX + rightW / 2, rightY + 92, selectedCls.name.toUpperCase(), {
+    c.add(UI.text(this, rightX + rightW / 2, rightY + 92, selectedCls.name.toUpperCase(), {
       fontFamily: '"Press Start 2P"', fontSize: '12px', color: selectedCls.colorHex
     }).setOrigin(0.5));
 
     const statY = rightY + 120;
-    c.add(this.add.text(rightX + 14, statY, `HP ${selectedCls.hp}`, {
-      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#bdcd9c'
+    c.add(UI.text(this, rightX + 14, statY, `HP ${selectedCls.hp}`, {
+      fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#bdcd9c'
     }).setOrigin(0, 0.5));
-    c.add(this.add.text(rightX + rightW / 2, statY, `ARM ${selectedCls.armor}`, {
-      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#9fcafd'
+    c.add(UI.text(this, rightX + rightW / 2, statY, `ARM ${selectedCls.armor}`, {
+      fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#9fcafd'
     }).setOrigin(0.5));
-    c.add(this.add.text(rightX + rightW - 14, statY, selectedCls.resource.toUpperCase(), {
-      fontFamily: '"Press Start 2P"', fontSize: '6px', color: '#faba72'
+    c.add(UI.text(this, rightX + rightW - 14, statY, selectedCls.resource.toUpperCase(), {
+      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#faba72'
     }).setOrigin(1, 0.5));
 
-    c.add(this.add.text(rightX + rightW / 2, statY + 16, selectedCls.style, {
-      fontFamily: '"Press Start 2P"', fontSize: '6px', color: '#e0e0e0'
+    c.add(UI.text(this, rightX + rightW / 2, statY + 16, selectedCls.style, {
+      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#e0e0e0'
     }).setOrigin(0.5));
 
     const lore = CLASS_LORE[selectedCls.id] || '';
-    c.add(this.add.text(rightX + rightW / 2, statY + 40, lore, {
-      fontFamily: '"VT323"', fontSize: '11px', color: '#8892a0', align: 'center', wordWrap: { width: rightW - 20 }
+    c.add(UI.text(this, rightX + rightW / 2, statY + 40, lore, {
+      fontFamily: '"VT323"', fontSize: '12px', color: '#8892a0', align: 'center', wordWrap: { width: rightW - 20 }
     }).setOrigin(0.5));
 
     // Hero power card
@@ -169,13 +169,13 @@ class DeckScene extends Phaser.Scene {
     VFX.lcdPanel(this, c, rightX + rightW / 2, hpY, rightW - 16, 46);
     const hp = selectedCls.heroPower;
     VFX.costHex(this, c, rightX + 24, hpY - 8, 8, hp.cost, selectedCls.colorHex);
-    c.add(this.add.text(rightX + rightW / 2, hpY - 10, 'HABILIDAD HEROICA', {
-      fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#555570'
+    c.add(UI.text(this, rightX + rightW / 2, hpY - 10, 'HABILIDAD HEROICA', {
+      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#555570'
     }).setOrigin(0.5));
-    c.add(this.add.text(rightX + 42, hpY + 4, hp.name.toUpperCase(), {
+    c.add(UI.text(this, rightX + 42, hpY + 4, hp.name.toUpperCase(), {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: selectedCls.colorHex
     }).setOrigin(0, 0.5));
-    c.add(this.add.text(rightX + 42, hpY + 18, hp.desc, {
+    c.add(UI.text(this, rightX + 42, hpY + 18, hp.desc, {
       fontFamily: '"VT323"', fontSize: '11px', color: '#e0e0e0'
     }).setOrigin(0, 0.5));
 
@@ -218,7 +218,7 @@ class DeckScene extends Phaser.Scene {
     const { cardW, cardH, cols, gap, slotAreaX, slotAreaY, slotAreaW, slotAreaH, showArrows = true } = opts;
     if (slots.length === 0) {
       VFX.lcdPanel(this, c, slotAreaX + slotAreaW / 2, slotAreaY + slotAreaH / 2, slotAreaW - 16, 60);
-      c.add(this.add.text(slotAreaX + slotAreaW / 2, slotAreaY + slotAreaH / 2, 'No tienes barajas.\nCrea la primera.', {
+      c.add(UI.text(this, slotAreaX + slotAreaW / 2, slotAreaY + slotAreaH / 2, 'No tienes barajas.\nCrea la primera.', {
         fontFamily: '"Press Start 2P"', fontSize: this.isMobile ? '7px' : '9px', color: '#4af0c8', align: 'center'
       }).setOrigin(0.5));
       return;
@@ -248,32 +248,32 @@ class DeckScene extends Phaser.Scene {
       if (this.isMobile) {
         slotContainer.add(this.add.rectangle(0, -cardH / 2 + 11, cardW, 20, 0x0a0a14));
         const total = Object.values(s.cards || {}).reduce((a, b) => a + b, 0);
-        slotContainer.add(this.add.text(-cardW / 2 + 8, -cardH / 2 + 11, (s.name || 'Baraja').toUpperCase(), {
+        slotContainer.add(UI.text(this, -cardW / 2 + 8, -cardH / 2 + 11, (s.name || 'Baraja').toUpperCase(), {
           fontFamily: '"Press Start 2P"', fontSize: '8px',
           color: i === this.activeSlot ? '#faba72' : '#e0e0e0'
         }).setOrigin(0, 0.5));
         slotContainer.add(this.add.circle(-cardW / 2 + 14, 10, 6, 0x0d0d1a).setStrokeStyle(1, 0x050510));
         slotContainer.add(this.add.circle(-cardW / 2 + 32, 10, 6, 0x0d0d1a).setStrokeStyle(1, 0x050510));
-        slotContainer.add(this.add.text(cardW / 2 - 8, 10, `${total}`, {
+        slotContainer.add(UI.text(this, cardW / 2 - 8, 10, `${total}`, {
           fontFamily: '"Press Start 2P"', fontSize: '12px',
           color: total >= 5 ? '#bdcd9c' : '#ff6b6b'
         }).setOrigin(1, 0.5));
       } else {
         slotContainer.add(this.add.rectangle(0, -cardH / 2 + 12, cardW, 22, 0x0a0a14).setStrokeStyle(1, 0x050510));
-        slotContainer.add(this.add.text(-cardW / 2 + 8, -cardH / 2 + 12, (s.name || 'Baraja').toUpperCase(), {
+        slotContainer.add(UI.text(this, -cardW / 2 + 8, -cardH / 2 + 12, (s.name || 'Baraja').toUpperCase(), {
           fontFamily: '"Press Start 2P"', fontSize: '7px',
           color: i === this.activeSlot ? '#faba72' : '#e0e0e0'
         }).setOrigin(0, 0.5));
         slotContainer.add(this.add.circle(-cardW / 2 + 10, 8, 6, 0x0d0d1a).setStrokeStyle(1, 0x050510));
         slotContainer.add(this.add.circle(-cardW / 2 + 26, 8, 6, 0x0d0d1a).setStrokeStyle(1, 0x050510));
         const total = Object.values(s.cards || {}).reduce((a, b) => a + b, 0);
-        slotContainer.add(this.add.text(cardW / 2 - 8, 8, `${total} CARTAS`, {
+        slotContainer.add(UI.text(this, cardW / 2 - 8, 8, `${total} CARTAS`, {
           fontFamily: '"Press Start 2P"', fontSize: '6px',
           color: total >= 5 ? '#bdcd9c' : '#ff6b6b'
         }).setOrigin(1, 0.5));
         if (i === this.activeSlot) {
           slotContainer.add(this.add.rectangle(cardW / 2 - 24, -cardH / 2 + 10, 40, 10, 0xfaba72));
-          slotContainer.add(this.add.text(cardW / 2 - 24, -cardH / 2 + 10, 'ACTIVE', {
+          slotContainer.add(UI.text(this, cardW / 2 - 24, -cardH / 2 + 10, 'ACTIVE', {
             fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#0d0d1a'
           }).setOrigin(0.5));
         }
@@ -290,11 +290,11 @@ class DeckScene extends Phaser.Scene {
 
     if (showArrows) {
       const arrowX = slotAreaX + slotAreaW + 8;
-      const upArrow = this.add.text(arrowX, slotAreaY + 6, '▲', {
+      const upArrow = UI.text(this, arrowX, slotAreaY + 6, '▲', {
         fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#faba72'
       }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true })
         .on('pointerdown', () => this.scrollSlotGrid(-cardH / 2));
-      const downArrow = this.add.text(arrowX, slotAreaY + slotAreaH - 8, '▼', {
+      const downArrow = UI.text(this, arrowX, slotAreaY + slotAreaH - 8, '▼', {
         fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#faba72'
       }).setOrigin(0.5, 1).setInteractive({ useHandCursor: true })
         .on('pointerdown', () => this.scrollSlotGrid(cardH / 2));
@@ -451,11 +451,11 @@ class DeckScene extends Phaser.Scene {
         // Place arrows below the grid, never over cards or the side panel
         const arrowY = gridAreaY + gridAreaH + 8;
         const arrowX = gridAreaX + gridAreaW / 2;
-        const upArrow = this.add.text(arrowX - 12, arrowY, '▲', {
+        const upArrow = UI.text(this, arrowX - 12, arrowY, '▲', {
           fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#faba72'
         }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true })
           .on('pointerdown', () => this.scrollCardGrid(-40));
-        const downArrow = this.add.text(arrowX + 12, arrowY, '▼', {
+        const downArrow = UI.text(this, arrowX + 12, arrowY, '▼', {
           fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#faba72'
         }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true })
           .on('pointerdown', () => this.scrollCardGrid(40));
@@ -488,7 +488,7 @@ class DeckScene extends Phaser.Scene {
         }
       });
     } else {
-      c.add(this.add.text(gridAreaX + gridAreaW / 2, gridAreaY + gridAreaH / 2,
+      c.add(UI.text(this, gridAreaX + gridAreaW / 2, gridAreaY + gridAreaH / 2,
         'Sin cartas.\nAjusta los filtros.', {
         fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#8892a0', align: 'center'
       }).setOrigin(0.5));
@@ -503,8 +503,8 @@ class DeckScene extends Phaser.Scene {
     for (let i = 0; i < panelH; i += 2) lcdG.fillRect(panelX + 1, panelY + 1 + i, panelW - 2, 1);
     c.add(lcdG);
 
-    c.add(this.add.text(panelX + 8, panelY + 10, `DECK [${total}]`, {
-      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#faba72'
+    c.add(UI.text(this, panelX + 8, panelY + 10, `DECK [${total}]`, {
+      fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#faba72'
     }).setOrigin(0, 0));
     const validColor = total >= 5 ? 0x4af0c8 : 0xff6b6b;
     c.add(this.add.circle(panelX + panelW - 12, panelY + 12, 4, validColor).setBlendMode(Phaser.BlendModes.ADD));
@@ -530,11 +530,11 @@ class DeckScene extends Phaser.Scene {
       for (let m = 0; m <= 6; m++) {
         const h = Math.max(4, (eqData[m] / eqMax) * 40);
         VFX.eqBar(this, c, eqStartX + m * (eqBarW + eqGap), eqBaseY, h, 0x4af0c8, h + 2);
-        c.add(this.add.text(eqStartX + m * (eqBarW + eqGap), eqBaseY + 9, `${m}`, {
+        c.add(UI.text(this, eqStartX + m * (eqBarW + eqGap), eqBaseY + 9, `${m}`, {
           fontFamily: '"VT323"', fontSize: '13px', color: '#8892a0'
         }).setOrigin(0.5, 0));
         if (eqData[m] > 0) {
-          c.add(this.add.text(eqStartX + m * (eqBarW + eqGap), eqBaseY - h - 2, `${eqData[m]}`, {
+          c.add(UI.text(this, eqStartX + m * (eqBarW + eqGap), eqBaseY - h - 2, `${eqData[m]}`, {
             fontFamily: '"VT323"', fontSize: '14px', color: '#e0e0e0'
           }).setOrigin(0.5, 1));
         }
@@ -542,19 +542,19 @@ class DeckScene extends Phaser.Scene {
       let ty = panelY + 90;
       const trackPanelX = panelX + 8;
       const trackPanelW = panelW - 16;
-      c.add(this.add.text(trackPanelX, ty, 'CARTAS EN DECK', {
+      c.add(UI.text(this, trackPanelX, ty, 'CARTAS EN DECK', {
         fontFamily: '"Press Start 2P"', fontSize: '6px', color: '#faba72'
       }).setOrigin(0, 0));
       ty += 10;
       cards.filter(card => (deck[card.id] || 0) > 0).sort((a, b) => a.cost - b.cost).forEach(card => {
         if (ty > panelY + panelH - 28) return;
-        c.add(this.add.text(trackPanelX, ty, `${card.cost}M`, {
+        c.add(UI.text(this, trackPanelX, ty, `${card.cost}M`, {
           fontFamily: '"VT323"', fontSize: '14px', color: '#4af0c8'
         }).setOrigin(0, 0));
-        c.add(this.add.text(trackPanelX + 22, ty, card.name.slice(0, 16), {
+        c.add(UI.text(this, trackPanelX + 22, ty, card.name.slice(0, 16), {
           fontFamily: '"VT323"', fontSize: '14px', color: '#e0e0e0'
         }).setOrigin(0, 0));
-        c.add(this.add.text(trackPanelX + trackPanelW, ty, `x${deck[card.id]}`, {
+        c.add(UI.text(this, trackPanelX + trackPanelW, ty, `x${deck[card.id]}`, {
           fontFamily: '"VT323"', fontSize: '14px', color: '#faba72'
         }).setOrigin(1, 0));
         ty += 13;
@@ -584,7 +584,7 @@ class DeckScene extends Phaser.Scene {
 
   renderFilterBar(c, cards, filterY) {
     VFX.lcdPanel(this, c, this.W / 2, filterY, this.W - 16, 14);
-    c.add(this.add.text(14, filterY, 'COST:', {
+    c.add(UI.text(this, 14, filterY, 'COST:', {
       fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#4af0c8'
     }).setOrigin(0, 0.5));
     const costs = ['0', '1', '2', '3', '4', '5', '6+'];
@@ -600,7 +600,7 @@ class DeckScene extends Phaser.Scene {
           if (this.costFilters.has(i)) this.costFilters.delete(i); else this.costFilters.add(i);
           this.showStep(3);
         }));
-      c.add(this.add.text(cx, filterY, cc, {
+      c.add(UI.text(this, cx, filterY, cc, {
         fontFamily: '"Press Start 2P"', fontSize: '6px',
         color: active ? '#faba72' : '#8892a0'
       }).setOrigin(0.5));
@@ -629,7 +629,7 @@ class DeckScene extends Phaser.Scene {
           else this.typeFilters.add(tag.id);
           this.showStep(3);
         }));
-      c.add(this.add.text(cx, filterY, lbl, {
+      c.add(UI.text(this, cx, filterY, lbl, {
         fontFamily: '"Press Start 2P"', fontSize: '6px',
         color: active ? '#faba72' : '#8892a0'
       }).setOrigin(0.5));
@@ -728,26 +728,26 @@ class DeckScene extends Phaser.Scene {
     if (this.isMobile) {
       let ly = 30;
       VFX.lcdPanel(this, c, this.W / 2, ly + 18, this.W - 16, 32);
-      c.add(this.add.text(this.W / 2, ly + 8, 'TOTAL', {
+      c.add(UI.text(this, this.W / 2, ly + 8, 'TOTAL', {
         fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#555570'
       }).setOrigin(0.5, 0));
-      c.add(this.add.text(this.W / 2, ly + 24, `${total}`, {
+      c.add(UI.text(this, this.W / 2, ly + 24, `${total}`, {
         fontFamily: '"Press Start 2P"', fontSize: '14px',
         color: valid ? '#4af0c8' : '#ff6b6b'
       }).setOrigin(0.5));
       ly += 38;
       VFX.lcdPanel(this, c, this.W / 2 - 80, ly + 14, 140, 26);
-      c.add(this.add.text(this.W / 2 - 130, ly + 14, 'AVG', {
+      c.add(UI.text(this, this.W / 2 - 130, ly + 14, 'AVG', {
         fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#555570'
       }).setOrigin(0, 0.5));
-      c.add(this.add.text(this.W / 2 - 80, ly + 14, `${avg}`, {
+      c.add(UI.text(this, this.W / 2 - 80, ly + 14, `${avg}`, {
         fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#4af0c8'
       }).setOrigin(0.5));
       VFX.lcdPanel(this, c, this.W / 2 + 80, ly + 14, 140, 26);
-      c.add(this.add.text(this.W / 2 + 30, ly + 14, 'AC/CR', {
+      c.add(UI.text(this, this.W / 2 + 30, ly + 14, 'AC/CR', {
         fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#555570'
       }).setOrigin(0, 0.5));
-      c.add(this.add.text(this.W / 2 + 80, ly + 14, `${acciones}/${criat}`, {
+      c.add(UI.text(this, this.W / 2 + 80, ly + 14, `${acciones}/${criat}`, {
         fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#4af0c8'
       }).setOrigin(0.5));
       ly += 34;
@@ -756,7 +756,7 @@ class DeckScene extends Phaser.Scene {
       for (let m = 0; m <= 6; m++) {
         const h = Math.max(4, (eqData[m] / eqMax) * 40);
         VFX.eqBar(this, c, eqStartX + m * (eqBarW + eqGap), eqBaseY, h, 0x4af0c8, h + 2);
-        c.add(this.add.text(eqStartX + m * (eqBarW + eqGap), eqBaseY + 6, `${m}`, {
+        c.add(UI.text(this, eqStartX + m * (eqBarW + eqGap), eqBaseY + 6, `${m}`, {
           fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#555570'
         }).setOrigin(0.5, 0));
       }
@@ -764,7 +764,7 @@ class DeckScene extends Phaser.Scene {
       let ty = ly;
       cards.filter(card => (deck[card.id] || 0) > 0).sort((a, b) => a.cost - b.cost).forEach(card => {
         if (ty > this.H - 50) return;
-        c.add(this.add.text(this.W / 2, ty, `${card.cost}M  ${card.name.slice(0, 14)}  x${deck[card.id]}`, {
+        c.add(UI.text(this, this.W / 2, ty, `${card.cost}M  ${card.name.slice(0, 14)}  x${deck[card.id]}`, {
           fontFamily: '"Press Start 2P"', fontSize: '6px', color: '#e0e0e0'
         }).setOrigin(0.5, 0));
         ty += 9;
@@ -776,32 +776,32 @@ class DeckScene extends Phaser.Scene {
       const leftW = 220;
       let ly = 32;
       VFX.lcdPanel(this, c, leftW / 2 + 16, ly + 18, leftW - 16, 36);
-      c.add(this.add.text(leftW / 2 + 16, ly + 12, 'TOTAL CARTAS', {
+      c.add(UI.text(this, leftW / 2 + 16, ly + 12, 'TOTAL CARTAS', {
         fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#555570'
       }).setOrigin(0.5, 0));
-      c.add(this.add.text(leftW / 2 + 16, ly + 30, `${total}`, {
+      c.add(UI.text(this, leftW / 2 + 16, ly + 30, `${total}`, {
         fontFamily: '"Press Start 2P"', fontSize: '14px',
         color: valid ? '#4af0c8' : '#ff6b6b'
       }).setOrigin(0.5));
       c.add(this.add.circle(leftW - 8, ly + 14, 3, valid ? 0x4af0c8 : 0xff6b6b).setBlendMode(Phaser.BlendModes.ADD));
       ly += 46;
       VFX.lcdPanel(this, c, leftW / 2 + 16, ly + 18, leftW - 16, 28);
-      c.add(this.add.text(16 + 8, ly + 18, 'AVG', {
+      c.add(UI.text(this, 16 + 8, ly + 18, 'AVG', {
         fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#555570'
       }).setOrigin(0, 0.5));
-      c.add(this.add.text(leftW / 2 + 16, ly + 18, `${avg}`, {
+      c.add(UI.text(this, leftW / 2 + 16, ly + 18, `${avg}`, {
         fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#4af0c8'
       }).setOrigin(0.5));
       ly += 34;
       VFX.lcdPanel(this, c, leftW / 2 + 16, ly + 14, leftW - 16, 28);
-      c.add(this.add.text(16 + 8, ly + 14, 'AC/CR', {
+      c.add(UI.text(this, 16 + 8, ly + 14, 'AC/CR', {
         fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#555570'
       }).setOrigin(0, 0.5));
-      c.add(this.add.text(leftW / 2 + 16, ly + 14, `${acciones} / ${criat}`, {
+      c.add(UI.text(this, leftW / 2 + 16, ly + 14, `${acciones} / ${criat}`, {
         fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#4af0c8'
       }).setOrigin(0.5));
       ly += 34;
-      c.add(this.add.text(leftW / 2 + 16, ly + 4, 'CURVA DE MANA', {
+      c.add(UI.text(this, leftW / 2 + 16, ly + 4, 'CURVA DE MANA', {
         fontFamily: '"Press Start 2P"', fontSize: '6px', color: '#faba72'
       }).setOrigin(0.5));
       const eqBarW = 14, eqGap = 4, eqBaseY = ly + 70;
@@ -809,11 +809,11 @@ class DeckScene extends Phaser.Scene {
       for (let m = 0; m <= 6; m++) {
         const h = Math.max(4, (eqData[m] / eqMax) * 50);
         VFX.eqBar(this, c, eqStartX + m * (eqBarW + eqGap), eqBaseY, h, 0x4af0c8, h + 2);
-        c.add(this.add.text(eqStartX + m * (eqBarW + eqGap), eqBaseY + 6, `${m}`, {
+        c.add(UI.text(this, eqStartX + m * (eqBarW + eqGap), eqBaseY + 6, `${m}`, {
           fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#555570'
         }).setOrigin(0.5, 0));
         if (eqData[m] > 0) {
-          c.add(this.add.text(eqStartX + m * (eqBarW + eqGap), eqBaseY - h - 4, `${eqData[m]}`, {
+          c.add(UI.text(this, eqStartX + m * (eqBarW + eqGap), eqBaseY - h - 4, `${eqData[m]}`, {
             fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#e0e0e0'
           }).setOrigin(0.5, 1));
         }
@@ -833,19 +833,19 @@ class DeckScene extends Phaser.Scene {
       lcdG.fillStyle(0x000000, 0.18);
       for (let i = 0; i < listH; i += 2) lcdG.fillRect(listX + 1, 29 + i, listW - 2, 1);
       c.add(lcdG);
-      c.add(this.add.text(listX + 8, 36, 'TRACK LISTING', {
+      c.add(UI.text(this, listX + 8, 36, 'TRACK LISTING', {
         fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#faba72'
       }).setOrigin(0, 0));
       let ty = 52;
       cards.filter(card => (deck[card.id] || 0) > 0).sort((a, b) => a.cost - b.cost).forEach(card => {
         VFX.classSeal(this, c, listX + 16, ty + 6, 5, '', cls.colorHex, true);
-        c.add(this.add.text(listX + 28, ty + 2, `${card.cost}M`, {
+        c.add(UI.text(this, listX + 28, ty + 2, `${card.cost}M`, {
           fontFamily: '"Press Start 2P"', fontSize: '6px', color: '#4af0c8'
         }).setOrigin(0, 0));
-        c.add(this.add.text(listX + 50, ty + 2, card.name, {
+        c.add(UI.text(this, listX + 50, ty + 2, card.name, {
           fontFamily: '"Press Start 2P"', fontSize: '6px', color: '#e0e0e0'
         }).setOrigin(0, 0));
-        c.add(this.add.text(listX + listW - 8, ty + 2, `x${deck[card.id]}`, {
+        c.add(UI.text(this, listX + listW - 8, ty + 2, `x${deck[card.id]}`, {
           fontFamily: '"Press Start 2P"', fontSize: '6px', color: '#faba72'
         }).setOrigin(1, 0));
         ty += 14;
@@ -900,7 +900,7 @@ class DeckScene extends Phaser.Scene {
     cardRoot.setPosition(modalCenterX, modalCenterY);
     m.add(cardRoot);
 
-    const maxTxt = this.add.text(this.W / 2, modalCenterY + cardH / 2 + 14,
+    const maxTxt = UI.text(this, this.W / 2, modalCenterY + cardH / 2 + 14,
       `Max ${card.maxCopies} copias`, {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#8892a0'
     }).setOrigin(0.5);
@@ -911,11 +911,11 @@ class DeckScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xff6b6b)
       .setInteractive({ useHandCursor: true });
     m.add(minusBg);
-    m.add(this.add.text(this.W / 2 - 50, btnY, '−', {
+    m.add(UI.text(this, this.W / 2 - 50, btnY, '−', {
       fontFamily: '"Press Start 2P"', fontSize: '16px', color: '#ff6b6b'
     }).setOrigin(0.5));
 
-    const countTxt = this.add.text(this.W / 2, btnY, `${count}/${card.maxCopies}`, {
+    const countTxt = UI.text(this, this.W / 2, btnY, `${count}/${card.maxCopies}`, {
       fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#faba72'
     }).setOrigin(0.5);
     m.add(countTxt);
@@ -924,7 +924,7 @@ class DeckScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xbdcd9c)
       .setInteractive({ useHandCursor: true });
     m.add(plusBg);
-    m.add(this.add.text(this.W / 2 + 50, btnY, '+', {
+    m.add(UI.text(this, this.W / 2 + 50, btnY, '+', {
       fontFamily: '"Press Start 2P"', fontSize: '16px', color: '#bdcd9c'
     }).setOrigin(0.5));
 
@@ -932,7 +932,7 @@ class DeckScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xff6b6b)
       .setInteractive({ useHandCursor: true });
     m.add(closeBg);
-    m.add(this.add.text(this.W / 2, btnY + 28, 'CERRAR', {
+    m.add(UI.text(this, this.W / 2, btnY + 28, 'CERRAR', {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
     }).setOrigin(0.5));
 
@@ -1019,7 +1019,7 @@ class DeckScene extends Phaser.Scene {
       const bb = this.add.rectangle(mx + menuW / 2, by + 9, menuW - 8, 22, 0x16213e)
         .setInteractive({ useHandCursor: true });
       m.add(bb);
-      m.add(this.add.text(mx + 10, by + 9, a.label, {
+      m.add(UI.text(this, mx + 10, by + 9, a.label, {
         fontFamily: '"Press Start 2P"', fontSize: '7px', color: a.color
       }).setOrigin(0, 0.5));
       bb.on('pointerover', () => bb.setFillStyle(0x1a2a4e, 1));
@@ -1100,20 +1100,20 @@ class DeckScene extends Phaser.Scene {
     const px = this.W / 2, py = this.H / 2;
     const panel = this.add.rectangle(px, py, pw, ph, 0x16213e).setStrokeStyle(2, 0xfaba72);
     m.add(panel);
-    m.add(this.add.text(px, py - 24, msg, {
+    m.add(UI.text(this, px, py - 24, msg, {
       fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#e0e0e0',
       wordWrap: { width: pw - 24 }, align: 'center'
     }).setOrigin(0.5));
     const noBg = this.add.rectangle(px - 50, py + 18, 90, 22, 0x16213e)
       .setStrokeStyle(1, 0x2a2a4a).setInteractive({ useHandCursor: true });
     m.add(noBg);
-    m.add(this.add.text(px - 50, py + 18, 'CANCELAR', {
+    m.add(UI.text(this, px - 50, py + 18, 'CANCELAR', {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#e0e0e0'
     }).setOrigin(0.5));
     const yesBg = this.add.rectangle(px + 50, py + 18, 90, 22, 0x16213e)
       .setStrokeStyle(2, 0xff6b6b).setInteractive({ useHandCursor: true });
     m.add(yesBg);
-    m.add(this.add.text(px + 50, py + 18, 'SALIR', {
+    m.add(UI.text(this, px + 50, py + 18, 'SALIR', {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
     }).setOrigin(0.5));
     noBg.on('pointerdown', () => this.clearModalLayer());
@@ -1135,7 +1135,7 @@ class DeckScene extends Phaser.Scene {
     const bg = this.add.rectangle(this.W / 2, this.H - 50, w, 32, 0x16213e)
       .setStrokeStyle(2, 0xfaba72);
     m.add(bg);
-    m.add(this.add.text(this.W / 2, this.H - 50, msg, {
+    m.add(UI.text(this, this.W / 2, this.H - 50, msg, {
       fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#faba72'
     }).setOrigin(0.5));
     this.tweens.add({
@@ -1153,15 +1153,15 @@ class DeckScene extends Phaser.Scene {
       const overlay = this.add.rectangle(this.W / 2, this.H / 2, this.W, this.H, 0x000000, 0.92)
         .setInteractive();
       m.add(overlay);
-      m.add(this.add.text(this.W / 2, this.H / 2 - 20, '📱', { fontSize: '32px' }).setOrigin(0.5));
-      m.add(this.add.text(this.W / 2, this.H / 2 + 10, 'Gira tu dispositivo\npara jugar en horizontal', {
+      m.add(UI.text(this, this.W / 2, this.H / 2 - 20, '📱', { fontSize: '32px' }).setOrigin(0.5));
+      m.add(UI.text(this, this.W / 2, this.H / 2 + 10, 'Gira tu dispositivo\npara jugar en horizontal', {
         fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#faba72',
         align: 'center', lineSpacing: 6
       }).setOrigin(0.5));
       const btnBg = this.add.rectangle(this.W / 2, this.H / 2 + 60, 130, 26, 0x16213e)
         .setStrokeStyle(1, 0x2a2a4a).setInteractive({ useHandCursor: true });
       m.add(btnBg);
-      m.add(this.add.text(this.W / 2, this.H / 2 + 60, 'ENTENDIDO', {
+      m.add(UI.text(this, this.W / 2, this.H / 2 + 60, 'ENTENDIDO', {
         fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#8892a0'
       }).setOrigin(0.5));
       btnBg.on('pointerdown', () => {

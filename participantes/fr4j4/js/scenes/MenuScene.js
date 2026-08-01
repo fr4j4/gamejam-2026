@@ -56,7 +56,7 @@ class MenuScene extends Phaser.Scene {
     });
     this.cameras.main.shake(120, 0.004);
 
-    const subtitle = this.add.text(W / 2, 138, 'BARAJAS EN DUELO', {
+    const subtitle = UI.text(this, W / 2, 138, 'BARAJAS EN DUELO', {
       fontFamily: '"VT323"', fontSize: '18px', color: '#9fcafd'
     }).setOrigin(0.5).setAlpha(0);
     this.menuObjects.push(subtitle);
@@ -72,7 +72,7 @@ class MenuScene extends Phaser.Scene {
     const c = colorHex || '#ff6b6b';
     const W = 640;
     const box = this.add.rectangle(W / 2, 60, 480, 30, 0x16213e).setStrokeStyle(2, Phaser.Display.Color.HexStringToColor(c).color);
-    const txt = this.add.text(W / 2, 60, msg, {
+    const txt = UI.text(this, W / 2, 60, msg, {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: c
     }).setOrigin(0.5);
     this.tweens.add({
@@ -130,7 +130,7 @@ class MenuScene extends Phaser.Scene {
     const lo = this.add.rectangle(0, h / 2 - 1, w - 2, 1, 0x050510).setOrigin(0.5, 1);
     const led = this.add.circle(-w / 2 + 10, 0, 3, c);
     if (Phaser.BlendModes && Phaser.BlendModes.ADD) led.setBlendMode(Phaser.BlendModes.ADD);
-    const txt = this.add.text(4, 0, label, {
+    const txt = UI.text(this, 4, 0, label, {
       fontFamily: '"Press Start 2P"', fontSize: '8px',
       color: '#' + c.toString(16).padStart(6, '0')
     }).setOrigin(0.5);

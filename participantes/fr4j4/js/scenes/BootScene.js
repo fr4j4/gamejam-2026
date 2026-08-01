@@ -16,7 +16,13 @@ class BootScene extends Phaser.Scene {
     if (typeof WebFont !== 'undefined') {
       WebFont.load({
         google: { families: ['Press Start 2P', 'VT323'] },
-        active: () => { this.scene.start('MenuScene'); },
+        active: () => {
+          if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(() => this.scene.start('MenuScene'));
+          } else {
+            this.scene.start('MenuScene');
+          }
+        },
         inactive: () => { this.scene.start('MenuScene'); }
       });
     } else {

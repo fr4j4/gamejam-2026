@@ -30,8 +30,8 @@
     for (let i = 1; i < 6; i++) g.lineTo(pts[i].x, pts[i].y);
     g.closePath(); g.fillPath();
     g.lineStyle(2, colorNum, 1); g.strokePath();
-    const t = scene.add.text(x, y, `${value}`, {
-      fontFamily: '"Press Start 2P"', fontSize: '8px',
+    const t = UI.text(scene, x, y, `${value}`, {
+      fontFamily: '"Press Start 2P"', fontSize: '9px',
       color: '#' + colorNum.toString(16).padStart(6, '0')
     }).setOrigin(0.5);
     return [g, t];
@@ -80,8 +80,8 @@
 
     if (isModal) {
       const tagLabel = card.type === 'criatura' ? 'CR' : 'AC';
-      const typeTag = scene.add.text(cardW / 2 - 4, -cardH / 2 + 4, tagLabel, {
-        fontFamily: '"Press Start 2P"', fontSize: '6px',
+      const typeTag = UI.text(scene, cardW / 2 - 4, -cardH / 2 + 4, tagLabel, {
+        fontFamily: '"Press Start 2P"', fontSize: '8px',
         color: '#' + COLORS.textMuted.toString(16).padStart(6, '0')
       }).setOrigin(1, 0);
       cardRoot.add(typeTag);
@@ -102,8 +102,8 @@
 
     const nameY = isModal ? 40 : -8;
     const nameFont = isModal ? '"Press Start 2P"' : '"VT323"';
-    const nameSize = isModal ? '10px' : '13px';
-    const nameText = scene.add.text(0, nameY, card.name, {
+    const nameSize = isModal ? '12px' : '14px';
+    const nameText = UI.text(scene, 0, nameY, card.name, {
       fontFamily: nameFont, fontSize: nameSize,
       color: '#' + COLORS.text.toString(16).padStart(6, '0')
     }).setOrigin(0.5);
@@ -111,8 +111,8 @@
     cardRoot.add(nameText);
 
     if (isModal) {
-      const desc = scene.add.text(0, 78, card.desc, {
-        fontFamily: '"VT323"', fontSize: '14px',
+      const desc = UI.text(scene, 0, 78, card.desc, {
+        fontFamily: '"VT323"', fontSize: '15px',
         color: '#' + COLORS.info.toString(16).padStart(6, '0'),
         align: 'center', wordWrap: { width: cardW - 24 }
       }).setOrigin(0.5);
@@ -121,8 +121,8 @@
       if (card.type === 'criatura') {
         const se = (card.effects || []).find(e => e.type === 'summon');
         if (se) {
-          const stats = scene.add.text(0, cardH / 2 - 26, `ATK ${se.atk}  /  HP ${se.hp}`, {
-            fontFamily: '"Press Start 2P"', fontSize: '9px',
+          const stats = UI.text(scene, 0, cardH / 2 - 26, `ATK ${se.atk}  /  HP ${se.hp}`, {
+            fontFamily: '"Press Start 2P"', fontSize: '10px',
             color: '#' + COLORS.danger.toString(16).padStart(6, '0')
           }).setOrigin(0.5);
           cardRoot.add(stats);
@@ -135,15 +135,15 @@
       if ((card.effects || []).some(e => e.celerity)) ind += '⚡ ';
       if (card.consumable) ind += '🔥';
       if (ind) {
-        const indText = scene.add.text(0, cardH / 2 - 10, ind.trim(), {
-          fontFamily: '"Press Start 2P"', fontSize: '7px',
+        const indText = UI.text(scene, 0, cardH / 2 - 10, ind.trim(), {
+          fontFamily: '"Press Start 2P"', fontSize: '8px',
           color: '#' + COLORS.gold.toString(16).padStart(6, '0')
         }).setOrigin(0.5);
         cardRoot.add(indText);
       }
     } else {
-      const effectFont = scene.add.text(0, cardH / 2 - 8, shortEffect(card), {
-        fontFamily: '"VT323"', fontSize: '10px',
+      const effectFont = UI.text(scene, 0, cardH / 2 - 8, shortEffect(card), {
+        fontFamily: '"VT323"', fontSize: '11px',
         color: '#' + COLORS.info.toString(16).padStart(6, '0')
       }).setOrigin(0.5, 1);
       effectFont.setWordWrapWidth(cardW - 10);
@@ -158,8 +158,8 @@
       const badgeBg = scene.add.rectangle(badgeX, badgeY, badgeW, badgeH, COLORS.gold)
         .setStrokeStyle(1, 0x9a7038);
       const badgeFont = isModal ? '"Press Start 2P"' : '"VT323"';
-      const badgeSize = isModal ? '8px' : '11px';
-      const badgeTxt = scene.add.text(badgeX, badgeY, `×${count}`, {
+      const badgeSize = isModal ? '9px' : '12px';
+      const badgeTxt = UI.text(scene, badgeX, badgeY, `×${count}`, {
         fontFamily: badgeFont, fontSize: badgeSize, color: '#0d0d1a'
       }).setOrigin(0.5);
       cardRoot.add([badgeBg, badgeTxt]);

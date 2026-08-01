@@ -20,7 +20,7 @@ class GameOverScene extends Phaser.Scene {
 
     VFX.lcdPanel(this, this, W / 2, H / 2 + 16, 320, 150);
 
-    this.add.text(W / 2, H / 2 - 20, title, {
+    UI.text(this, W / 2, H / 2 - 20, title, {
       fontFamily: '"Press Start 2P"', fontSize: '20px', color: color,
       stroke: '#000000', strokeThickness: 4
     }).setOrigin(0.5);
@@ -32,7 +32,7 @@ class GameOverScene extends Phaser.Scene {
       `Vida restante: ${this.result.hpLeft}`
     ];
     stats.forEach((s, i) => {
-      this.add.text(W / 2, H / 2 + 14 + i * 18, s, {
+      UI.text(this, W / 2, H / 2 + 14 + i * 18, s, {
         fontFamily: '"VT323"', fontSize: '16px', color: '#8892a0'
       }).setOrigin(0.5);
     });

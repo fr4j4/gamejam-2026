@@ -15,7 +15,13 @@ const config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
-  pixelArt: true,
+  render: {
+    antialias: true,
+    antialiasGL: true,
+    pixelArt: false,
+    roundPixels: true
+  },
+  resolution: 2,
   backgroundColor: '#0d0d1a',
   scene: [BootScene, MenuScene, DeckPickerScene, DeckScene, GameScene, GameOverScene]
 };

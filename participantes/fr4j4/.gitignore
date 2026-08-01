@@ -1,6 +1,9 @@
 .opencode/
 .superpowers/
 docs/superpowers/
+AGENTS.md
+GDD.md
+ROADMAP.md
 
 # Dependencias
 node_modules/

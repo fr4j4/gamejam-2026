@@ -51,15 +51,15 @@ class DeckPickerScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
       bg.on('pointerdown', () => { this.selectedClass = cl.id; this.activeSlot = 0; this.renderBody(); });
       VFX.classSeal(this, this, leftX + 24, y, 14, cl.icon, cl.colorHex, active);
-      this.add.text(leftX + 44, y - 4, cl.name.toUpperCase(), {
+      UI.text(this, leftX + 44, y - 4, cl.name.toUpperCase(), {
         fontFamily: '"Press Start 2P"', fontSize: '7px',
         color: active ? cl.colorHex : '#e0e0e0'
       }).setOrigin(0, 0.5);
-      this.add.text(leftX + 44, y + 8, cl.style, {
+      UI.text(this, leftX + 44, y + 8, cl.style, {
         fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#8892a0'
       }).setOrigin(0, 0.5);
       if (active) {
-        this.add.text(leftX + leftW - 12, y, '>', {
+        UI.text(this, leftX + leftW - 12, y, '>', {
           fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#faba72'
         }).setOrigin(1, 0.5);
       }
@@ -70,7 +70,7 @@ class DeckPickerScene extends Phaser.Scene {
     const slots = this.allDecks[this.selectedClass] || [];
 
     if (slots.length === 0) {
-      this.add.text(rightX + rightW / 2, rightY + rightH / 2 - 10, 'No tienes barajas.\nCrea una en el\nDeckbuilder.', {
+      UI.text(this, rightX + rightW / 2, rightY + rightH / 2 - 10, 'No tienes barajas.\nCrea una en el\nDeckbuilder.', {
         fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#8892a0', align: 'center'
       }).setOrigin(0.5);
     } else {
@@ -93,16 +93,16 @@ class DeckPickerScene extends Phaser.Scene {
         bg.on('pointerdown', () => { this.activeSlot = i; this.renderBody(); });
         this.attachSlotMenu(bg, i);
 
-        this.add.text(rightX + 16, y - 8, (s.name || 'Baraja').toUpperCase(), {
+        UI.text(this, rightX + 16, y - 8, (s.name || 'Baraja').toUpperCase(), {
           fontFamily: '"Press Start 2P"', fontSize: '7px',
           color: active ? clsColor : '#e0e0e0'
         }).setOrigin(0, 0.5);
-        this.add.text(rightX + 16, y + 8, `${total} cartas`, {
+        UI.text(this, rightX + 16, y + 8, `${total} cartas`, {
           fontFamily: '"Press Start 2P"', fontSize: '6px',
           color: valid ? '#bdcd9c' : '#ff6b6b'
         }).setOrigin(0, 0.5);
         if (active) {
-          this.add.text(rightX + rightW - 16, y, '>', {
+          UI.text(this, rightX + rightW - 16, y, '>', {
             fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#faba72'
           }).setOrigin(1, 0.5);
         }
@@ -131,7 +131,7 @@ class DeckPickerScene extends Phaser.Scene {
           });
         });
       } else {
-        this.add.text(W - 60, btnY, 'MIN 5', {
+        UI.text(this, W - 60, btnY, 'MIN 5', {
           fontFamily: '"Press Start 2P"', fontSize: '6px', color: '#ff6b6b'
         }).setOrigin(0.5);
       }
@@ -176,7 +176,7 @@ class DeckPickerScene extends Phaser.Scene {
       const bb = this.add.rectangle(mx + menuW / 2, by + 9, menuW - 8, 22, 0x16213e)
         .setInteractive({ useHandCursor: true });
       m.add(bb);
-      m.add(this.add.text(mx + 10, by + 9, a.label, {
+      m.add(UI.text(this, mx + 10, by + 9, a.label, {
         fontFamily: '"Press Start 2P"', fontSize: '7px', color: a.color
       }).setOrigin(0, 0.5));
       bb.on('pointerover', () => bb.setFillStyle(0x1a2a4e, 1));
@@ -239,20 +239,20 @@ class DeckPickerScene extends Phaser.Scene {
     const px = this.W / 2, py = this.H / 2;
     const panel = this.add.rectangle(px, py, pw, ph, 0x16213e).setStrokeStyle(2, 0xfaba72);
     m.add(panel);
-    m.add(this.add.text(px, py - 24, msg, {
+    m.add(UI.text(this, px, py - 24, msg, {
       fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#e0e0e0',
       wordWrap: { width: pw - 24 }, align: 'center'
     }).setOrigin(0.5));
     const noBg = this.add.rectangle(px - 50, py + 18, 90, 22, 0x16213e)
       .setStrokeStyle(1, 0x2a2a4a).setInteractive({ useHandCursor: true });
     m.add(noBg);
-    m.add(this.add.text(px - 50, py + 18, 'CANCELAR', {
+    m.add(UI.text(this, px - 50, py + 18, 'CANCELAR', {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#e0e0e0'
     }).setOrigin(0.5));
     const yesBg = this.add.rectangle(px + 50, py + 18, 90, 22, 0x16213e)
       .setStrokeStyle(2, 0xff6b6b).setInteractive({ useHandCursor: true });
     m.add(yesBg);
-    m.add(this.add.text(px + 50, py + 18, 'ELIMINAR', {
+    m.add(UI.text(this, px + 50, py + 18, 'ELIMINAR', {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
     }).setOrigin(0.5));
     noBg.on('pointerdown', () => this.clearModalLayer());
@@ -276,7 +276,7 @@ class DeckPickerScene extends Phaser.Scene {
     const bg = this.add.rectangle(this.W / 2, this.H - 50, w, 32, 0x16213e)
       .setStrokeStyle(2, 0xfaba72);
     m.add(bg);
-    m.add(this.add.text(this.W / 2, this.H - 50, msg, {
+    m.add(UI.text(this, this.W / 2, this.H - 50, msg, {
       fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#faba72'
     }).setOrigin(0.5));
     this.tweens.add({

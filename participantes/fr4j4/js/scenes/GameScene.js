@@ -26,7 +26,7 @@ class GameScene extends Phaser.Scene {
     ensureStarterDecks();
 
     if (!this.classId) {
-      this.add.text(W / 2, H / 2, 'NO TIENES BARAJA — VUELVE AL MENÚ', {
+      UI.text(this, W / 2, H / 2, 'NO TIENES BARAJA — VUELVE AL MENÚ', {
         fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#ff6b6b'
       }).setOrigin(0.5);
       this.time.delayedCall(2000, () => this.scene.start('MenuScene'));
@@ -110,17 +110,17 @@ class GameScene extends Phaser.Scene {
     this.menuBtn = this.add.rectangle(15, barY, 22, 22, 0x16213e)
       .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#faba72').color)
       .setInteractive({ useHandCursor: true });
-    this.add.text(15, barY, '☰', {
-      fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#faba72'
+    UI.text(this, 15, barY, '☰', {
+      fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#faba72'
     }).setOrigin(0.5);
     this.menuBtn.on('pointerdown', () => this.toggleMenu());
-    this.turnText = this.add.text(30, barY, 'Turno 1', {
+    this.turnText = UI.text(this, 30, barY, 'Turno 1', {
       fontFamily: '"VT323"', fontSize: '16px', color: '#faba72'
     }).setOrigin(0, 0.5);
-    this.phaseText = this.add.text(118, barY, 'Tu turno', {
+    this.phaseText = UI.text(this, 118, barY, 'Tu turno', {
       fontFamily: '"VT323"', fontSize: '16px', color: '#8892a0'
     }).setOrigin(0, 0.5);
-    this.timerText = this.add.text(W - 180, barY, '60s', {
+    this.timerText = UI.text(this, W - 180, barY, '60s', {
       fontFamily: '"VT323"', fontSize: '16px', color: '#ff6b6b'
     }).setOrigin(0, 0.5);
     this.heroPowerBtn = VFX.switchButton(this, this, W - 96, barY, 80, 22, `HEROE (${this.cls.heroPower.cost}M)`, '#faba72', () => this.useHeroPower());
@@ -140,8 +140,8 @@ class GameScene extends Phaser.Scene {
     this.endTurnBtn = this.add.rectangle(W - 76, H - 22, 120, 32, 0x16213e)
       .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#faba72').color)
       .setInteractive({ useHandCursor: true });
-    this.endTurnText = this.add.text(W - 76, H - 22, 'FIN DE TURNO', {
-      fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#faba72'
+    this.endTurnText = UI.text(this, W - 76, H - 22, 'FIN DE TURNO', {
+      fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#faba72'
     }).setOrigin(0.5);
     this.endTurnBtn.on('pointerdown', () => this.endTurn());
 
@@ -160,33 +160,33 @@ class GameScene extends Phaser.Scene {
     this.pInfoContainer.removeAll(true);
     const pCls = CLASSES.find(c => c.id === p.classId) || { name: 'Tu', icon: '🧙', colorHex: '#9fcafd' };
     VFX.classSeal(this, this.pInfoContainer, 72, 104, 40, pCls.icon, pCls.colorHex, true);
-    this.pInfoContainer.add(this.add.text(72, 150, pCls.name.toUpperCase(), {
+    this.pInfoContainer.add(UI.text(this, 72, 150, pCls.name.toUpperCase(), {
       fontFamily: '"VT323"', fontSize: '12px', color: pCls.colorHex
     }).setOrigin(0.5));
     this.renderHeroBar(this.pInfoContainer, 72, 162, 80, p.hp, p.maxHp, pCls.colorHex);
-    this.pInfoContainer.add(this.add.text(72, 174, `HP ${Math.max(0, p.hp)}/${p.maxHp}  ARM ${p.armor}  MAN ${p.mana}/${p.maxMana}`, {
-      fontFamily: '"VT323"', fontSize: '11px', color: '#e0e0e0'
+    this.pInfoContainer.add(UI.text(this, 72, 174, `HP ${Math.max(0, p.hp)}/${p.maxHp}  ARM ${p.armor}  MAN ${p.mana}/${p.maxMana}`, {
+      fontFamily: '"VT323"', fontSize: '13px', color: '#e0e0e0'
     }).setOrigin(0.5));
     let pEx = '';
     if (p.venom > 0) pEx += ` VENENO ${p.venom}`;
     if (p.inspiration > 0) pEx += ` INSPIR ${p.inspiration}`;
-    if (pEx) this.pInfoContainer.add(this.add.text(72, 186, pEx.trim(), {
+    if (pEx) this.pInfoContainer.add(UI.text(this, 72, 186, pEx.trim(), {
       fontFamily: '"VT323"', fontSize: '10px', color: '#bdcd9c'
     }).setOrigin(0.5));
 
     this.eInfoContainer.removeAll(true);
     const eCls = CLASSES.find(c => c.id === e.classId) || { name: 'Dummy', icon: '🤖', colorHex: '#8892a0' };
     VFX.classSeal(this, this.eInfoContainer, W - 72, 104, 40, eCls.icon, eCls.colorHex, true);
-    this.eInfoContainer.add(this.add.text(W - 72, 150, eCls.name.toUpperCase(), {
+    this.eInfoContainer.add(UI.text(this, W - 72, 150, eCls.name.toUpperCase(), {
       fontFamily: '"VT323"', fontSize: '12px', color: eCls.colorHex
     }).setOrigin(0.5));
     this.renderHeroBar(this.eInfoContainer, W - 72, 162, 80, e.hp, e.maxHp, eCls.colorHex);
-    this.eInfoContainer.add(this.add.text(W - 72, 174, `HP ${Math.max(0, e.hp)}/${e.maxHp}  ARM ${e.armor}  MAN ${e.mana}/${e.maxMana}`, {
-      fontFamily: '"VT323"', fontSize: '11px', color: '#e0e0e0'
+    this.eInfoContainer.add(UI.text(this, W - 72, 174, `HP ${Math.max(0, e.hp)}/${e.maxHp}  ARM ${e.armor}  MAN ${e.mana}/${e.maxMana}`, {
+      fontFamily: '"VT323"', fontSize: '13px', color: '#e0e0e0'
     }).setOrigin(0.5));
     let eEx = '';
     if (e.venom > 0) eEx += ` VENENO ${e.venom}`;
-    if (eEx) this.eInfoContainer.add(this.add.text(W - 72, 186, eEx.trim(), {
+    if (eEx) this.eInfoContainer.add(UI.text(this, W - 72, 186, eEx.trim(), {
       fontFamily: '"VT323"', fontSize: '10px', color: '#bdcd9c'
     }).setOrigin(0.5));
   }
@@ -219,11 +219,11 @@ class GameScene extends Phaser.Scene {
 
         if (!c) continue;
 
-        const icon = this.add.text(cx, cy - 3, '🐾', { fontSize: '16px' }).setOrigin(0.5);
-        const atk = this.add.text(cx - 12, cy + 11, `${this.getAtk(c)}`, {
+        const icon = UI.text(this, cx, cy - 3, '🐾', { fontSize: '16px' }).setOrigin(0.5);
+        const atk = UI.text(this, cx - 12, cy + 11, `${this.getAtk(c)}`, {
           fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#faba72'
         }).setOrigin(0.5);
-        const hp = this.add.text(cx + 12, cy + 11, `${this.getHp(c)}`, {
+        const hp = UI.text(this, cx + 12, cy + 11, `${this.getHp(c)}`, {
           fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
         }).setOrigin(0.5);
 
@@ -231,7 +231,7 @@ class GameScene extends Phaser.Scene {
         if (c.guard) ind += '🛡️';
         if (c.evasive) ind += '💨';
         if (c.celerity) ind += '⚡';
-        if (ind) container.add(this.add.text(cx, cy - 14, ind, { fontSize: '7px' }).setOrigin(0.5));
+        if (ind) container.add(UI.text(this, cx, cy - 14, ind, { fontSize: '7px' }).setOrigin(0.5));
 
         bg.setInteractive({ useHandCursor: true });
         bg.on('pointerover', () => this.showCreatureCard(c, cx, cy));
@@ -249,7 +249,7 @@ class GameScene extends Phaser.Scene {
         } else if (!isEnemy && c.canAttack && this.state.phase === 'player') {
           bg.setFillStyle(0x1a2a4e);
           bg.on('pointerdown', () => this.selectAttacker(c));
-          container.add(this.add.text(cx, cy + 18, '⚔️', { fontSize: '7px' }).setOrigin(0.5));
+          container.add(UI.text(this, cx, cy + 18, '⚔️', { fontSize: '7px' }).setOrigin(0.5));
         } else if (isEnemy && this.selectedAttacker) {
           bg.setFillStyle(0x4a1a4a);
           bg.on('pointerdown', () => this.attackCreature(this.selectedAttacker, c));
@@ -685,13 +685,13 @@ class GameScene extends Phaser.Scene {
       .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#faba72').color);
     layer.add(panel);
 
-    layer.add(this.add.text(W / 2, H / 2 - 40, 'TABLERO CASI LLENO', {
+    layer.add(UI.text(this, W / 2, H / 2 - 40, 'TABLERO CASI LLENO', {
       fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#faba72'
     }).setOrigin(0.5));
-    layer.add(this.add.text(W / 2, H / 2 - 15, `Solo caben ${freeSlots} de ${summonsNeeded}`, {
+    layer.add(UI.text(this, W / 2, H / 2 - 15, `Solo caben ${freeSlots} de ${summonsNeeded}`, {
       fontFamily: '"VT323"', fontSize: '16px', color: '#e0e0e0'
     }).setOrigin(0.5));
-    layer.add(this.add.text(W / 2, H / 2 + 5, 'invocaciones. ¿Continuar?', {
+    layer.add(UI.text(this, W / 2, H / 2 + 5, 'invocaciones. ¿Continuar?', {
       fontFamily: '"VT323"', fontSize: '14px', color: '#9fcafd'
     }).setOrigin(0.5));
 
@@ -699,7 +699,7 @@ class GameScene extends Phaser.Scene {
       .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#bdcd9c').color)
       .setInteractive({ useHandCursor: true });
     layer.add(yesBtn);
-    layer.add(this.add.text(W / 2 - 50, H / 2 + 40, 'INVOCAR', {
+    layer.add(UI.text(this, W / 2 - 50, H / 2 + 40, 'INVOCAR', {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#bdcd9c'
     }).setOrigin(0.5));
 
@@ -707,7 +707,7 @@ class GameScene extends Phaser.Scene {
       .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#ff6b6b').color)
       .setInteractive({ useHandCursor: true });
     layer.add(noBtn);
-    layer.add(this.add.text(W / 2 + 50, H / 2 + 40, 'CANCELAR', {
+    layer.add(UI.text(this, W / 2 + 50, H / 2 + 40, 'CANCELAR', {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
     }).setOrigin(0.5));
 
@@ -934,7 +934,7 @@ class GameScene extends Phaser.Scene {
 
   renderTargetingPrompt() {
     if (this.targetingPrompt) { this.targetingPrompt.destroy(true); this.targetingPrompt = null; }
-    this.targetingPrompt = this.add.text(320, 220, 'SELECCIONA CRIATURA A SACRIFICAR', {
+    this.targetingPrompt = UI.text(this, 320, 220, 'SELECCIONA CRIATURA A SACRIFICAR', {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b',
       stroke: '#000000', strokeThickness: 3
     }).setOrigin(0.5).setDepth(1500);
@@ -1140,7 +1140,7 @@ class GameScene extends Phaser.Scene {
   addLog(msg, type) {
     this.state.log.push({ msg, type, turn: this.state.turn });
     const color = type === 'dmg' ? '#ff6b6b' : type === 'sys' ? '#faba72' : type === 'info' ? '#9fcafd' : '#bdcd9c';
-    const t = this.add.text(320, 250, msg, {
+    const t = UI.text(this, 320, 250, msg, {
       fontFamily: '"VT323"', fontSize: '13px', color: color,
       stroke: '#000000', strokeThickness: 2
     }).setOrigin(0.5).setDepth(1002);
@@ -1174,7 +1174,7 @@ class GameScene extends Phaser.Scene {
   }
 
   showFloatingNumber(x, y, text, colorHex) {
-    const t = this.add.text(x, y, text, {
+    const t = UI.text(this, x, y, text, {
       fontFamily: '"VT323"', fontSize: '20px', color: colorHex,
       stroke: '#000000', strokeThickness: 2
     }).setOrigin(0.5).setDepth(1002);
@@ -1239,14 +1239,14 @@ class GameScene extends Phaser.Scene {
     layer.add(dim);
 
     VFX.lcdPanel(this, layer, W / 2, H / 2, 200, 140, 'MENU');
-    layer.add(this.add.text(W / 2, H / 2 - 50, 'MENU', {
+    layer.add(UI.text(this, W / 2, H / 2 - 50, 'MENU', {
       fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#faba72'
     }).setOrigin(0.5));
 
     const continuar = this.add.rectangle(W / 2, H / 2 - 10, 160, 26, 0x16213e)
       .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#bdcd9c').color)
       .setInteractive({ useHandCursor: true });
-    this.add.text(W / 2, H / 2 - 10, 'CONTINUAR', {
+    UI.text(this, W / 2, H / 2 - 10, 'CONTINUAR', {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#bdcd9c'
     }).setOrigin(0.5);
     continuar.on('pointerdown', () => this.closeMenu());
@@ -1255,7 +1255,7 @@ class GameScene extends Phaser.Scene {
     const rendirse = this.add.rectangle(W / 2, H / 2 + 30, 160, 26, 0x16213e)
       .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#ff6b6b').color)
       .setInteractive({ useHandCursor: true });
-    this.add.text(W / 2, H / 2 + 30, 'RENDIRSE', {
+    UI.text(this, W / 2, H / 2 + 30, 'RENDIRSE', {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
     }).setOrigin(0.5);
     rendirse.on('pointerdown', () => this.surrender());

@@ -32,116 +32,122 @@ const SHIELD_REGEN_DELAY_MS = 4000;
 const DODGE_CAP = 0.6;
 const VICTORY_STAGE = 6;
 const BEST_TIME_KEY = 'survivorsBestTimeMs';
+const MAX_ENEMIES = 150;
+const MAX_SPAWN_PER_TICK = 6;
 
 const ENEMY_TYPES = {
-  normal: { texture: 'enemy', color: 0xff5566, baseHp: 20, hpPerMin: 10, baseSpeed: 80, speedPerMin: 8, damage: 10 },
-  fast: { texture: 'enemyFast', color: 0xffaa33, baseHp: 8, hpPerMin: 4, baseSpeed: 160, speedPerMin: 12, damage: 6 },
-  tank: { texture: 'enemyTank', color: 0x88cc44, baseHp: 60, hpPerMin: 22, baseSpeed: 45, speedPerMin: 3, damage: 18 },
-  boss: { texture: 'boss', color: 0xff33aa, baseHp: 250, hpPerMin: 50, baseSpeed: 50, speedPerMin: 4, damage: 20 },
-  bossRanged: { texture: 'bossRanged', color: 0x33ccff, baseHp: 200, hpPerMin: 45, baseSpeed: 70, speedPerMin: 4, damage: 15 },
+  normal: { texture: 'enemy', color: 0xff5566, baseHp: 20, hpPerMin: 10, baseSpeed: 80, speedPerMin: 8, damage: 10, xpValue: 1 },
+  fast: { texture: 'enemyFast', color: 0xffaa33, baseHp: 8, hpPerMin: 4, baseSpeed: 160, speedPerMin: 12, damage: 6, xpValue: 1 },
+  tank: { texture: 'enemyTank', color: 0x88cc44, baseHp: 60, hpPerMin: 22, baseSpeed: 45, speedPerMin: 3, damage: 18, xpValue: 3 },
+  boss: { texture: 'boss', color: 0xff33aa, baseHp: 250, hpPerMin: 50, baseSpeed: 50, speedPerMin: 4, damage: 20, xpValue: 0 },
+  bossRanged: { texture: 'bossRanged', color: 0x33ccff, baseHp: 200, hpPerMin: 45, baseSpeed: 70, speedPerMin: 4, damage: 15, xpValue: 0 },
 };
 
 const STAT_UPGRADES = [
-  { key: 'damage', describe: (b, a) => `Daño: ${b.damage} → ${a.damage}`, apply: (s) => { s.damage += 5; } },
+  { key: 'damage', rarity: 'common', describe: (b, a) => `Daño: ${b.damage} → ${a.damage}`, apply: (s) => { s.damage += 8; } },
   {
-    key: 'fireRate',
+    key: 'fireRate', rarity: 'common',
     describe: (b, a) => `Cadencia: ${(1000 / b.fireRate).toFixed(1)}/s → ${(1000 / a.fireRate).toFixed(1)}/s`,
-    apply: (s) => { s.fireRate = Math.max(150, Math.round(s.fireRate * 0.85)); },
+    apply: (s) => { s.fireRate = Math.max(130, Math.round(s.fireRate * 0.8)); },
   },
-  { key: 'moveSpeed', describe: (b, a) => `Velocidad: ${b.moveSpeed} → ${a.moveSpeed}`, apply: (s) => { s.moveSpeed = Math.min(450, Math.round(s.moveSpeed * 1.1)); } },
-  { key: 'maxHp', describe: (b, a) => `HP máximo: ${b.maxHp} → ${a.maxHp}`, apply: (s) => { s.maxHp += 20; s.hp += 20; } },
-  { key: 'magnet', describe: (b, a) => `Radio de imán: ${b.magnetRadius} → ${a.magnetRadius}`, apply: (s) => { s.magnetRadius = Math.min(500, Math.round(s.magnetRadius * 1.4)); } },
+  { key: 'moveSpeed', rarity: 'common', describe: (b, a) => `Velocidad: ${b.moveSpeed} → ${a.moveSpeed}`, apply: (s) => { s.moveSpeed = Math.min(480, Math.round(s.moveSpeed * 1.15)); } },
+  { key: 'maxHp', rarity: 'common', describe: (b, a) => `HP máximo: ${b.maxHp} → ${a.maxHp}`, apply: (s) => { s.maxHp += 30; s.hp += 30; } },
+  { key: 'magnet', rarity: 'common', describe: (b, a) => `Radio de imán: ${b.magnetRadius} → ${a.magnetRadius}`, apply: (s) => { s.magnetRadius = Math.min(550, Math.round(s.magnetRadius * 1.5)); } },
   {
-    key: 'hpRegen',
+    key: 'hpRegen', rarity: 'common',
     describe: (b, a) => `Regeneración: ${b.hpRegen.toFixed(1)}/s → ${a.hpRegen.toFixed(1)}/s`,
-    apply: (s) => { s.hpRegen += 0.8; },
+    apply: (s) => { s.hpRegen += 1.2; },
   },
   {
-    key: 'lifesteal',
+    key: 'lifesteal', rarity: 'rare',
     describe: (b, a) => `Robo de vida: ${(b.lifesteal * 100).toFixed(0)}% → ${(a.lifesteal * 100).toFixed(0)}%`,
-    apply: (s) => { s.lifesteal += 0.03; },
+    apply: (s) => { s.lifesteal += 0.05; },
   },
   {
-    key: 'dodge',
+    key: 'dodge', rarity: 'rare',
     describe: (b, a) => `Esquivar: ${(b.dodge * 100).toFixed(0)}% → ${(a.dodge * 100).toFixed(0)}%`,
-    apply: (s) => { s.dodge = Math.min(DODGE_CAP, s.dodge + 0.05); },
+    apply: (s) => { s.dodge = Math.min(DODGE_CAP, s.dodge + 0.07); },
   },
   {
-    key: 'shield',
+    key: 'shield', rarity: 'epic',
     describe: (b, a) => `Escudo: ${b.shieldMax} → ${a.shieldMax}`,
-    apply: (s) => { s.shieldMax += 25; s.shield = s.shieldMax; },
+    apply: (s) => { s.shieldMax += 35; s.shield = s.shieldMax; },
   },
 ];
 
 const WEAPON_UPGRADES = {
   aura: {
     unlock: {
-      key: 'auraUnlock',
+      key: 'auraUnlock', rarity: 'epic',
       describe: (b, a) => `Nueva arma: Aura de daño (${a.auraDamage} dmg, radio ${a.auraRadius})`,
-      apply: (s) => { s.hasAura = true; s.auraDamage = 8; s.auraRadius = 90; s.auraTickMs = 600; },
+      apply: (s) => { s.hasAura = true; s.auraDamage = 10; s.auraRadius = 100; s.auraTickMs = 600; },
     },
     upgrades: [
-      { key: 'auraDamage', describe: (b, a) => `Aura daño: ${b.auraDamage} → ${a.auraDamage}`, apply: (s) => { s.auraDamage += 5; } },
-      { key: 'auraRadius', describe: (b, a) => `Aura radio: ${b.auraRadius} → ${a.auraRadius}`, apply: (s) => { s.auraRadius = Math.min(400, Math.round(s.auraRadius * 1.25)); } },
+      { key: 'auraDamage', rarity: 'common', describe: (b, a) => `Aura daño: ${b.auraDamage} → ${a.auraDamage}`, apply: (s) => { s.auraDamage += 8; } },
+      { key: 'auraRadius', rarity: 'common', describe: (b, a) => `Aura radio: ${b.auraRadius} → ${a.auraRadius}`, apply: (s) => { s.auraRadius = Math.min(420, Math.round(s.auraRadius * 1.3)); } },
     ],
   },
   orbit: {
     unlock: {
-      key: 'orbitUnlock',
+      key: 'orbitUnlock', rarity: 'epic',
       describe: (b, a) => `Nueva arma: Orbe giratorio (${a.orbitCount} orbes, ${a.orbitDamage} dmg)`,
-      apply: (s) => { s.hasOrbit = true; s.orbitDamage = 8; s.orbitRadius = 70; s.orbitSpeed = 2.2; s.orbitCount = 2; },
+      apply: (s) => { s.hasOrbit = true; s.orbitDamage = 10; s.orbitRadius = 70; s.orbitSpeed = 2.2; s.orbitCount = 2; },
     },
     upgrades: [
-      { key: 'orbitDamage', describe: (b, a) => `Orbe daño: ${b.orbitDamage} → ${a.orbitDamage}`, apply: (s) => { s.orbitDamage += 5; } },
-      { key: 'orbitCount', describe: (b, a) => `Orbe cantidad: ${b.orbitCount} → ${a.orbitCount}`, apply: (s) => { s.orbitCount = Math.min(8, s.orbitCount + 1); } },
-      { key: 'orbitSpeed', describe: (b, a) => `Orbe velocidad: ${b.orbitSpeed.toFixed(2)} → ${a.orbitSpeed.toFixed(2)}`, apply: (s) => { s.orbitSpeed = Math.min(6, s.orbitSpeed * 1.25); } },
+      { key: 'orbitDamage', rarity: 'common', describe: (b, a) => `Orbe daño: ${b.orbitDamage} → ${a.orbitDamage}`, apply: (s) => { s.orbitDamage += 8; } },
+      { key: 'orbitCount', rarity: 'rare', describe: (b, a) => `Orbe cantidad: ${b.orbitCount} → ${a.orbitCount}`, apply: (s) => { s.orbitCount = Math.min(8, s.orbitCount + 1); } },
+      { key: 'orbitSpeed', rarity: 'common', describe: (b, a) => `Orbe velocidad: ${b.orbitSpeed.toFixed(2)} → ${a.orbitSpeed.toFixed(2)}`, apply: (s) => { s.orbitSpeed = Math.min(6.5, s.orbitSpeed * 1.3); } },
     ],
   },
   pierce: {
     unlock: {
-      key: 'pierceUnlock',
+      key: 'pierceUnlock', rarity: 'epic',
       describe: (b, a) => `Nueva arma: Perforante (${a.pierceDamage} dmg, atraviesa todo)`,
-      apply: (s) => { s.hasPierce = true; s.pierceDamage = 15; s.pierceRate = 1200; s.pierceSpeed = 600; },
+      apply: (s) => { s.hasPierce = true; s.pierceDamage = 18; s.pierceRate = 1200; s.pierceSpeed = 600; },
     },
     upgrades: [
-      { key: 'pierceDamage', describe: (b, a) => `Perforante daño: ${b.pierceDamage} → ${a.pierceDamage}`, apply: (s) => { s.pierceDamage += 8; } },
+      { key: 'pierceDamage', rarity: 'common', describe: (b, a) => `Perforante daño: ${b.pierceDamage} → ${a.pierceDamage}`, apply: (s) => { s.pierceDamage += 12; } },
       {
-        key: 'pierceRate',
+        key: 'pierceRate', rarity: 'common',
         describe: (b, a) => `Perforante cadencia: ${(1000 / b.pierceRate).toFixed(1)}/s → ${(1000 / a.pierceRate).toFixed(1)}/s`,
-        apply: (s) => { s.pierceRate = Math.max(250, Math.round(s.pierceRate * 0.85)); },
+        apply: (s) => { s.pierceRate = Math.max(220, Math.round(s.pierceRate * 0.8)); },
       },
     ],
   },
   burst: {
     unlock: {
-      key: 'burstUnlock',
+      key: 'burstUnlock', rarity: 'epic',
       describe: (b, a) => `Nueva arma: Ráfaga (${a.burstCount} disparos, ${a.burstDamage} dmg)`,
-      apply: (s) => { s.hasBurst = true; s.burstDamage = 10; s.burstCount = 3; s.burstRate = 1500; },
+      apply: (s) => { s.hasBurst = true; s.burstDamage = 12; s.burstCount = 3; s.burstRate = 1500; },
     },
     upgrades: [
-      { key: 'burstDamage', describe: (b, a) => `Ráfaga daño: ${b.burstDamage} → ${a.burstDamage}`, apply: (s) => { s.burstDamage += 5; } },
-      { key: 'burstCount', describe: (b, a) => `Ráfaga disparos: ${b.burstCount} → ${a.burstCount}`, apply: (s) => { s.burstCount = Math.min(10, s.burstCount + 1); } },
+      { key: 'burstDamage', rarity: 'common', describe: (b, a) => `Ráfaga daño: ${b.burstDamage} → ${a.burstDamage}`, apply: (s) => { s.burstDamage += 8; } },
+      { key: 'burstCount', rarity: 'rare', describe: (b, a) => `Ráfaga disparos: ${b.burstCount} → ${a.burstCount}`, apply: (s) => { s.burstCount = Math.min(10, s.burstCount + 1); } },
       {
-        key: 'burstRate',
+        key: 'burstRate', rarity: 'common',
         describe: (b, a) => `Ráfaga cadencia: ${(1000 / b.burstRate).toFixed(1)}/s → ${(1000 / a.burstRate).toFixed(1)}/s`,
-        apply: (s) => { s.burstRate = Math.max(400, Math.round(s.burstRate * 0.85)); },
+        apply: (s) => { s.burstRate = Math.max(350, Math.round(s.burstRate * 0.8)); },
       },
     ],
   },
   nova: {
     unlock: {
-      key: 'novaUnlock',
+      key: 'novaUnlock', rarity: 'epic',
       describe: (b, a) => `Nueva arma: Onda expansiva (${a.novaDamage} dmg, radio ${a.novaRadius})`,
-      apply: (s) => { s.hasNova = true; s.novaDamage = 20; s.novaRadius = 140; s.novaRate = 2500; },
+      apply: (s) => { s.hasNova = true; s.novaDamage = 25; s.novaRadius = 140; s.novaRate = 2500; },
     },
     upgrades: [
-      { key: 'novaDamage', describe: (b, a) => `Onda daño: ${b.novaDamage} → ${a.novaDamage}`, apply: (s) => { s.novaDamage += 10; } },
-      { key: 'novaRadius', describe: (b, a) => `Onda radio: ${b.novaRadius} → ${a.novaRadius}`, apply: (s) => { s.novaRadius = Math.min(450, Math.round(s.novaRadius * 1.2)); } },
+      { key: 'novaDamage', rarity: 'common', describe: (b, a) => `Onda daño: ${b.novaDamage} → ${a.novaDamage}`, apply: (s) => { s.novaDamage += 15; } },
+      { key: 'novaRadius', rarity: 'common', describe: (b, a) => `Onda radio: ${b.novaRadius} → ${a.novaRadius}`, apply: (s) => { s.novaRadius = Math.min(480, Math.round(s.novaRadius * 1.25)); } },
     ],
   },
 };
 
 const WEAPON_KEYS = ['aura', 'orbit', 'pierce', 'burst', 'nova'];
+
+const RARITY_WEIGHT = { common: 3, rare: 2, epic: 1 };
+const RARITY_COLOR = { common: '#66ffcc', rare: '#66aaff', epic: '#ffcc44' };
+const RARITY_LABEL = { common: '', rare: '[RARA] ', epic: '[ÉPICA] ' };
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -741,10 +747,18 @@ export default class GameScene extends Phaser.Scene {
   }
 
   spawnEnemy() {
-    if (this.isGameOver || this.isLevelingUp) return;
+    if (this.isGameOver || this.hasWon || this.isLevelingUp) return;
+    if (this.enemies.countActive(true) >= MAX_ENEMIES) return;
 
-    const { x, y } = this.randomPointNear(this.spawnRadius);
     const minutes = this.elapsed / 60000;
+    const spawnCount = Math.min(MAX_SPAWN_PER_TICK, 1 + Math.floor(minutes / 1.5) + (this.stage - 1));
+    for (let i = 0; i < spawnCount && this.enemies.countActive(true) < MAX_ENEMIES; i++) {
+      this.spawnOneEnemy(minutes);
+    }
+  }
+
+  spawnOneEnemy(minutes) {
+    const { x, y } = this.randomPointNear(this.spawnRadius);
     const fastChance = Math.min(0.4, minutes * 0.12);
     const tankChance = Math.min(0.2, minutes * 0.05);
     const roll = Math.random();
@@ -950,7 +964,8 @@ export default class GameScene extends Phaser.Scene {
         this.level += 1;
         this.startLevelUp();
       } else {
-        this.spawnXpOrb(enemy.x, enemy.y);
+        const type = ENEMY_TYPES[enemy.getData('type')];
+        this.spawnXpOrb(enemy.x, enemy.y, type.xpValue);
       }
       enemy.destroy();
     } else {
@@ -986,8 +1001,9 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  spawnXpOrb(x, y) {
-    this.xpOrbs.create(x, y, 'xp');
+  spawnXpOrb(x, y, value = 1) {
+    const orb = this.xpOrbs.create(x, y, 'xp');
+    orb.setData('value', value);
   }
 
   spawnPortal() {
@@ -1045,8 +1061,9 @@ export default class GameScene extends Phaser.Scene {
   }
 
   onPlayerPickupXp(player, orb) {
+    const value = orb.getData('value') || 1;
     orb.destroy();
-    this.xp += 1;
+    this.xp += value;
     if (this.xp >= this.xpToNext) {
       this.xp -= this.xpToNext;
       this.xpToNext = Math.round(this.xpToNext * 1.25);
@@ -1187,16 +1204,36 @@ export default class GameScene extends Phaser.Scene {
     return pool;
   }
 
+  pickWeighted(pool, count) {
+    const remaining = [...pool];
+    const picked = [];
+    while (picked.length < count && remaining.length > 0) {
+      const totalWeight = remaining.reduce((sum, c) => sum + RARITY_WEIGHT[c.rarity || 'common'], 0);
+      let roll = Math.random() * totalWeight;
+      let idx = 0;
+      for (; idx < remaining.length - 1; idx++) {
+        roll -= RARITY_WEIGHT[remaining[idx].rarity || 'common'];
+        if (roll <= 0) break;
+      }
+      picked.push(remaining.splice(idx, 1)[0]);
+    }
+    return picked;
+  }
+
   startLevelUp() {
     this.isLevelingUp = true;
     this.player.setVelocity(0, 0);
     this.physics.world.pause();
 
-    this.levelUpChoices = Phaser.Utils.Array.Shuffle(this.getAvailableUpgrades()).slice(0, 4);
+    this.levelUpChoices = this.pickWeighted(this.getAvailableUpgrades(), 4);
     this.levelUpChoices.forEach((choice, i) => {
       const after = { ...this.stats };
       choice.apply(after);
-      this.levelUpTexts[i].setText(`${i + 1}. ${choice.describe(this.stats, after)}`).setVisible(true);
+      const rarity = choice.rarity || 'common';
+      this.levelUpTexts[i]
+        .setText(`${i + 1}. ${RARITY_LABEL[rarity]}${choice.describe(this.stats, after)}`)
+        .setColor(RARITY_COLOR[rarity])
+        .setVisible(true);
     });
     this.levelUpTitle.setVisible(true);
   }

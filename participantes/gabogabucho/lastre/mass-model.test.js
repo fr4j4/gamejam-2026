@@ -8,7 +8,9 @@ const {
   torqueForInput,
   choosePartToShed,
   jumpForceForMass,
-  canHop
+  canHop,
+  scrapSpecForIndex,
+  routeMessage
 } = require('./mass-model.js');
 
 test('la cámara acelera suavemente y tiene un límite', () => {
@@ -55,4 +57,17 @@ test('solo puede pulsar apoyado y fuera del cooldown', () => {
   assert.equal(canHop(378, 380, 0), true);
   assert.equal(canHop(350, 380, 0), false);
   assert.equal(canHop(378, 380, 10), false);
+});
+
+test('la chatarra alterna formas cuya medida define el collider', () => {
+  assert.deepEqual(scrapSpecForIndex(0), { kind: 'gear', radius: 7 });
+  assert.deepEqual(scrapSpecForIndex(1), { kind: 'plate', width: 18, height: 8 });
+  assert.deepEqual(scrapSpecForIndex(2), { kind: 'nut', radius: 9, sides: 6 });
+  assert.deepEqual(scrapSpecForIndex(3), { kind: 'gear', radius: 10 });
+});
+
+test('la ruta comunica el basurero sin interrumpir el juego', () => {
+  assert.equal(routeMessage(0, 12000), 'BASURERO MUNICIPAL 1200 m');
+  assert.equal(routeMessage(11850, 12000), 'YA SE VE EL BASURERO');
+  assert.equal(routeMessage(12000, 12000), 'DESTINO ALCANZADO');
 });

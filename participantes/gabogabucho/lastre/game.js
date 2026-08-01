@@ -4,19 +4,25 @@ const {
   torqueForInput,
   choosePartToShed,
   jumpForceForMass,
-  canHop
+  canHop,
+  scrapSpecForIndex,
+  routeMessage
 } = LastreModel;
 
 const COLORS = {
-  sky: 0x0b1320,
-  horizon: 0x172534,
-  ground: 0x18232b,
-  stone: 0x34424a,
-  stoneEdge: 0x65727a,
+  sky: 0x111820,
+  horizon: 0x253039,
+  ground: 0x252b2d,
+  asphalt: 0x31383a,
+  stone: 0x535a59,
+  stoneEdge: 0x8c9691,
   core: 0xf7fbff,
   glow: 0x6fe7ff,
-  soft: 0x7be4c4,
-  danger: 0xff5263
+  copper: 0xb86f43,
+  steel: 0x87918f,
+  rust: 0x8f4e32,
+  danger: 0xff5263,
+  sign: 0xf1c75b
 };
 
 class LastreScene extends Phaser.Scene {
@@ -32,6 +38,8 @@ class LastreScene extends Phaser.Scene {
     this.shedCooldown = 0;
     this.jumpCooldown = 0;
     this.collected = new Set();
+    this.finished = false;
+    this.trackLength = 14000;
 
     this.makeBackdrop();
     this.dangerLine = this.add.rectangle(20, this.H / 2, 4, this.H, COLORS.danger, 0.72)
@@ -59,6 +67,14 @@ class LastreScene extends Phaser.Scene {
     this.warning = this.add.text(18, 39, '', {
       fontFamily: 'Courier New', fontSize: '12px', color: '#ff5263'
     }).setScrollFactor(0).setDepth(100);
+    this.routeHud = this.add.text(782, 18, '', {
+      fontFamily: 'Courier New', fontSize: '12px', color: '#f1c75b', align: 'right'
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(100);
+    const intro = this.add.text(400, 92, 'MR. LASTRE\nRUTA AL BASURERO', {
+      fontFamily: 'Courier New', fontSize: '22px', color: '#f7fbff', align: 'center',
+      stroke: '#13242a', strokeThickness: 5
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(110);
+    this.tweens.add({ targets: intro, alpha: 0, y: 78, delay: 1150, duration: 850, onComplete: () => intro.destroy() });
 
     const qs = new URLSearchParams(location.search);
     this.debugMode = qs.has('debug');
@@ -69,7 +85,7 @@ class LastreScene extends Phaser.Scene {
       this.addBlobPart(
         this.blob.position.x + Math.cos(angle) * distance,
         this.blob.position.y + Math.sin(angle) * distance,
-        7 + i % 3
+        scrapSpecForIndex(i)
       );
     }
     if (qs.has('shed')) {
@@ -80,21 +96,35 @@ class LastreScene extends Phaser.Scene {
 
   makeBackdrop() {
     this.add.rectangle(400, 225, 800, 450, COLORS.sky).setScrollFactor(0);
-    this.add.rectangle(400, 330, 800, 240, COLORS.horizon).setScrollFactor(0).setAlpha(0.72);
-    const skyline = this.add.graphics().setScrollFactor(0);
-    skyline.fillStyle(0x22323d, 0.8);
-    for (let x = -40; x < 900; x += 70) {
-      const h = 35 + ((x * 17) % 55 + 55) % 55;
-      skyline.fillTriangle(x, 350, x + 42, 350 - h, x + 88, 350);
+    this.add.circle(650, 92, 54, 0xe8c787, 0.16).setScrollFactor(0);
+
+    const far = this.add.graphics().setScrollFactor(0.12).setDepth(0);
+    far.fillStyle(0x1a252d, 1);
+    for (let x = -400; x < this.trackLength + 800; x += 180) {
+      const h = 80 + ((x / 180) % 4) * 20;
+      far.fillRect(x, 315 - h, 145, h);
+      far.fillRect(x + 28, 195 - h, 12, 36);
+      far.fillStyle(0x8ba29e, 0.16);
+      for (let wy = 252 - h; wy < 300; wy += 22) far.fillRect(x + 16, wy, 12, 7);
+      far.fillStyle(0x1a252d, 1);
     }
-    const stars = this.add.graphics().setScrollFactor(0);
-    stars.fillStyle(0xa6c5d2, 0.35);
-    for (let i = 0; i < 36; i++) stars.fillCircle((i * 83) % 790, 20 + (i * 47) % 230, i % 7 === 0 ? 1.5 : 1);
+
+    const near = this.add.graphics().setScrollFactor(0.38).setDepth(1);
+    near.fillStyle(0x202b30, 1);
+    for (let x = -250; x < this.trackLength + 900; x += 430) {
+      near.fillRect(x, 270, 260, 110);
+      near.fillRect(x + 35, 235, 26, 35);
+      near.fillStyle(0xc18249, 0.22);
+      near.fillRect(x + 28, 292, 45, 28);
+      near.fillRect(x + 96, 292, 45, 28);
+      near.fillStyle(0x202b30, 1);
+    }
   }
 
   makeTrack() {
-    this.trackLength = 14000;
+    this.destinationX = this.trackLength - 650;
     this.add.rectangle(this.trackLength / 2, 420, this.trackLength, 80, COLORS.ground).setDepth(2);
+    this.add.rectangle(this.trackLength / 2, 395, this.trackLength, 30, COLORS.asphalt).setDepth(2);
     const groundBody = this.matter.bodies.rectangle(this.trackLength / 2, 420, this.trackLength, 80, {
       isStatic: true, label: 'ground', friction: 0.95
     });
@@ -104,6 +134,44 @@ class LastreScene extends Phaser.Scene {
     const edge = this.add.graphics().setDepth(3);
     edge.lineStyle(2, 0x52636c, 0.9);
     edge.lineBetween(0, 380, this.trackLength, 380);
+    edge.lineStyle(3, 0xd9b957, 0.28);
+    for (let x = 80; x < this.trackLength; x += 140) edge.lineBetween(x, 402, x + 62, 402);
+
+    for (let x = 700; x < this.destinationX; x += 1180) this.makeStreetSign(x);
+    this.makeLandfill(this.destinationX);
+  }
+
+  makeStreetSign(x) {
+    const sign = this.add.graphics().setDepth(5);
+    sign.fillStyle(0x55605e, 1);
+    sign.fillRect(x, 284, 7, 96);
+    sign.fillStyle(COLORS.sign, 1);
+    sign.fillRoundedRect(x - 42, 278, 92, 38, 4);
+    sign.lineStyle(3, 0x3e3c32, 1);
+    sign.strokeRoundedRect(x - 42, 278, 92, 38, 4);
+    sign.fillStyle(0x3e3c32, 1);
+    sign.fillTriangle(x + 34, 287, x + 44, 297, x + 34, 307);
+    this.add.text(x - 31, 288, 'BASURA', {
+      fontFamily: 'Courier New', fontSize: '11px', color: '#34352f', fontStyle: 'bold'
+    }).setDepth(6);
+  }
+
+  makeLandfill(x) {
+    const plant = this.add.graphics().setDepth(4);
+    plant.fillStyle(0x35413e, 1);
+    plant.fillRect(x - 120, 220, 430, 160);
+    plant.fillStyle(0x232c2b, 1);
+    plant.fillTriangle(x - 150, 220, x + 95, 132, x + 340, 220);
+    plant.fillStyle(0x111817, 1);
+    plant.fillRect(x + 25, 286, 140, 94);
+    plant.lineStyle(8, COLORS.sign, 0.9);
+    for (let sx = x + 35; sx < x + 165; sx += 34) plant.lineBetween(sx, 291, sx + 55, 365);
+    this.add.text(x + 95, 190, 'BASURERO\nMUNICIPAL', {
+      fontFamily: 'Courier New', fontSize: '20px', color: '#f1c75b', align: 'center', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(6);
+    this.add.circle(x - 55, 345, 30, COLORS.rust).setDepth(6);
+    this.add.circle(x - 18, 353, 23, COLORS.steel).setDepth(6);
+    this.add.circle(x - 92, 357, 19, 0x6c4938).setDepth(6);
   }
 
   makeBlob() {
@@ -113,7 +181,7 @@ class LastreScene extends Phaser.Scene {
     core.plugin.isBlobPart = true;
     core.plugin.isCore = true;
     core.plugin.radius = 15;
-    core.plugin.shape = 'pixel';
+    core.plugin.shape = 'magnet';
 
     this.blob = this.matter.body.create({
       label: 'blob',
@@ -133,18 +201,35 @@ class LastreScene extends Phaser.Scene {
     for (let x = 480; x < this.trackLength - 500; x += 145) {
       if (x % 870 < 120) continue;
       const y = 352 - ((id * 29) % 48);
-      const radius = 6 + (id % 3) * 2;
-      const body = this.matter.bodies.circle(x, y, radius, {
-        isStatic: true, isSensor: true, label: 'soft'
-      });
+      const spec = scrapSpecForIndex(id);
+      const body = this.createScrapBody(x, y, spec, true);
       body.plugin.softId = id;
-      body.plugin.radius = radius;
       this.matter.world.add(body);
-      const view = this.add.circle(x, y, radius, COLORS.soft, 0.82).setDepth(8);
-      view.setStrokeStyle(2, 0xbaffee, 0.75);
-      this.soft.push({ id, body, view, radius });
+      const view = this.add.graphics().setDepth(8);
+      this.paintScrap(view, body, 0.92);
+      this.soft.push({ id, body, view, spec });
       id++;
     }
+  }
+
+  createScrapBody(x, y, spec, sensor = false) {
+    const options = {
+      isStatic: sensor,
+      isSensor: sensor,
+      label: sensor ? 'soft' : 'blobPart',
+      density: 0.0028,
+      friction: 0.92,
+      restitution: 0.03,
+      angle: spec.kind === 'plate' ? (x % 11) * 0.11 : 0
+    };
+    let body;
+    if (spec.kind === 'plate') body = this.matter.bodies.rectangle(x, y, spec.width, spec.height, options);
+    else if (spec.kind === 'nut') body = this.matter.bodies.polygon(x, y, spec.sides, spec.radius, options);
+    else body = this.matter.bodies.circle(x, y, spec.radius, options);
+    body.plugin.isBlobPart = !sensor;
+    body.plugin.scrap = spec;
+    body.plugin.radius = spec.radius || Math.max(spec.width, spec.height) / 2;
+    return body;
   }
 
   makeStoneGates() {
@@ -204,7 +289,9 @@ class LastreScene extends Phaser.Scene {
     const point = { x: item.body.position.x, y: item.body.position.y };
     this.matter.world.remove(item.body);
     item.view.destroy();
-    this.addBlobPart(point.x, point.y, item.radius);
+    this.addBlobPart(point.x, point.y, item.spec);
+    const spark = this.add.circle(point.x, point.y, 5, COLORS.glow, 0.85).setDepth(25);
+    this.tweens.add({ targets: spark, scale: 2.6, alpha: 0, duration: 260, onComplete: () => spark.destroy() });
   }
 
   rebuildBlob(parts) {
@@ -215,12 +302,8 @@ class LastreScene extends Phaser.Scene {
     this.matter.body.setAngularVelocity(this.blob, angularVelocity);
   }
 
-  addBlobPart(x, y, radius) {
-    const part = this.matter.bodies.circle(x, y, radius, {
-      label: 'blobPart', density: 0.0028, friction: 0.92, restitution: 0.03
-    });
-    part.plugin.isBlobPart = true;
-    part.plugin.radius = radius;
+  addBlobPart(x, y, spec) {
+    const part = this.createScrapBody(x, y, spec, false);
     this.rebuildBlob([...this.blob.parts.slice(1), part]);
   }
 
@@ -240,24 +323,95 @@ class LastreScene extends Phaser.Scene {
       x: Math.max(0.35, this.blob.velocity.x * 0.68),
       y: this.blob.velocity.y
     });
-    const fragment = this.add.circle(shed.position.x, shed.position.y, shed.plugin.radius, COLORS.soft, 0.9).setDepth(24);
+    const fragment = this.add.graphics().setDepth(24);
+    this.paintScrap(fragment, shed, 0.95);
     this.tweens.add({ targets: fragment, y: fragment.y - 24, alpha: 0, scale: 0.45, duration: 650, onComplete: () => fragment.destroy() });
+  }
+
+  polygonPath(graphics, vertices) {
+    graphics.beginPath();
+    graphics.moveTo(vertices[0].x, vertices[0].y);
+    for (let i = 1; i < vertices.length; i++) graphics.lineTo(vertices[i].x, vertices[i].y);
+    graphics.closePath();
+  }
+
+  localPoint(part, x, y) {
+    const cosine = Math.cos(part.angle);
+    const sine = Math.sin(part.angle);
+    return {
+      x: part.position.x + x * cosine - y * sine,
+      y: part.position.y + x * sine + y * cosine
+    };
+  }
+
+  paintScrap(graphics, part, alpha = 1) {
+    const spec = part.plugin.scrap;
+    const fill = spec.kind === 'gear' ? COLORS.rust : spec.kind === 'plate' ? COLORS.steel : COLORS.copper;
+    graphics.fillStyle(fill, alpha);
+    graphics.lineStyle(2, 0xd5d9d4, alpha * 0.62);
+    if (spec.kind === 'gear') {
+      graphics.fillCircle(part.position.x, part.position.y, spec.radius);
+      graphics.strokeCircle(part.position.x, part.position.y, spec.radius);
+      graphics.lineStyle(2, 0x54352b, alpha);
+      graphics.strokeCircle(part.position.x, part.position.y, Math.max(2, spec.radius * 0.32));
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4;
+        graphics.lineBetween(
+          part.position.x + Math.cos(a) * spec.radius * 0.48,
+          part.position.y + Math.sin(a) * spec.radius * 0.48,
+          part.position.x + Math.cos(a) * spec.radius * 0.82,
+          part.position.y + Math.sin(a) * spec.radius * 0.82
+        );
+      }
+    } else {
+      this.polygonPath(graphics, part.vertices);
+      graphics.fillPath();
+      graphics.strokePath();
+      if (spec.kind === 'nut') {
+        graphics.fillStyle(0x273034, 0.9);
+        graphics.fillCircle(part.position.x, part.position.y, spec.radius * 0.34);
+      } else {
+        const left = this.localPoint(part, -spec.width * 0.3, 0);
+        const right = this.localPoint(part, spec.width * 0.3, 0);
+        graphics.fillStyle(0x46504f, 0.9);
+        graphics.fillCircle(left.x, left.y, Math.max(1.5, spec.height * 0.16));
+        graphics.fillCircle(right.x, right.y, Math.max(1.5, spec.height * 0.16));
+      }
+    }
+  }
+
+  paintCore(graphics, part, pulse) {
+    graphics.fillStyle(COLORS.core, 1);
+    graphics.lineStyle(3, COLORS.glow, pulse);
+    this.polygonPath(graphics, part.vertices);
+    graphics.fillPath();
+    graphics.strokePath();
+
+    const leftTop = this.localPoint(part, -9, -8);
+    const leftBottom = this.localPoint(part, -9, 8);
+    const rightTop = this.localPoint(part, 9, -8);
+    const rightBottom = this.localPoint(part, 9, 8);
+    graphics.lineStyle(4, 0xe45b56, 1);
+    graphics.lineBetween(leftTop.x, leftTop.y, leftBottom.x, leftBottom.y);
+    graphics.lineStyle(4, 0x4dbbd4, 1);
+    graphics.lineBetween(rightTop.x, rightTop.y, rightBottom.x, rightBottom.y);
+    const eyeA = this.localPoint(part, -4, -2);
+    const eyeB = this.localPoint(part, 4, -2);
+    graphics.fillStyle(0x16262d, 1);
+    graphics.fillCircle(eyeA.x, eyeA.y, 1.8);
+    graphics.fillCircle(eyeB.x, eyeB.y, 1.8);
+    const mouthA = this.localPoint(part, -4, 5);
+    const mouthB = this.localPoint(part, 4, 5);
+    graphics.lineStyle(1.5, 0x52666c, 1);
+    graphics.lineBetween(mouthA.x, mouthA.y, mouthB.x, mouthB.y);
   }
 
   drawBlob(time) {
     this.blobPaint.clear();
     const pulse = 0.82 + Math.sin(time / 90) * 0.12;
     for (const part of this.blob.parts.slice(1)) {
-      const radius = part.plugin.radius;
-      this.blobPaint.fillStyle(part.plugin.isCore ? COLORS.core : COLORS.glow, part.plugin.isCore ? 1 : 0.88);
-      this.blobPaint.lineStyle(2, 0xc8f7ff, pulse);
-      if (part.plugin.shape === 'pixel') {
-        this.blobPaint.fillRect(part.position.x - 11, part.position.y - 11, 22, 22);
-        this.blobPaint.strokeRect(part.position.x - 12, part.position.y - 12, 24, 24);
-      } else {
-        this.blobPaint.fillCircle(part.position.x, part.position.y, radius);
-        this.blobPaint.strokeCircle(part.position.x, part.position.y, radius + 1);
-      }
+      if (part.plugin.isCore) this.paintCore(this.blobPaint, part, pulse);
+      else this.paintScrap(this.blobPaint, part, 0.96);
     }
   }
 
@@ -292,8 +446,21 @@ class LastreScene extends Phaser.Scene {
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
   }
 
+  finish() {
+    if (this.finished) return;
+    this.finished = true;
+    this.matter.body.setStatic(this.blob, true);
+    this.add.rectangle(400, 225, 800, 450, 0x071012, 0.7).setScrollFactor(0).setDepth(200);
+    this.add.text(400, 190, 'LLEGASTE AL BASURERO', {
+      fontFamily: 'Courier New', fontSize: '28px', color: '#f1c75b', fontStyle: 'bold'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+    this.add.text(400, 238, `MR. LASTRE ENTREGÓ ${this.blob.parts.length - 1} PIEZAS\nR para volver a la ciudad`, {
+      fontFamily: 'Courier New', fontSize: '14px', color: '#dbe8ed', align: 'center'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+  }
+
   update(time, delta) {
-    if (this.dead) return;
+    if (this.dead || this.finished) return;
     this.shedCooldown = Math.max(0, this.shedCooldown - delta);
     this.jumpCooldown = Math.max(0, this.jumpCooldown - delta);
 
@@ -313,11 +480,13 @@ class LastreScene extends Phaser.Scene {
     const rightEdge = this.blob.bounds.max.x;
     const relative = rightEdge - this.cameras.main.scrollX;
     if (isCaughtByCamera(rightEdge, this.cameras.main.scrollX, 24)) this.lose();
+    if (rightEdge >= this.destinationX) this.finish();
 
     const pieces = this.blob.parts.length - 1;
     const distance = Math.floor(this.cameras.main.scrollX / 10);
     const hopState = this.jumpCooldown > 0 ? 'RECARGA' : 'LISTO';
     this.hud.setText(`LASTRE  ·  ${distance} m  ·  masa ${pieces}  ·  velocidad ${Math.max(0, this.blob.velocity.x).toFixed(1)}  ·  pulso ${hopState}`);
+    this.routeHud.setText(routeMessage(Math.floor(this.blob.position.x), this.destinationX));
     this.warning.setText(relative < 130 ? '◀ EL BORDE TE ESTÁ ALCANZANDO' : '');
   }
 }

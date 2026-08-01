@@ -1,8 +1,10 @@
-# LASTRE — concepto de jam
+# MR. LASTRE — concepto de jam
 
 ## Promesa
 
 Un auto-runner lateral sobre **crecer por accidente y adelgazar a propósito**. La forma del personaje es simultáneamente vida, control, obstáculo y registro de errores.
+
+Mr. Lastre es un electroimán perdido que atraviesa una ciudad industrial para entregar toda la chatarra que se le pegó en el basurero municipal. El destino siempre está indicado por señales y distancia: la historia acompaña al loop, no lo interrumpe.
 
 ## Verbo central
 
@@ -25,7 +27,7 @@ Un auto-runner lateral sobre **crecer por accidente y adelgazar a propósito**. 
 
 ## Dirección conceptual: chatarra magnética
 
-El núcleo es un electroimán blanco-cian. Lo que recoge no son partículas abstractas: son tornillos, chapas, resortes, tuercas y engranajes oxidados.
+El núcleo es un electroimán blanco-cian con polos rojo y azul. Lo que recoge no son partículas abstractas: son chapas, tuercas y engranajes oxidados.
 
 La regla de producción es estricta: **la forma dibujada debe coincidir con la forma Matter**. Una chapa larga necesita un collider largo; un engranaje puede aproximarse con un círculo. Las piezas no se simulan por separado una vez adheridas: pasan a ser partes convexas del mismo cuerpo compuesto.
 
@@ -53,7 +55,7 @@ La referencia estructural es Katamari, pero la inversión es esencial: allí cre
 
 ## Fuera de alcance por ahora
 
-- Arte definitivo, metaprogresión, poderes, enemigos, salto, niveles narrativos.
+- Arte ilustrado definitivo, metaprogresión, poderes, enemigos y niveles narrativos.
 - Simular cada píxel como un rigid body independiente.
 - Editor procedural sofisticado: primero se valida si deformarse es divertido.
 

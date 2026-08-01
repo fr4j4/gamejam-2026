@@ -35,6 +35,20 @@
     return cooldownMs <= 0 && boundsMaxY >= groundY - 5;
   }
 
+  function scrapSpecForIndex(index) {
+    const sizeStep = Math.floor(index / 3) % 3;
+    if (index % 3 === 0) return { kind: 'gear', radius: 7 + sizeStep * 3 };
+    if (index % 3 === 1) return { kind: 'plate', width: 18 + sizeStep * 4, height: 8 + sizeStep * 2 };
+    return { kind: 'nut', radius: 9 + sizeStep * 2, sides: 6 };
+  }
+
+  function routeMessage(distance, destination) {
+    const remaining = Math.max(0, destination - distance);
+    if (remaining === 0) return 'DESTINO ALCANZADO';
+    if (remaining <= 150) return 'YA SE VE EL BASURERO';
+    return `BASURERO MUNICIPAL ${Math.ceil(remaining / 10)} m`;
+  }
+
   return {
     cameraSpeed,
     screenX,
@@ -42,6 +56,8 @@
     torqueForInput,
     choosePartToShed,
     jumpForceForMass,
-    canHop
+    canHop,
+    scrapSpecForIndex,
+    routeMessage
   };
 });

@@ -1,6 +1,6 @@
-# LASTRE
+# MR. LASTRE
 
-Auto-runner físico lateral hecho con **Phaser 4.2.1 + Matter**.
+Auto-runner físico lateral hecho con **Phaser 4.2.1 + Matter**. Mr. Lastre es un pequeño electroimán que cruza la ciudad industrial buscando el basurero municipal.
 
 ## Ejecutar
 
@@ -23,15 +23,18 @@ Abrir:
 
 ## Objetivo
 
-Avanzar mientras la cámara empuja. La materia luminosa se pega al cuerpo; la piedra arranca masa. Si el borde izquierdo alcanza el núcleo, termina la partida.
+Llegar al basurero mientras la cámara empuja. Engranajes, chapas y tuercas se pegan al cuerpo; el hormigón arranca masa. Si el borde izquierdo alcanza el núcleo, termina la partida.
+
+Cada pieza dibujada tiene la misma forma que su collider Matter y, al adherirse, pasa a ser parte del único cuerpo compuesto de Mr. Lastre.
 
 ## Estado
 
 - [x] Corte 0: cuerpo compuesto mutable con Matter; masa, inercia y centroide se recalculan.
 - [x] Corte 1: loop básico crecer → deformarse → rasparse → recuperar terreno.
 - [x] Pulso magnético dependiente de masa para reorientar aterrizajes.
-- [ ] Corte 2: diseño de obstáculos y pasos angostos.
-- [ ] Corte 3: arte, sonido y feedback.
+- [x] Corte 2: ciudad industrial, señalética, ruta y basurero como meta.
+- [x] Corte 3: identidad de Mr. Lastre y taxonomía procedural de chatarra física.
+- [ ] Corte 4: sonido y pulido de obstáculos.
 
 ## Verificación técnica
 

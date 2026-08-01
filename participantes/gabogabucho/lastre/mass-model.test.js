@@ -10,7 +10,10 @@ const {
   jumpForceForMass,
   canHop,
   scrapSpecForIndex,
-  routeMessage
+  routeMessage,
+  scrapValue,
+  scoreDelivery,
+  belongsToCompound
 } = require('./mass-model.js');
 
 test('la cámara acelera suavemente y tiene un límite', () => {
@@ -70,4 +73,39 @@ test('la ruta comunica el basurero sin interrumpir el juego', () => {
   assert.equal(routeMessage(0, 12000), 'BASURERO MUNICIPAL 1200 m');
   assert.equal(routeMessage(11850, 12000), 'YA SE VE EL BASURERO');
   assert.equal(routeMessage(12000, 12000), 'DESTINO ALCANZADO');
+});
+
+test('cada forma y tamano de chatarra tiene un valor determinista', () => {
+  assert.equal(scrapValue({ kind: 'gear', radius: 7 }), 10);
+  assert.equal(scrapValue({ kind: 'gear', radius: 13 }), 30);
+  assert.equal(scrapValue({ kind: 'plate', width: 18, height: 8 }), 15);
+  assert.equal(scrapValue({ kind: 'plate', width: 26, height: 12 }), 35);
+  assert.equal(scrapValue({ kind: 'nut', radius: 9 }), 20);
+  assert.equal(scrapValue({ kind: 'nut', radius: 13 }), 40);
+});
+
+test('la puntuacion suma solo valor entregado y un bonus de tiempo no negativo', () => {
+  assert.deepEqual(scoreDelivery(125, 150), {
+    deliveredValue: 125,
+    elapsedSeconds: 150,
+    timeBonus: 300,
+    total: 425
+  });
+  assert.deepEqual(scoreDelivery(0, 181), {
+    deliveredValue: 0,
+    elapsedSeconds: 181,
+    timeBonus: 0,
+    total: 0
+  });
+  assert.equal(scoreDelivery(80, -5).timeBonus, 1800);
+});
+
+test('el nucleo, el root y cualquier child pertenecen al mismo compuesto', () => {
+  const compound = { id: 'blob' };
+  const child = { id: 'scrap', parent: compound };
+  const stranger = { id: 'soft', parent: { id: 'soft-root' } };
+  assert.equal(belongsToCompound(compound, compound), true);
+  assert.equal(belongsToCompound(child, compound), true);
+  assert.equal(belongsToCompound(stranger, compound), false);
+  assert.equal(belongsToCompound(null, compound), false);
 });

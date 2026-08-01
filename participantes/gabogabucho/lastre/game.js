@@ -6,7 +6,10 @@ const {
   jumpForceForMass,
   canHop,
   scrapSpecForIndex,
-  routeMessage
+  routeMessage,
+  scrapValue,
+  scoreDelivery,
+  belongsToCompound
 } = LastreModel;
 
 const COLORS = {
@@ -33,7 +36,9 @@ class LastreScene extends Phaser.Scene {
   create() {
     this.W = 800;
     this.H = 450;
-    this.startedAt = this.time.now;
+    this.startedAt = null;
+    this.started = false;
+    this.ignoreJumpUntilRelease = false;
     this.dead = false;
     this.shedCooldown = 0;
     this.jumpCooldown = 0;
@@ -58,7 +63,8 @@ class LastreScene extends Phaser.Scene {
     });
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
 
-    this.matter.world.on('collisionstart', event => this.onCollision(event));
+    this.matter.world.on('collisionstart', event => this.onCollision(event, true));
+    this.matter.world.on('collisionactive', event => this.onCollision(event, false));
 
     this.blobPaint = this.add.graphics().setDepth(20);
     this.hud = this.add.text(18, 16, '', {
@@ -70,11 +76,11 @@ class LastreScene extends Phaser.Scene {
     this.routeHud = this.add.text(782, 18, '', {
       fontFamily: 'Courier New', fontSize: '12px', color: '#f1c75b', align: 'right'
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(100);
-    const intro = this.add.text(400, 92, 'MR. LASTRE\nRUTA AL BASURERO', {
-      fontFamily: 'Courier New', fontSize: '22px', color: '#f7fbff', align: 'center',
-      stroke: '#13242a', strokeThickness: 5
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(110);
-    this.tweens.add({ targets: intro, alpha: 0, y: 78, delay: 1150, duration: 850, onComplete: () => intro.destroy() });
+    this.showIntro();
+    this.matter.world.pause();
+    this.input.keyboard.on('keydown-ENTER', () => this.startGame(false));
+    this.input.keyboard.on('keydown-SPACE', () => this.startGame(true));
+    this.input.on('pointerdown', () => this.startGame(false));
 
     const qs = new URLSearchParams(location.search);
     this.debugMode = qs.has('debug');
@@ -92,6 +98,41 @@ class LastreScene extends Phaser.Scene {
       const side = qs.get('shed') === 'left' ? -1 : 1;
       this.shedAt(this.blob.position.x + side * 100);
     }
+    if (qs.has('autostart')) this.startGame(false);
+  }
+
+  showIntro() {
+    const panel = this.add.rectangle(400, 225, 800, 450, 0x05090d, 0.9)
+      .setScrollFactor(0).setDepth(200);
+    const title = this.add.text(400, 88, 'MR. LASTRE', {
+      fontFamily: 'Courier New', fontSize: '34px', color: '#f7fbff', fontStyle: 'bold',
+      stroke: '#17323b', strokeThickness: 6
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+    const story = this.add.text(400, 147,
+      'SOS UN IMÁN PERDIDO EN LA CIUDAD\nLLEVA LA CHATARRA AL BASURERO', {
+        fontFamily: 'Courier New', fontSize: '17px', color: '#f1c75b', align: 'center',
+        lineSpacing: 7
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+    const rules = this.add.text(400, 250,
+      'A / D   INCLINARTE\nESPACIO   PULSO\n\nEL METAL SE PEGA  ·  LA PIEDRA TE ALIGERA\nNO DEJES QUE EL BORDE ROJO TE ALCANCE', {
+        fontFamily: 'Courier New', fontSize: '14px', color: '#dbe8ed', align: 'center',
+        lineSpacing: 8
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+    const start = this.add.text(400, 377, 'ESPACIO / ENTER / CLICK PARA EMPEZAR', {
+      fontFamily: 'Courier New', fontSize: '14px', color: '#6fe7ff'
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+    this.tweens.add({ targets: start, alpha: 0.35, yoyo: true, repeat: -1, duration: 620 });
+    this.introLayer = [panel, title, story, rules, start];
+  }
+
+  startGame(startedWithSpace) {
+    if (this.started) return;
+    this.started = true;
+    this.startedAt = this.time.now;
+    this.ignoreJumpUntilRelease = startedWithSpace;
+    this.matter.world.resume();
+    for (const item of this.introLayer) item.destroy();
+    this.introLayer = [];
   }
 
   makeBackdrop() {
@@ -207,7 +248,11 @@ class LastreScene extends Phaser.Scene {
       this.matter.world.add(body);
       const view = this.add.graphics().setDepth(8);
       this.paintScrap(view, body, 0.92);
-      this.soft.push({ id, body, view, spec });
+      const value = scrapValue(spec);
+      const valueView = this.add.text(x, y - (body.plugin.radius + 10), `$${value}`, {
+        fontFamily: 'Courier New', fontSize: '10px', color: '#f1c75b', fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(9);
+      this.soft.push({ id, body, view, valueView, spec, value });
       id++;
     }
   }
@@ -229,6 +274,7 @@ class LastreScene extends Phaser.Scene {
     body.plugin.isBlobPart = !sensor;
     body.plugin.scrap = spec;
     body.plugin.radius = spec.radius || Math.max(spec.width, spec.height) / 2;
+    body.plugin.value = scrapValue(spec);
     return body;
   }
 
@@ -260,28 +306,27 @@ class LastreScene extends Phaser.Scene {
     });
   }
 
-  onCollision(event) {
+  onCollision(event, allowStone) {
     for (const pair of event.pairs) {
       const a = pair.bodyA;
       const b = pair.bodyB;
-      const aRoot = a.parent || a;
-      const bRoot = b.parent || b;
-      const aIsBlob = aRoot === this.blob;
-      const bIsBlob = bRoot === this.blob;
+      const aIsBlob = belongsToCompound(a, this.blob);
+      const bIsBlob = belongsToCompound(b, this.blob);
       if (!aIsBlob && !bIsBlob) continue;
-      const other = aIsBlob ? bRoot : aRoot;
+      const otherBody = aIsBlob ? b : a;
+      const other = otherBody.parent || otherBody;
+      const contact = pair.collision && pair.collision.supports && pair.collision.supports[0]
+        ? pair.collision.supports[0]
+        : other.position;
 
-      if (other.plugin && other.plugin.softId !== undefined) this.collectSoft(other.plugin.softId);
-      if (other.plugin && other.plugin.isStone && this.shedCooldown <= 0) {
-        const impactX = pair.collision && pair.collision.supports && pair.collision.supports[0]
-          ? pair.collision.supports[0].x
-          : other.position.x;
-        this.shedAt(impactX);
+      if (other.plugin && other.plugin.softId !== undefined) this.collectSoft(other.plugin.softId, contact);
+      if (allowStone && other.plugin && other.plugin.isStone && this.shedCooldown <= 0) {
+        this.shedAt(contact.x);
       }
     }
   }
 
-  collectSoft(id) {
+  collectSoft(id, contact) {
     if (this.collected.has(id)) return;
     const item = this.soft.find(entry => entry.id === id);
     if (!item) return;
@@ -289,9 +334,22 @@ class LastreScene extends Phaser.Scene {
     const point = { x: item.body.position.x, y: item.body.position.y };
     this.matter.world.remove(item.body);
     item.view.destroy();
+    item.valueView.destroy();
     this.addBlobPart(point.x, point.y, item.spec);
     const spark = this.add.circle(point.x, point.y, 5, COLORS.glow, 0.85).setDepth(25);
     this.tweens.add({ targets: spark, scale: 2.6, alpha: 0, duration: 260, onComplete: () => spark.destroy() });
+    const arc = this.add.graphics().setDepth(24);
+    arc.lineStyle(3, COLORS.glow, 0.9);
+    arc.lineBetween(this.blob.position.x, this.blob.position.y, contact.x, contact.y);
+    arc.strokeCircle(contact.x, contact.y, 10);
+    this.tweens.add({ targets: arc, alpha: 0, duration: 320, onComplete: () => arc.destroy() });
+    const points = this.add.text(point.x, point.y - 24, `+$${item.value}`, {
+      fontFamily: 'Courier New', fontSize: '14px', color: '#f1c75b', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(26);
+    this.tweens.add({
+      targets: points, y: points.y - 22, alpha: 0, duration: 700,
+      ease: 'Cubic.easeOut', onComplete: () => points.destroy()
+    });
   }
 
   rebuildBlob(parts) {
@@ -415,6 +473,13 @@ class LastreScene extends Phaser.Scene {
     }
   }
 
+  deliveredValue() {
+    return this.blob.parts.slice(1).reduce((total, part) => {
+      if (part.plugin && part.plugin.isCore) return total;
+      return total + ((part.plugin && part.plugin.value) || 0);
+    }, 0);
+  }
+
   hop() {
     if (!canHop(this.blob.bounds.max.y, 380, this.jumpCooldown)) return;
     const force = jumpForceForMass(this.blob.mass, this.coreMass, 0.038);
@@ -454,12 +519,20 @@ class LastreScene extends Phaser.Scene {
     this.add.text(400, 190, 'LLEGASTE AL BASURERO', {
       fontFamily: 'Courier New', fontSize: '28px', color: '#f1c75b', fontStyle: 'bold'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
-    this.add.text(400, 238, `MR. LASTRE ENTREGÓ ${this.blob.parts.length - 1} PIEZAS\nR para volver a la ciudad`, {
+    const result = scoreDelivery(this.deliveredValue(), (this.time.now - this.startedAt) / 1000);
+    this.add.text(400, 260,
+      `TIEMPO              ${result.elapsedSeconds} s\n` +
+      `BONUS DE TIEMPO    $${result.timeBonus}\n` +
+      `CHATARRA ENTREGADA $${result.deliveredValue}\n` +
+      `-------------------------\n` +
+      `PUNTUACIÓN TOTAL   $${result.total}\n\n` +
+      'R para volver a la ciudad', {
       fontFamily: 'Courier New', fontSize: '14px', color: '#dbe8ed', align: 'center'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
   }
 
   update(time, delta) {
+    if (!this.started) return;
     if (this.dead || this.finished) return;
     this.shedCooldown = Math.max(0, this.shedCooldown - delta);
     this.jumpCooldown = Math.max(0, this.jumpCooldown - delta);
@@ -467,7 +540,11 @@ class LastreScene extends Phaser.Scene {
     const left = this.keys.leftA.isDown || this.keys.leftArrow.isDown;
     const right = this.keys.rightD.isDown || this.keys.rightArrow.isDown;
     this.blob.torque += torqueForInput(left, right, 0.018) * this.blob.mass;
-    if (Phaser.Input.Keyboard.JustDown(this.keys.jump)) this.hop();
+    if (this.ignoreJumpUntilRelease) {
+      if (!this.keys.jump.isDown) this.ignoreJumpUntilRelease = false;
+    } else if (Phaser.Input.Keyboard.JustDown(this.keys.jump)) {
+      this.hop();
+    }
 
     this.blob.force.x += 0.00042;
     if (this.blob.velocity.x > 4.2) this.matter.body.setVelocity(this.blob, { x: 4.2, y: this.blob.velocity.y });
@@ -483,9 +560,10 @@ class LastreScene extends Phaser.Scene {
     if (rightEdge >= this.destinationX) this.finish();
 
     const pieces = this.blob.parts.length - 1;
+    const value = this.deliveredValue();
     const distance = Math.floor(this.cameras.main.scrollX / 10);
     const hopState = this.jumpCooldown > 0 ? 'RECARGA' : 'LISTO';
-    this.hud.setText(`LASTRE  ·  ${distance} m  ·  masa ${pieces}  ·  velocidad ${Math.max(0, this.blob.velocity.x).toFixed(1)}  ·  pulso ${hopState}`);
+    this.hud.setText(`LASTRE  ·  ${distance} m  ·  piezas ${pieces}  ·  chatarra $${value}  ·  pulso ${hopState}`);
     this.routeHud.setText(routeMessage(Math.floor(this.blob.position.x), this.destinationX));
     this.warning.setText(relative < 130 ? '◀ EL BORDE TE ESTÁ ALCANZANDO' : '');
   }

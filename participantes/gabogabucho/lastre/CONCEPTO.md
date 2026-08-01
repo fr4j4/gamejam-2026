@@ -24,6 +24,13 @@ Mr. Lastre es un electroimán perdido que atraviesa una ciudad industrial para e
 - **Piedra arranca.** El contacto desprende la parte del lado golpeado.
 - **El borde izquierdo mata.** Ningún obstáculo produce muerte instantánea.
 - **A/D o ←/→ aplican torque.** Espacio produce un hop bajo que pierde altura con la masa.
+- **Toda la masa sigue imantada.** El núcleo y cualquier pieza ya adherida pueden capturar chatarra nueva.
+
+## Riesgo, recompensa y entrega
+
+La chatarra no vale solamente por cantidad: forma y tamaño tienen un valor visible. Llegar cargado aumenta la puntuación, pero una forma grande y asimétrica pone en riesgo el tiempo y la supervivencia. Rasparse resuelve un problema físico a cambio de perder exactamente el valor de la pieza desprendida.
+
+La pantalla final desglosa tiempo, bonus de tiempo, valor de chatarra entregada y total. El bonus vale 10 puntos por cada segundo restante hasta 180 segundos. Así, el jugador puede comprender el resultado y decidir en la siguiente partida si le conviene cargar más o llegar antes.
 
 ## Dirección conceptual: chatarra magnética
 

@@ -49,6 +49,29 @@
     return `BASURERO MUNICIPAL ${Math.ceil(remaining / 10)} m`;
   }
 
+  function scrapValue(spec) {
+    if (spec.kind === 'gear') return 10 + Math.max(0, Math.round((spec.radius - 7) / 3)) * 10;
+    if (spec.kind === 'plate') return 15 + Math.max(0, Math.round((spec.width - 18) / 4)) * 10;
+    if (spec.kind === 'nut') return 20 + Math.max(0, Math.round((spec.radius - 9) / 2)) * 10;
+    return 0;
+  }
+
+  function scoreDelivery(deliveredValue, elapsedSeconds) {
+    const seconds = Math.max(0, Math.floor(elapsedSeconds));
+    const value = Math.max(0, Math.floor(deliveredValue));
+    const timeBonus = Math.max(0, 180 - seconds) * 10;
+    return {
+      deliveredValue: value,
+      elapsedSeconds: seconds,
+      timeBonus,
+      total: value + timeBonus
+    };
+  }
+
+  function belongsToCompound(body, compound) {
+    return Boolean(body && compound && (body === compound || body.parent === compound));
+  }
+
   return {
     cameraSpeed,
     screenX,
@@ -58,6 +81,9 @@
     jumpForceForMass,
     canHop,
     scrapSpecForIndex,
-    routeMessage
+    routeMessage,
+    scrapValue,
+    scoreDelivery,
+    belongsToCompound
   };
 });

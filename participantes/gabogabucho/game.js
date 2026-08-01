@@ -43,14 +43,14 @@ const STATES = {
   duda:    { label: 'D', color: 0x7d8478, tone: 'Cree a medias. El peor lugar.' },
   ciencia: { label: 'C', color: 0x7fb8d8, tone: 'Ya no te necesita. O nunca.' }
 };
-// burbujas reales del usuario (assets/estado_XX). Mapeo por defecto:
-// corregir si el orden visual de tus burbujas es otro.
+// burbujas reales del usuario (assets/estado_XX). CONFIRMADO por el usuario:
+// estado_02 = miedo, estado_00 = fe, estado_03 = hambre, estado_04 = duda, estado_01 = ciencia
 const BUBBLE_IMG = {
-  miedo:   'estado_00_17x23',
-  fe:      'estado_01_16x23',
-  hambre:  'estado_02_18x22',
-  duda:    'estado_03_15x21',
-  ciencia: 'estado_04_16x21'
+  miedo:   'estado_02_18x22',
+  fe:      'estado_00_17x23',
+  hambre:  'estado_03_15x21',
+  duda:    'estado_04_16x21',
+  ciencia: 'estado_01_16x23'
 };
 
 // ---- utilidades ----
@@ -93,14 +93,12 @@ class ApocryphaScene extends Phaser.Scene {
     img('aldeano3', 'aldeano_03_24x43.png');
     img('aldeano4', 'aldeano_04_38x41.png');
     img('aldeano5', 'aldeano_05_24x41.png');
-    // estructuras del pueblo (Estructuras 2: chicas, 53-90px)
-    img('casa0', 'estructura_00_53x90.png');
-    img('casa1', 'estructura_01_55x90.png');
-    img('casa2', 'estructura_02_89x68.png');
-    img('casa3', 'estructura_03_77x65.png');
-    img('casa4', 'estructura_04_64x59.png');
-    // catedral (estructuras1, la grande)
-    img('catedral', 'estructura_01_120x116.png');
+    // Estructuras 1 (CONFIRMADO por el usuario):
+    // estructura_03 = choza, estructura_02 = casa, estructura_01 = templo, estructura_00 = catedral
+    img('choza', 'estructura_03_101x91.png');
+    img('casa', 'estructura_02_130x111.png');
+    img('templo', 'estructura_01_120x116.png');
+    img('catedral', 'estructura_00_96x146.png');
     // fondo: montañas, arboleda, árboles
     img('montanas', 'montanas_00_369x63.png');
     img('arbolada', 'arbolada_00_395x98.png');
@@ -137,9 +135,14 @@ class ApocryphaScene extends Phaser.Scene {
     this.ground = this.add.rectangle(W / 2, this.groundY + 40, W, 80, PAL.groundN);
     this.front = this.add.rectangle(W / 2, H - 12, W, 24, PAL.frontN);
 
-    // ---- aldea: 5 estructuras reales ----
-    const hutXs = [130, 240, 400, 560, 670];
-    this.huts = hutXs.map((x, i) => this.add.image(x, this.groundY, 'casa' + i).setOrigin(0.5, 1));
+    // ---- aldea: chozas, casa y templo reales (Estructuras 1) ----
+    // [x, key]: chozas en los extremos, casa y templo al centro
+    const buildings = [
+      [110, 'choza'], [240, 'casa'], [400, 'templo'], [560, 'casa'], [690, 'choza']
+    ];
+    this.huts = buildings.map(([x, key]) =>
+      this.add.image(x, this.groundY, key).setOrigin(0.5, 1)
+    );
 
     // ---- 9 aldeanos reales, cada uno con su burbuja de estado ----
     const villagerXs = [95, 175, 300, 340, 455, 520, 625, 700, 740];

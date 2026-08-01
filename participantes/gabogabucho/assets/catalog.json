@@ -13,7 +13,8 @@
    "FERVOR",
    "DUDA"
   ],
-  "src": "Estados_id00_17x23.png"
+  "src": "Estados_id00_17x23.png",
+  "nombre": "fe"
  },
  {
   "file": "estado_01_16x23.png",
@@ -29,7 +30,8 @@
    "FERVOR",
    "DUDA"
   ],
-  "src": "Estados_id01_16x23.png"
+  "src": "Estados_id01_16x23.png",
+  "nombre": "ciencia"
  },
  {
   "file": "estado_02_18x22.png",
@@ -45,7 +47,8 @@
    "FERVOR",
    "DUDA"
   ],
-  "src": "Estados_id02_18x22.png"
+  "src": "Estados_id02_18x22.png",
+  "nombre": "miedo"
  },
  {
   "file": "estado_03_15x21.png",
@@ -61,7 +64,8 @@
    "FERVOR",
    "DUDA"
   ],
-  "src": "Estados_id03_15x21.png"
+  "src": "Estados_id03_15x21.png",
+  "nombre": "hambre"
  },
  {
   "file": "estado_04_16x21.png",
@@ -77,7 +81,8 @@
    "FERVOR",
    "DUDA"
   ],
-  "src": "Estados_id04_16x21.png"
+  "src": "Estados_id04_16x21.png",
+  "nombre": "duda"
  },
  {
   "file": "estructura_00_53x90.png",
@@ -747,7 +752,8 @@
    "TORRE",
    "MURALLA"
   ],
-  "src": "estructuras1_id00_96x146.png"
+  "src": "estructuras1_id00_96x146.png",
+  "nombre": "catedral"
  },
  {
   "file": "estructura_01_120x116.png",
@@ -763,7 +769,8 @@
    "TORRE",
    "MURALLA"
   ],
-  "src": "estructuras1_id01_120x116.png"
+  "src": "estructuras1_id01_120x116.png",
+  "nombre": "templo"
  },
  {
   "file": "estructura_02_130x111.png",
@@ -779,7 +786,8 @@
    "TORRE",
    "MURALLA"
   ],
-  "src": "estructuras1_id02_130x111.png"
+  "src": "estructuras1_id02_130x111.png",
+  "nombre": "casa"
  },
  {
   "file": "estructura_03_101x91.png",
@@ -795,7 +803,8 @@
    "TORRE",
    "MURALLA"
   ],
-  "src": "estructuras1_id03_101x91.png"
+  "src": "estructuras1_id03_101x91.png",
+  "nombre": "choza"
  },
  {
   "file": "objeto_00_41x37.png",

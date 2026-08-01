@@ -21,11 +21,19 @@ const PORTAL_SPAWN_RADIUS = 350;
 const PORTAL_TRIGGER_RADIUS = 40;
 const STAGE_BOSS_MULTIPLIER = 1.15;
 const STAGE_PORTAL_MULTIPLIER = 1.5;
+const PIERCE_LIFETIME = 1200;
+const BOSS_PROJECTILE_SPEED = 220;
+const BOSS_PROJECTILE_LIFETIME = 3000;
+const BOSS_RANGED_PREFERRED_DIST = 260;
+const BOSS_SHOT_COOLDOWN_MS = 1800;
+const BOSS_TELEGRAPH_MS = 400;
 
 const ENEMY_TYPES = {
   normal: { texture: 'enemy', color: 0xff5566, baseHp: 20, hpPerMin: 10, baseSpeed: 80, speedPerMin: 8, damage: 10 },
   fast: { texture: 'enemyFast', color: 0xffaa33, baseHp: 8, hpPerMin: 4, baseSpeed: 160, speedPerMin: 12, damage: 6 },
+  tank: { texture: 'enemyTank', color: 0x88cc44, baseHp: 60, hpPerMin: 22, baseSpeed: 45, speedPerMin: 3, damage: 18 },
   boss: { texture: 'boss', color: 0xff33aa, baseHp: 250, hpPerMin: 50, baseSpeed: 50, speedPerMin: 4, damage: 20 },
+  bossRanged: { texture: 'bossRanged', color: 0x33ccff, baseHp: 200, hpPerMin: 45, baseSpeed: 70, speedPerMin: 4, damage: 15 },
 };
 
 const STAT_UPGRADES = [
@@ -64,6 +72,21 @@ const WEAPON_UPGRADES = {
       { key: 'orbitSpeed', describe: (b, a) => `Orbe velocidad: ${b.orbitSpeed.toFixed(2)} → ${a.orbitSpeed.toFixed(2)}`, apply: (s) => { s.orbitSpeed *= 1.25; } },
     ],
   },
+  pierce: {
+    unlock: {
+      key: 'pierceUnlock',
+      describe: (b, a) => `Nueva arma: Perforante (${a.pierceDamage} dmg, atraviesa todo)`,
+      apply: (s) => { s.hasPierce = true; s.pierceDamage = 15; s.pierceRate = 1200; s.pierceSpeed = 600; },
+    },
+    upgrades: [
+      { key: 'pierceDamage', describe: (b, a) => `Perforante daño: ${b.pierceDamage} → ${a.pierceDamage}`, apply: (s) => { s.pierceDamage += 8; } },
+      {
+        key: 'pierceRate',
+        describe: (b, a) => `Perforante cadencia: ${(1000 / b.pierceRate).toFixed(1)}/s → ${(1000 / a.pierceRate).toFixed(1)}/s`,
+        apply: (s) => { s.pierceRate = Math.round(s.pierceRate * 0.85); },
+      },
+    ],
+  },
 };
 
 export default class GameScene extends Phaser.Scene {
@@ -81,6 +104,7 @@ export default class GameScene extends Phaser.Scene {
       magnetRadius: 90,
       hasAura: false,
       hasOrbit: false,
+      hasPierce: false,
     };
     this.xp = 0;
     this.level = 1;
@@ -120,18 +144,24 @@ export default class GameScene extends Phaser.Scene {
 
     this.enemies = this.physics.add.group();
     this.projectiles = this.physics.add.group();
+    this.pierceProjectiles = this.physics.add.group();
+    this.bossProjectiles = this.physics.add.group();
     this.xpOrbs = this.physics.add.group();
 
     this.physics.add.overlap(this.projectiles, this.enemies, this.onProjectileHitEnemy, null, this);
+    this.physics.add.overlap(this.pierceProjectiles, this.enemies, this.onPierceHitEnemy, null, this);
+    this.physics.add.overlap(this.player, this.bossProjectiles, this.onBossProjectileHitPlayer, null, this);
     this.physics.add.overlap(this.player, this.enemies, this.onPlayerHitEnemy, null, this);
     this.physics.add.overlap(this.player, this.xpOrbs, this.onPlayerPickupXp, null, this);
 
     this.spawnTimer = this.time.addEvent({ delay: 1000, loop: true, callback: this.spawnEnemy, callbackScope: this });
     this.attackTimer = this.time.addEvent({ delay: this.stats.fireRate, loop: true, callback: this.fireAtNearest, callbackScope: this });
+    this.pierceTimer = this.time.addEvent({ delay: 1200, loop: true, callback: this.firePierce, callbackScope: this });
     this.difficultyTimer = this.time.addEvent({ delay: DIFFICULTY_RAMP_MS, loop: true, callback: this.rampDifficulty, callbackScope: this });
     this.bossTimer = this.time.addEvent({ delay: BOSS_DELAY_MS, loop: true, callback: this.warnBoss, callbackScope: this });
     this.spawnTimer.paused = true;
     this.attackTimer.paused = true;
+    this.pierceTimer.paused = true;
     this.difficultyTimer.paused = true;
     this.bossTimer.paused = true;
 
@@ -208,6 +238,34 @@ export default class GameScene extends Phaser.Scene {
     orbit.generateTexture('orbit', 12, 12);
     orbit.destroy();
 
+    const enemyTank = this.add.graphics();
+    enemyTank.fillStyle(0x335522, 1);
+    enemyTank.fillRect(0, 0, 28, 28);
+    enemyTank.lineStyle(2, 0x88cc44, 1);
+    enemyTank.strokeRect(1, 1, 26, 26);
+    enemyTank.generateTexture('enemyTank', 28, 28);
+    enemyTank.destroy();
+
+    const bossRanged = this.add.graphics();
+    bossRanged.fillStyle(0x002233, 1);
+    bossRanged.fillRect(0, 0, 44, 44);
+    bossRanged.lineStyle(3, 0x33ccff, 1);
+    bossRanged.strokeRect(1.5, 1.5, 41, 41);
+    bossRanged.generateTexture('bossRanged', 44, 44);
+    bossRanged.destroy();
+
+    const pierce = this.add.graphics();
+    pierce.fillStyle(0x66ddff, 1);
+    pierce.fillRect(0, 3, 20, 4);
+    pierce.generateTexture('pierce', 20, 10);
+    pierce.destroy();
+
+    const bossBolt = this.add.graphics();
+    bossBolt.fillStyle(0xff3333, 1);
+    bossBolt.fillCircle(7, 7, 7);
+    bossBolt.generateTexture('bossBolt', 14, 14);
+    bossBolt.destroy();
+
     const portal = this.add.graphics();
     portal.fillStyle(0x8855ff, 0.35);
     portal.fillCircle(32, 32, 32);
@@ -235,6 +293,7 @@ export default class GameScene extends Phaser.Scene {
     this.startText.destroy();
     this.spawnTimer.paused = false;
     this.attackTimer.paused = false;
+    this.pierceTimer.paused = false;
     this.difficultyTimer.paused = false;
     this.bossTimer.paused = false;
   }
@@ -328,6 +387,7 @@ export default class GameScene extends Phaser.Scene {
     this.physics.world.pause();
     this.spawnTimer.paused = true;
     this.attackTimer.paused = true;
+    this.pierceTimer.paused = true;
     this.difficultyTimer.paused = true;
     this.bossTimer.paused = true;
 
@@ -342,6 +402,7 @@ export default class GameScene extends Phaser.Scene {
     ];
     if (s.hasAura) lines.push(`Aura — daño ${s.auraDamage}, radio ${s.auraRadius}`);
     if (s.hasOrbit) lines.push(`Orbe — daño ${s.orbitDamage}, cantidad ${s.orbitCount}, velocidad ${s.orbitSpeed.toFixed(2)}`);
+    if (s.hasPierce) lines.push(`Perforante — daño ${s.pierceDamage}, cadencia ${(1000 / s.pierceRate).toFixed(1)}/s`);
 
     this.pauseStats.setText(lines.join('\n'));
     this.pauseTitle.setVisible(true);
@@ -354,6 +415,7 @@ export default class GameScene extends Phaser.Scene {
     this.physics.world.resume();
     this.spawnTimer.paused = false;
     this.attackTimer.paused = false;
+    this.pierceTimer.paused = false;
     this.difficultyTimer.paused = false;
     this.bossTimer.paused = false;
 
@@ -408,7 +470,11 @@ export default class GameScene extends Phaser.Scene {
     this.enemies.getChildren().forEach((e) => {
       if (!e.active) return;
       if (time < (e.getData('knockbackUntil') || 0)) return;
-      this.physics.moveToObject(e, this.player, e.getData('speed'));
+      if (e.getData('type') === 'bossRanged') {
+        this.updateRangedBoss(e, time);
+      } else {
+        this.physics.moveToObject(e, this.player, e.getData('speed'));
+      }
     });
 
     this.xpOrbs.getChildren().forEach((orb) => {
@@ -424,6 +490,20 @@ export default class GameScene extends Phaser.Scene {
     this.projectiles.getChildren().forEach((p) => {
       if (!p.active) return;
       if (time - p.getData('bornAt') > PROJECTILE_LIFETIME) {
+        p.destroy();
+      }
+    });
+
+    this.pierceProjectiles.getChildren().forEach((p) => {
+      if (!p.active) return;
+      if (time - p.getData('bornAt') > PIERCE_LIFETIME) {
+        p.destroy();
+      }
+    });
+
+    this.bossProjectiles.getChildren().forEach((p) => {
+      if (!p.active) return;
+      if (time - p.getData('bornAt') > BOSS_PROJECTILE_LIFETIME) {
         p.destroy();
       }
     });
@@ -488,8 +568,10 @@ export default class GameScene extends Phaser.Scene {
     const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * SPAWN_RADIUS, 20, WORLD_SIZE - 20);
 
     const minutes = this.elapsed / 60000;
-    const fastChance = Math.min(0.5, minutes * 0.15);
-    const typeKey = Math.random() < fastChance ? 'fast' : 'normal';
+    const fastChance = Math.min(0.4, minutes * 0.12);
+    const tankChance = Math.min(0.2, minutes * 0.05);
+    const roll = Math.random();
+    const typeKey = roll < tankChance ? 'tank' : (roll < tankChance + fastChance ? 'fast' : 'normal');
     const type = ENEMY_TYPES[typeKey];
 
     const enemy = this.enemies.create(x, y, type.texture);
@@ -526,16 +608,18 @@ export default class GameScene extends Phaser.Scene {
     const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * SPAWN_RADIUS, 20, WORLD_SIZE - 20);
 
     const minutes = this.elapsed / 60000;
-    const type = ENEMY_TYPES.boss;
+    const bossTypeKey = Math.random() < 0.5 ? 'boss' : 'bossRanged';
+    const type = ENEMY_TYPES[bossTypeKey];
     const maxHp = Math.round((type.baseHp + minutes * type.hpPerMin) * this.stageMultiplier);
 
     const boss = this.enemies.create(x, y, type.texture);
-    boss.setData('type', 'boss');
+    boss.setData('type', bossTypeKey);
     boss.setData('isBoss', true);
     boss.setData('hp', maxHp);
     boss.setData('maxHp', maxHp);
     boss.setData('speed', Math.round(type.baseSpeed + minutes * type.speedPerMin));
     boss.setData('damage', Math.round(type.damage * this.stageMultiplier));
+    boss.setData('nextShotAt', this.time.now + 1000);
     boss.setDepth(11);
 
     this.isBossAlive = true;
@@ -543,6 +627,43 @@ export default class GameScene extends Phaser.Scene {
     this.bossLabel.setVisible(true);
     this.bossBarBg.setVisible(true);
     this.bossBarFill.setVisible(true);
+  }
+
+  updateRangedBoss(boss, time) {
+    const d = Phaser.Math.Distance.Between(boss.x, boss.y, this.player.x, this.player.y);
+    const speed = boss.getData('speed');
+
+    if (d > BOSS_RANGED_PREFERRED_DIST + 40) {
+      this.physics.moveToObject(boss, this.player, speed);
+    } else if (d < BOSS_RANGED_PREFERRED_DIST - 40) {
+      this.physics.moveToObject(boss, this.player, -speed);
+    } else {
+      boss.setVelocity(0, 0);
+    }
+
+    if (time >= (boss.getData('nextShotAt') || 0)) {
+      boss.setData('nextShotAt', time + BOSS_SHOT_COOLDOWN_MS);
+      this.fireBossProjectile(boss);
+    }
+  }
+
+  fireBossProjectile(boss) {
+    const marker = this.add.circle(boss.x, boss.y, 10, 0xff3333, 0.6).setDepth(9);
+    this.tweens.add({
+      targets: marker,
+      scale: 2,
+      alpha: 0,
+      duration: BOSS_TELEGRAPH_MS,
+      onComplete: () => marker.destroy(),
+    });
+
+    this.time.delayedCall(BOSS_TELEGRAPH_MS, () => {
+      if (!boss.active || this.isGameOver) return;
+      const proj = this.bossProjectiles.create(boss.x, boss.y, 'bossBolt');
+      proj.setData('damage', boss.getData('damage'));
+      proj.setData('bornAt', this.time.now);
+      this.physics.moveToObject(proj, this.player, BOSS_PROJECTILE_SPEED);
+    });
   }
 
   rampDifficulty() {
@@ -578,6 +699,27 @@ export default class GameScene extends Phaser.Scene {
     const damage = proj.getData('damage');
     proj.destroy();
     this.damageEnemy(enemy, damage);
+  }
+
+  firePierce() {
+    if (this.isGameOver || this.isLevelingUp || !this.stats.hasPierce) return;
+    const target = this.getNearestEnemy();
+    if (!target) return;
+
+    const proj = this.pierceProjectiles.create(this.player.x, this.player.y, 'pierce');
+    proj.setData('damage', this.stats.pierceDamage);
+    proj.setData('bornAt', this.time.now);
+    proj.setData('hitSet', new Set());
+    proj.setRotation(Phaser.Math.Angle.Between(this.player.x, this.player.y, target.x, target.y));
+    this.physics.moveToObject(proj, target, this.stats.pierceSpeed);
+  }
+
+  onPierceHitEnemy(proj, enemy) {
+    if (!proj.active || !enemy.active) return;
+    const hitSet = proj.getData('hitSet');
+    if (hitSet.has(enemy)) return;
+    hitSet.add(enemy);
+    this.damageEnemy(enemy, proj.getData('damage'));
   }
 
   damageEnemy(enemy, damage) {
@@ -684,16 +826,29 @@ export default class GameScene extends Phaser.Scene {
 
   onPlayerHitEnemy(player, enemy) {
     if (this.isGameOver || this.isLevelingUp) return;
+    this.damagePlayer(enemy.getData('damage'), enemy.x, enemy.y);
+  }
+
+  onBossProjectileHitPlayer(player, proj) {
+    if (this.isGameOver || this.isLevelingUp) return;
+    const damage = proj.getData('damage');
+    const sx = proj.x;
+    const sy = proj.y;
+    proj.destroy();
+    this.damagePlayer(damage, sx, sy);
+  }
+
+  damagePlayer(amount, sourceX, sourceY) {
     const now = this.time.now;
     if (now - this.lastHitAt < HIT_INVULN_MS) return;
     this.lastHitAt = now;
 
-    this.stats.hp -= enemy.getData('damage');
+    this.stats.hp -= amount;
     this.cameras.main.shake(150, 0.008);
     this.player.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.time.delayedCall(80, () => this.player.active && this.player.clearTint());
 
-    const push = new Phaser.Math.Vector2(this.player.x - enemy.x, this.player.y - enemy.y);
+    const push = new Phaser.Math.Vector2(this.player.x - sourceX, this.player.y - sourceY);
     if (push.lengthSq() > 0) {
       push.normalize().scale(PLAYER_KNOCKBACK_SPEED);
       this.player.setVelocity(push.x, push.y);
@@ -710,6 +865,7 @@ export default class GameScene extends Phaser.Scene {
     this.isGameOver = true;
     this.spawnTimer.paused = true;
     this.attackTimer.paused = true;
+    this.pierceTimer.paused = true;
     this.difficultyTimer.paused = true;
     this.bossTimer.paused = true;
 
@@ -749,6 +905,7 @@ export default class GameScene extends Phaser.Scene {
     const pool = [...STAT_UPGRADES];
     pool.push(this.stats.hasAura ? Phaser.Utils.Array.GetRandom(WEAPON_UPGRADES.aura.upgrades) : WEAPON_UPGRADES.aura.unlock);
     pool.push(this.stats.hasOrbit ? Phaser.Utils.Array.GetRandom(WEAPON_UPGRADES.orbit.upgrades) : WEAPON_UPGRADES.orbit.unlock);
+    pool.push(this.stats.hasPierce ? Phaser.Utils.Array.GetRandom(WEAPON_UPGRADES.pierce.upgrades) : WEAPON_UPGRADES.pierce.unlock);
     return pool;
   }
 
@@ -773,6 +930,7 @@ export default class GameScene extends Phaser.Scene {
 
     choice.apply(this.stats);
     this.attackTimer.delay = this.stats.fireRate;
+    if (this.stats.hasPierce) this.pierceTimer.delay = this.stats.pierceRate;
     this.syncWeapons();
 
     this.levelUpTitle.setVisible(false);

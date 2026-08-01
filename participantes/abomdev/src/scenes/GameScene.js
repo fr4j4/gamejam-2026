@@ -58,8 +58,8 @@ export default class GameScene extends Phaser.Scene {
 
   create() {
     this.stats = {
-      damage: 10,
-      fireRate: 700,
+      damage: 20,
+      fireRate: 600,
       moveSpeed: 220,
       maxHp: PLAYER_MAX_HP,
       hp: PLAYER_MAX_HP,
@@ -127,6 +127,7 @@ export default class GameScene extends Phaser.Scene {
     this.buildLevelUpUI();
     this.buildHud();
     this.buildBossBar();
+    this.buildMinimap();
     this.buildStartScreen();
     this.updateHud();
   }
@@ -231,6 +232,40 @@ export default class GameScene extends Phaser.Scene {
     this.bossBarFill = this.add.rectangle(barX + 2, barY + 2, this.bossBarMaxWidth, barH - 4, 0xff33aa).setOrigin(0, 0).setScrollFactor(0).setDepth(151).setVisible(false);
   }
 
+  buildMinimap() {
+    this.minimapX = 630;
+    this.minimapY = 430;
+    this.minimapSize = 150;
+    this.minimapGfx = this.add.graphics().setScrollFactor(0).setDepth(150);
+  }
+
+  updateMinimap() {
+    const gfx = this.minimapGfx;
+    gfx.clear();
+    gfx.fillStyle(0x111122, 0.7);
+    gfx.fillRect(this.minimapX, this.minimapY, this.minimapSize, this.minimapSize);
+    gfx.lineStyle(2, 0x444466, 1);
+    gfx.strokeRect(this.minimapX, this.minimapY, this.minimapSize, this.minimapSize);
+
+    const toMinimap = (wx, wy) => ({
+      x: this.minimapX + (wx / WORLD_SIZE) * this.minimapSize,
+      y: this.minimapY + (wy / WORLD_SIZE) * this.minimapSize,
+    });
+
+    this.enemies.getChildren().forEach((e) => {
+      if (!e.active) return;
+      const p = toMinimap(e.x, e.y);
+      const isBoss = e.getData('isBoss');
+      const color = ENEMY_TYPES[e.getData('type')].color;
+      gfx.fillStyle(color, 1);
+      gfx.fillCircle(p.x, p.y, isBoss ? 4 : 2);
+    });
+
+    const pp = toMinimap(this.player.x, this.player.y);
+    gfx.fillStyle(0x66ffcc, 1);
+    gfx.fillCircle(pp.x, pp.y, 3);
+  }
+
   updateHud() {
     const hpRatio = Phaser.Math.Clamp(this.stats.hp / this.stats.maxHp, 0, 1);
     this.hpBarFill.width = 196 * hpRatio;
@@ -295,6 +330,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     this.updateWeapons(time);
+    this.updateMinimap();
 
     if (this.isBossAlive && this.currentBoss && this.currentBoss.active) {
       const ratio = Phaser.Math.Clamp(this.currentBoss.getData('hp') / this.currentBoss.getData('maxHp'), 0, 1);
@@ -422,6 +458,8 @@ export default class GameScene extends Phaser.Scene {
   damageEnemy(enemy, damage) {
     if (!enemy.active) return;
 
+    this.showDamageNumber(enemy.x, enemy.y, damage);
+
     const hp = enemy.getData('hp') - damage;
     if (hp <= 0) {
       const isBoss = enemy.getData('isBoss');
@@ -447,6 +485,21 @@ export default class GameScene extends Phaser.Scene {
       enemy.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
       this.time.delayedCall(60, () => enemy.active && enemy.clearTint());
     }
+  }
+
+  showDamageNumber(x, y, amount) {
+    const text = this.add.text(x, y - 10, String(amount), {
+      fontFamily: 'monospace', fontSize: '14px', color: '#ffffff',
+    }).setOrigin(0.5).setDepth(30);
+
+    this.tweens.add({
+      targets: text,
+      y: y - 40,
+      alpha: 0,
+      duration: 500,
+      ease: 'Cubic.Out',
+      onComplete: () => text.destroy(),
+    });
   }
 
   spawnXpOrb(x, y) {
@@ -505,8 +558,8 @@ export default class GameScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '26px', color: '#ffffff',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(100).setVisible(false);
 
-    this.levelUpTexts = [0, 1, 2].map((i) => {
-      const t = this.add.text(400, 250 + i * 50, '', {
+    this.levelUpTexts = [0, 1, 2, 3].map((i) => {
+      const t = this.add.text(400, 240 + i * 50, '', {
         fontFamily: 'monospace', fontSize: '20px', color: '#66ffcc',
         backgroundColor: '#222244', padding: { x: 12, y: 8 },
       }).setOrigin(0.5).setScrollFactor(0).setDepth(100).setVisible(false).setInteractive({ useHandCursor: true });
@@ -517,6 +570,7 @@ export default class GameScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-ONE', () => this.chooseUpgrade(0));
     this.input.keyboard.on('keydown-TWO', () => this.chooseUpgrade(1));
     this.input.keyboard.on('keydown-THREE', () => this.chooseUpgrade(2));
+    this.input.keyboard.on('keydown-FOUR', () => this.chooseUpgrade(3));
   }
 
   getAvailableUpgrades() {
@@ -530,7 +584,7 @@ export default class GameScene extends Phaser.Scene {
     this.isLevelingUp = true;
     this.player.setVelocity(0, 0);
 
-    this.levelUpChoices = Phaser.Utils.Array.Shuffle(this.getAvailableUpgrades()).slice(0, 3);
+    this.levelUpChoices = Phaser.Utils.Array.Shuffle(this.getAvailableUpgrades()).slice(0, 4);
     this.levelUpChoices.forEach((choice, i) => {
       this.levelUpTexts[i].setText(`${i + 1}. ${choice.label}`).setVisible(true);
     });

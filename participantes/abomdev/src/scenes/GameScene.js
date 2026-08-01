@@ -422,12 +422,27 @@ export default class GameScene extends Phaser.Scene {
   }
 
   buildStartScreen() {
+    this.startPanelW = 480;
+    this.startPanelH = 280;
+
+    this.startPanelBg = this.add.rectangle(0, 0, this.startPanelW, this.startPanelH, 0x181830, 0.97)
+      .setOrigin(0.5).setStrokeStyle(3, 0x66ffcc).setScrollFactor(0).setDepth(300);
+
+    this.startTitle = this.add.text(0, 0, 'SURVIVORS', {
+      fontFamily: 'monospace', fontSize: '42px', color: '#66ffcc',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(301);
+
     const bestTime = this.getBestTime();
-    const bestLine = bestTime > 0 ? `\nMejor tiempo: ${this.formatTime(bestTime)}` : '';
-    this.startText = this.add.text(0, 0,
-      `SURVIVORS\n\nWASD / Flechas para moverte\nAtaque automático al enemigo más cercano\nF: pantalla completa · ESC: pausa${bestLine}\n\nPresiona una tecla para empezar`,
-      { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff', align: 'center' }
-    ).setOrigin(0.5).setScrollFactor(0).setDepth(300);
+    const bestLine = bestTime > 0 ? `\n\nMejor tiempo: ${this.formatTime(bestTime)}` : '';
+    this.startBody = this.add.text(0, 0,
+      `WASD / Flechas para moverte\nAtaque automático al enemigo más cercano\nF: pantalla completa · ESC: pausa${bestLine}`,
+      { fontFamily: 'monospace', fontSize: '15px', color: '#cceeff', align: 'center', lineSpacing: 6 }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(301);
+
+    this.startPrompt = this.add.text(0, 0, 'Presiona una tecla para empezar', {
+      fontFamily: 'monospace', fontSize: '15px', color: '#ffcc44',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(301);
+    this.tweens.add({ targets: this.startPrompt, alpha: 0.25, duration: 700, yoyo: true, repeat: -1 });
 
     this.input.keyboard.once('keydown', () => this.startGame());
     this.input.once('pointerdown', () => this.startGame());
@@ -451,7 +466,10 @@ export default class GameScene extends Phaser.Scene {
     this.minimapX = w - 20 - this.minimapSize;
     this.minimapY = h - 20 - this.minimapSize;
 
-    this.startText.setPosition(cx, cy);
+    this.startPanelBg.setPosition(cx, cy);
+    this.startTitle.setPosition(cx, cy - this.startPanelH / 2 + 44);
+    this.startBody.setPosition(cx, cy - 6);
+    this.startPrompt.setPosition(cx, cy + this.startPanelH / 2 - 30);
 
     this.levelUpTitle.setPosition(cx, 100);
     const cardGapX = 24;
@@ -470,12 +488,18 @@ export default class GameScene extends Phaser.Scene {
       card.text.setPosition(x + this.levelUpCardW / 2, y + this.levelUpCardH / 2 + 6);
     });
 
-    this.pauseTitle.setPosition(cx, 60);
+    this.pauseOverlay.width = w;
+    this.pauseOverlay.height = h;
+
+    this.pauseTitleBoxBg.setPosition(cx, 55);
+    this.pauseTitle.setPosition(cx, 55);
+
     this.pauseBoxX = w - this.pauseBoxW - 40;
     this.pauseBoxY = 130;
     this.pauseBoxBg.setPosition(this.pauseBoxX, this.pauseBoxY);
-    this.pauseBoxTitle.setPosition(this.pauseBoxX + 16, this.pauseBoxY + 14);
-    this.pauseStats.setPosition(this.pauseBoxX + 16, this.pauseBoxY + 46);
+    this.pauseBoxTitle.setPosition(this.pauseBoxX + 16, this.pauseBoxY + 16);
+    this.pauseBoxDivider.setPosition(this.pauseBoxX + 16, this.pauseBoxY + 42);
+    this.pauseStats.setPosition(this.pauseBoxX + 16, this.pauseBoxY + 54);
     this.pauseHint.setPosition(cx, h - 40);
   }
 
@@ -486,22 +510,27 @@ export default class GameScene extends Phaser.Scene {
   startGame() {
     if (this.hasStarted) return;
     this.hasStarted = true;
-    this.startText.destroy();
+    this.tweens.killTweensOf(this.startPrompt);
+    this.startPanelBg.destroy();
+    this.startTitle.destroy();
+    this.startBody.destroy();
+    this.startPrompt.destroy();
     this.setTimersPaused(false);
   }
 
   buildHud() {
-    this.add.rectangle(20, 20, 200, 18, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150);
-    this.hpBarFill = this.add.rectangle(22, 22, 196, 14, 0xff5566).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
-    this.hpText = this.add.text(226, 20, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setScrollFactor(0).setDepth(151);
+    this.add.rectangle(20, 20, 200, 8, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150);
+    this.shieldBarFill = this.add.rectangle(21, 21, 0, 6, 0x66ddff).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
+    this.shieldText = this.add.text(226, 18, '', { fontFamily: 'monospace', fontSize: '12px', color: '#66ddff' }).setScrollFactor(0).setDepth(151);
 
-    this.add.rectangle(20, 40, 200, 8, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150);
-    this.shieldBarFill = this.add.rectangle(21, 41, 0, 6, 0x66ddff).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
+    this.add.rectangle(20, 32, 200, 18, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150);
+    this.hpBarFill = this.add.rectangle(22, 34, 196, 14, 0xff5566).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
+    this.hpText = this.add.text(226, 32, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setScrollFactor(0).setDepth(151);
 
-    this.add.rectangle(20, 52, 200, 10, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150);
-    this.xpBarFill = this.add.rectangle(21, 53, 198, 8, 0xaa88ff).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
+    this.add.rectangle(20, 54, 200, 10, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150);
+    this.xpBarFill = this.add.rectangle(21, 55, 198, 8, 0xaa88ff).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
 
-    this.levelText = this.add.text(20, 66, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setScrollFactor(0).setDepth(151);
+    this.levelText = this.add.text(20, 68, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setScrollFactor(0).setDepth(151);
     this.timerText = this.add.text(0, 20, '', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff' }).setOrigin(1, 0).setScrollFactor(0).setDepth(151);
     this.nextBossText = this.add.text(0, 44, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ff88cc' }).setOrigin(1, 0).setScrollFactor(0).setDepth(151);
   }
@@ -559,22 +588,33 @@ export default class GameScene extends Phaser.Scene {
   }
 
   buildPauseMenu() {
-    this.pauseBoxW = 320;
+    this.pauseBoxW = 340;
     this.pauseBoxH = 440;
+    this.pauseTitleBoxW = 260;
+    this.pauseTitleBoxH = 60;
 
-    this.pauseTitle = this.add.text(0, 60, 'PAUSADO', {
-      fontFamily: 'monospace', fontSize: '32px', color: '#ffffff',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setVisible(false);
+    this.pauseOverlay = this.add.rectangle(0, 0, 10, 10, 0x05050a, 0.6)
+      .setOrigin(0, 0).setScrollFactor(0).setDepth(290).setVisible(false);
 
-    this.pauseBoxBg = this.add.rectangle(0, 0, this.pauseBoxW, this.pauseBoxH, 0x1a1a2e, 0.95)
-      .setOrigin(0, 0).setStrokeStyle(2, 0x444466).setScrollFactor(0).setDepth(300).setVisible(false);
+    this.pauseTitleBoxBg = this.add.rectangle(0, 0, this.pauseTitleBoxW, this.pauseTitleBoxH, 0x181830, 0.95)
+      .setOrigin(0.5).setStrokeStyle(3, 0x66ffcc).setScrollFactor(0).setDepth(300).setVisible(false);
+
+    this.pauseTitle = this.add.text(0, 0, 'PAUSADO', {
+      fontFamily: 'monospace', fontSize: '30px', color: '#ffffff',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(301).setVisible(false);
+
+    this.pauseBoxBg = this.add.rectangle(0, 0, this.pauseBoxW, this.pauseBoxH, 0x181830, 0.97)
+      .setOrigin(0, 0).setStrokeStyle(3, 0x66aaff).setScrollFactor(0).setDepth(300).setVisible(false);
 
     this.pauseBoxTitle = this.add.text(0, 0, 'ESTADÍSTICAS', {
-      fontFamily: 'monospace', fontSize: '16px', color: '#aa88ff',
+      fontFamily: 'monospace', fontSize: '17px', color: '#66aaff',
     }).setOrigin(0, 0).setScrollFactor(0).setDepth(301).setVisible(false);
 
+    this.pauseBoxDivider = this.add.rectangle(0, 0, this.pauseBoxW - 32, 2, 0x444466)
+      .setOrigin(0, 0).setScrollFactor(0).setDepth(301).setVisible(false);
+
     this.pauseStats = this.add.text(0, 0, '', {
-      fontFamily: 'monospace', fontSize: '15px', color: '#66ffcc', lineSpacing: 10,
+      fontFamily: 'monospace', fontSize: '15px', color: '#cceeff', lineSpacing: 11,
     }).setOrigin(0, 0).setScrollFactor(0).setDepth(301).setVisible(false);
 
     this.pauseHint = this.add.text(0, 0, 'Presiona ESC para continuar', {
@@ -617,9 +657,12 @@ export default class GameScene extends Phaser.Scene {
     if (s.hasNova) lines.push(`Onda — daño ${Math.round(s.novaDamage)}, radio ${Math.round(s.novaRadius)}`);
 
     this.pauseStats.setText(lines.join('\n'));
+    this.pauseOverlay.setVisible(true);
+    this.pauseTitleBoxBg.setVisible(true);
     this.pauseTitle.setVisible(true);
     this.pauseBoxBg.setVisible(true);
     this.pauseBoxTitle.setVisible(true);
+    this.pauseBoxDivider.setVisible(true);
     this.pauseStats.setVisible(true);
     this.pauseHint.setVisible(true);
   }
@@ -629,9 +672,12 @@ export default class GameScene extends Phaser.Scene {
     this.physics.world.resume();
     this.setTimersPaused(false);
 
+    this.pauseOverlay.setVisible(false);
+    this.pauseTitleBoxBg.setVisible(false);
     this.pauseTitle.setVisible(false);
     this.pauseBoxBg.setVisible(false);
     this.pauseBoxTitle.setVisible(false);
+    this.pauseBoxDivider.setVisible(false);
     this.pauseStats.setVisible(false);
     this.pauseHint.setVisible(false);
   }
@@ -643,6 +689,7 @@ export default class GameScene extends Phaser.Scene {
 
     const shieldRatio = this.stats.shieldMax > 0 ? Phaser.Math.Clamp(this.stats.shield / this.stats.shieldMax, 0, 1) : 0;
     this.shieldBarFill.width = 196 * shieldRatio;
+    this.shieldText.setText(`${Math.ceil(this.stats.shield)}/${Math.round(this.stats.shieldMax)}`);
 
     const xpRatio = Phaser.Math.Clamp(this.xp / this.xpToNext, 0, 1);
     this.xpBarFill.width = 198 * xpRatio;

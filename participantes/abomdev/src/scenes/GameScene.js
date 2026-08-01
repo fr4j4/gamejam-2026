@@ -52,7 +52,18 @@ const ENEMY_TYPES = {
 };
 
 const STAT_UPGRADES = [
-  { key: 'damage', rarity: 'common', describe: (b, a) => `Daño: ${Math.round(b.damage)} → ${Math.round(a.damage)}`, apply: (s) => { s.damage += 8; } },
+  {
+    key: 'damage', rarity: 'common',
+    describe: (b, a) => `Daño (todas las armas): ${Math.round(b.damage)} → ${Math.round(a.damage)}`,
+    apply: (s) => {
+      s.damage += 8;
+      if (s.hasAura) s.auraDamage += 8;
+      if (s.hasOrbit) s.orbitDamage += 8;
+      if (s.hasPierce) s.pierceDamage += 8;
+      if (s.hasBurst) s.burstDamage += 8;
+      if (s.hasNova) s.novaDamage += 8;
+    },
+  },
   {
     key: 'fireRate', rarity: 'common',
     describe: (b, a) => `Cadencia: ${(1000 / b.fireRate).toFixed(1)}/s → ${(1000 / a.fireRate).toFixed(1)}/s`,

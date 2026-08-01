@@ -42,12 +42,18 @@ export default class PauseMenu {
     this.title = text(scene, 'PAUSADO', { size: FONT_SIZE.heading, color: TEXT.primary, depth: DEPTH + 1, origin: 0.5 })
       .setVisible(false);
 
+    // La etapa va bajo el título y no en la lista de estadísticas: es contexto de
+    // la partida, no una stat del personaje.
+    this.stageIcon = icon(scene, 'icon-layers', { size: 18, color: 0xaa88ff, depth: DEPTH + 1 }).setVisible(false);
+    this.stageText = text(scene, '', { size: '18px', color: TEXT.stage, depth: DEPTH + 1, origin: [0, 0.5] })
+      .setVisible(false);
+
     this.buildInventory(scene);
     this.buildStats(scene);
     this.buildButtons(scene, actions);
 
     this.chrome = [
-      this.overlay, this.titleBox, this.title,
+      this.overlay, this.titleBox, this.title, this.stageIcon, this.stageText,
       this.invBox, this.invTitle, this.invDivider,
       this.box, this.boxTitle, this.boxDivider,
     ];
@@ -101,8 +107,10 @@ export default class PauseMenu {
 
     this.titleBox.setPosition(cx, 55);
     this.title.setPosition(cx, 55);
+    this.stageCenterX = cx;
+    this.positionStage();
 
-    const boxY = 130;
+    const boxY = 150;
 
     // Izquierda: inventario.
     const invX = 40;
@@ -133,8 +141,19 @@ export default class PauseMenu {
     });
   }
 
+  // El ancho del texto cambia con el número de etapa, así que el grupo icono+texto
+  // se recentra cada vez en lugar de usar posiciones fijas.
+  positionStage() {
+    const gap = 8;
+    const groupW = 18 + gap + this.stageText.width;
+    const left = (this.stageCenterX || 0) - groupW / 2;
+    this.stageIcon.setPosition(left + 9, 104);
+    this.stageText.setPosition(left + 18 + gap, 104);
+  }
+
   // stats: filas de buildStatRows(). weapons: estado de armas de buildWeaponSlots().
-  show(stats, weapons) {
+  // stageLabel: texto de etapa a mostrar bajo el título.
+  show(stats, weapons, stageLabel) {
     this.rows.forEach((row, i) => {
       const data = stats[i];
       if (!data) {
@@ -154,6 +173,9 @@ export default class PauseMenu {
       slot.name.setColor(state.unlocked ? TEXT.secondary : TEXT.dim).setVisible(true);
       slot.detail.setText(state.unlocked ? state.detail : 'Sin desbloquear').setVisible(true);
     });
+
+    this.stageText.setText(stageLabel);
+    this.positionStage();
 
     setVisible(this.chrome, true);
     setVisible(this.buttonParts, true);
@@ -189,7 +211,8 @@ export function buildWeaponSlots(s) {
 
 // Arma las filas de estadísticas a mostrar. Las que arrancan en cero (o dependen de
 // un arma no desbloqueada) se omiten para no llenar el panel de ruido.
-export function buildStatRows(stats, stage, stageMultiplier) {
+// La etapa no está acá: se muestra bajo el título, como contexto de la partida.
+export function buildStatRows(stats) {
   const s = stats;
   const rows = [
     { icon: 'icon-swords', color: 0xff8866, label: `Daño: ${Math.round(s.damage)}` },
@@ -197,7 +220,6 @@ export function buildStatRows(stats, stage, stageMultiplier) {
     { icon: 'icon-footprints', color: 0x66ffcc, label: `Velocidad: ${Math.round(s.moveSpeed)}` },
     { icon: 'icon-heart', color: 0xff5566, label: `HP máximo: ${Math.round(s.maxHp)}` },
     { icon: 'icon-magnet', color: 0xaa88ff, label: `Radio de imán: ${Math.round(s.magnetRadius)}` },
-    { icon: 'icon-layers', color: 0xaa88ff, label: `Etapa ${stage} (x${stageMultiplier.toFixed(2)})` },
   ];
 
   if (s.hpRegen > 0) rows.push({ icon: 'icon-heart-pulse', color: 0xff88aa, label: `Regeneración: ${s.hpRegen.toFixed(1)}/s` });

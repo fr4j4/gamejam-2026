@@ -235,8 +235,9 @@ export default class GameScene extends Phaser.Scene {
 
   showPauseContent() {
     this.pauseMenu.show(
-      buildStatRows(this.stats, this.stage, this.stageMultiplier),
+      buildStatRows(this.stats),
       buildWeaponSlots(this.stats),
+      `Etapa ${this.stage}  (x${this.stageMultiplier.toFixed(2)})`,
     );
   }
 

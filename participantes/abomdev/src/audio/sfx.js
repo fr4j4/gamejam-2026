@@ -12,29 +12,29 @@ const SFX = {
   // --- Frecuentes: bajos y con throttle ---
   shoot: {
     throttleMs: 90,
-    play: () => playTone({ freq: 620, freqTo: 440, type: 'square', duration: 0.05, volume: 0.05 }),
+    play: () => playTone({ freq: 620, freqTo: 440, type: 'square', duration: 0.05, volume: 0.05, category: 'combat' }),
   },
   hit: {
     throttleMs: 60,
-    play: () => playNoise({ duration: 0.05, volume: 0.06, filterFreq: 2200 }),
+    play: () => playNoise({ duration: 0.05, volume: 0.06, filterFreq: 2200, category: 'combat' }),
   },
   xp: {
     throttleMs: 80,
-    play: () => playTone({ freq: 880, freqTo: 1320, type: 'sine', duration: 0.06, volume: 0.05 }),
+    play: () => playTone({ freq: 880, freqTo: 1320, type: 'sine', duration: 0.06, volume: 0.05, category: 'combat' }),
   },
   enemyDie: {
     throttleMs: 70,
-    play: () => playNoise({ duration: 0.12, volume: 0.09, filterFreq: 900 }),
+    play: () => playNoise({ duration: 0.12, volume: 0.09, filterFreq: 900, category: 'combat' }),
   },
 
   // --- Armas de área: menos frecuentes pero aún repetitivas ---
   nova: {
     throttleMs: 300,
-    play: () => playTone({ freq: 300, freqTo: 90, type: 'sawtooth', duration: 0.22, volume: 0.1 }),
+    play: () => playTone({ freq: 300, freqTo: 90, type: 'sawtooth', duration: 0.22, volume: 0.1, category: 'combat' }),
   },
   burst: {
     throttleMs: 200,
-    play: () => playTone({ freq: 520, freqTo: 700, type: 'square', duration: 0.07, volume: 0.07 }),
+    play: () => playTone({ freq: 520, freqTo: 700, type: 'square', duration: 0.07, volume: 0.07, category: 'combat' }),
   },
 
   // --- Eventos del jugador ---

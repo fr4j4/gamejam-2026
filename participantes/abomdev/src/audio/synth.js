@@ -2,20 +2,56 @@
 // Expone dos primitivas (tono y ruido) que alcanzan para todos los efectos del juego:
 // los tonos sirven para disparos, avisos y melodías cortas; el ruido para impactos y
 // explosiones, que con osciladores solos suenan pobres.
+//
+// El volumen se controla en tres niveles: uno maestro y dos categorías, para poder
+// bajar el ruido constante del combate sin perder los momentos importantes.
 
-const MUTE_KEY = 'survivorsMuted';
+const STORAGE_KEY = 'survivorsAudio';
+
+export const CATEGORIES = ['combat', 'events'];
+
+const DEFAULTS = { master: 0.8, combat: 0.7, events: 0.9, muted: false };
 
 let ctx = null;
 let masterGain = null;
-let muted = loadMuted();
+const categoryGains = {};
+const settings = loadSettings();
 
-function loadMuted() {
+function loadSettings() {
   try {
-    return localStorage.getItem(MUTE_KEY) === '1';
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    // Solo aceptamos claves conocidas: si el formato guardado cambió, ignoramos el resto.
+    if (saved && typeof saved === 'object') {
+      return {
+        master: clamp01(saved.master ?? DEFAULTS.master),
+        combat: clamp01(saved.combat ?? DEFAULTS.combat),
+        events: clamp01(saved.events ?? DEFAULTS.events),
+        muted: Boolean(saved.muted),
+      };
+    }
   } catch {
-    // Sin localStorage (ej. modo privado) arrancamos con sonido.
-    return false;
+    // Sin localStorage o con datos corruptos arrancamos con los valores por defecto.
   }
+  return { ...DEFAULTS };
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    // Si no se puede guardar, los ajustes igual valen para esta partida.
+  }
+}
+
+function clamp01(v) {
+  return Math.min(1, Math.max(0, Number(v) || 0));
+}
+
+function applyGains() {
+  if (masterGain) masterGain.gain.value = settings.muted ? 0 : settings.master;
+  CATEGORIES.forEach((cat) => {
+    if (categoryGains[cat]) categoryGains[cat].gain.value = settings[cat];
+  });
 }
 
 // El AudioContext se crea perezosamente: los navegadores lo bloquean hasta que hay
@@ -27,31 +63,46 @@ function getContext() {
 
   ctx = new AudioCtx();
   masterGain = ctx.createGain();
-  masterGain.gain.value = muted ? 0 : 1;
   masterGain.connect(ctx.destination);
+
+  // Cada categoría cuelga del maestro, así el volumen general escala a todas.
+  CATEGORIES.forEach((cat) => {
+    const gain = ctx.createGain();
+    gain.connect(masterGain);
+    categoryGains[cat] = gain;
+  });
+
+  applyGains();
   return ctx;
 }
 
-// Se llama con la primera tecla/clic del jugador, que es cuando el navegador
-// permite arrancar el audio.
+// Se llama con la primera interacción del jugador (el menú), que es cuando el
+// navegador permite arrancar el audio.
 export function unlockAudio() {
   const context = getContext();
   if (context && context.state === 'suspended') context.resume();
 }
 
+export function getAudioSettings() {
+  return { ...settings };
+}
+
+export function setVolume(key, value) {
+  if (key !== 'master' && !CATEGORIES.includes(key)) return;
+  settings[key] = clamp01(value);
+  applyGains();
+  saveSettings();
+}
+
 export function isMuted() {
-  return muted;
+  return settings.muted;
 }
 
 export function toggleMute() {
-  muted = !muted;
-  if (masterGain) masterGain.gain.value = muted ? 0 : 1;
-  try {
-    localStorage.setItem(MUTE_KEY, muted ? '1' : '0');
-  } catch {
-    // Si no se puede guardar, el mute igual funciona en esta partida.
-  }
-  return muted;
+  settings.muted = !settings.muted;
+  applyGains();
+  saveSettings();
+  return settings.muted;
 }
 
 // Envelope de ataque y caída, para que ninguna nota arranque o corte de golpe
@@ -63,10 +114,15 @@ function envelope(gain, startAt, duration, volume) {
   gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
 }
 
+// Devuelve el nodo al que conectar según la categoría del efecto.
+function outputFor(category) {
+  return categoryGains[category] || masterGain;
+}
+
 // freqTo opcional: la frecuencia barre de `freq` a `freqTo` durante toda la nota,
 // que es lo que da los sonidos que suben (level-up) o caen (daño recibido).
-export function playTone({ freq, freqTo, type = 'square', duration = 0.1, volume = 0.2, delay = 0 }) {
-  if (muted) return;
+export function playTone({ freq, freqTo, type = 'square', duration = 0.1, volume = 0.2, delay = 0, category = 'events' }) {
+  if (settings.muted) return;
   const context = getContext();
   if (!context) return;
 
@@ -83,13 +139,13 @@ export function playTone({ freq, freqTo, type = 'square', duration = 0.1, volume
   envelope(gain, startAt, duration, volume);
 
   osc.connect(gain);
-  gain.connect(masterGain);
+  gain.connect(outputFor(category));
   osc.start(startAt);
   osc.stop(startAt + duration);
 }
 
-export function playNoise({ duration = 0.1, volume = 0.2, filterFreq = 1200, delay = 0 }) {
-  if (muted) return;
+export function playNoise({ duration = 0.1, volume = 0.2, filterFreq = 1200, delay = 0, category = 'events' }) {
+  if (settings.muted) return;
   const context = getContext();
   if (!context) return;
 
@@ -112,7 +168,7 @@ export function playNoise({ duration = 0.1, volume = 0.2, filterFreq = 1200, del
 
   source.connect(filter);
   filter.connect(gain);
-  gain.connect(masterGain);
+  gain.connect(outputFor(category));
   source.start(startAt);
   source.stop(startAt + duration);
 }

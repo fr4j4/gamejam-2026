@@ -20,10 +20,10 @@ import { generateTextures } from '../assets/textures.js';
 import { preloadIcons } from '../assets/icons.js';
 import Hud from '../ui/Hud.js';
 import Minimap from '../ui/Minimap.js';
-import StartScreen from '../ui/StartScreen.js';
-import PauseMenu, { buildStatRows } from '../ui/PauseMenu.js';
+import PauseMenu, { buildStatRows, buildWeaponSlots } from '../ui/PauseMenu.js';
+import SettingsPanel from '../ui/SettingsPanel.js';
 import LevelUpMenu from '../ui/LevelUpMenu.js';
-import { getBestTime, showEndScreen } from '../ui/EndScreen.js';
+import { showEndScreen } from '../ui/EndScreen.js';
 import { playSfx } from '../audio/sfx.js';
 import { toggleMute, unlockAudio } from '../audio/synth.js';
 
@@ -50,6 +50,8 @@ export default class GameScene extends Phaser.Scene {
     this.createEmitter();
     this.createUI();
     this.bindInput();
+    // Por si se entra directo a esta escena sin pasar por el menú.
+    unlockAudio();
   }
 
   initState() {
@@ -78,7 +80,6 @@ export default class GameScene extends Phaser.Scene {
     this.isLevelingUp = false;
     this.isGameOver = false;
     this.hasWon = false;
-    this.hasStarted = false;
     this.isPaused = false;
     this.lastHitAt = -Infinity;
     this.lastDamageTakenAt = -Infinity;
@@ -133,7 +134,7 @@ export default class GameScene extends Phaser.Scene {
       this.spawnTimer, this.attackTimer, this.pierceTimer, this.burstTimer,
       this.novaTimer, this.difficultyTimer, this.chestTimer,
     ];
-    this.setTimersPaused(true);
+    // Se entra a esta escena desde el menú, así que la partida arranca de una.
   }
 
   createEmitter() {
@@ -150,9 +151,16 @@ export default class GameScene extends Phaser.Scene {
   createUI() {
     this.hud = new Hud(this);
     this.minimap = new Minimap(this);
-    this.pauseMenu = new PauseMenu(this);
     this.levelUpMenu = new LevelUpMenu(this, (i) => this.chooseUpgrade(i));
-    this.startScreen = new StartScreen(this, getBestTime());
+
+    this.pauseMenu = new PauseMenu(this, {
+      onResume: () => this.resumeGame(),
+      onSettings: () => this.openSettings(),
+      onRestart: () => this.restartGame(),
+      onQuit: () => this.quitToMenu(),
+    });
+    // Al cerrar configuración volvemos a la pausa, que es desde donde se abrió.
+    this.settingsPanel = new SettingsPanel(this, () => this.showPauseContent());
 
     this.layoutUI();
     this.updateHud();
@@ -165,15 +173,12 @@ export default class GameScene extends Phaser.Scene {
     this.minimap.layout(w, h);
     this.pauseMenu.layout(w, h);
     this.levelUpMenu.layout(w, h);
-    if (this.startScreen) this.startScreen.layout(w, h);
+    this.settingsPanel.layout(w, h);
   }
 
   bindInput() {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.wasd = this.input.keyboard.addKeys('W,A,S,D');
-
-    this.input.keyboard.once('keydown', () => this.startGame());
-    this.input.once('pointerdown', () => this.startGame());
 
     this.input.keyboard.on('keydown-ESC', () => this.togglePause());
     this.input.keyboard.on('keydown-M', () => toggleMute());
@@ -206,19 +211,13 @@ export default class GameScene extends Phaser.Scene {
     this.gameplayTimers.forEach((t) => { t.paused = paused; });
   }
 
-  startGame() {
-    if (this.hasStarted) return;
-    this.hasStarted = true;
-    // Primera interacción del jugador: es el momento en que el navegador permite
-    // arrancar el audio.
-    unlockAudio();
-    this.startScreen.destroy();
-    this.startScreen = null;
-    this.setTimersPaused(false);
-  }
-
   togglePause() {
-    if (!this.hasStarted || this.isGameOver || this.hasWon || this.isLevelingUp) return;
+    if (this.isGameOver || this.hasWon || this.isLevelingUp) return;
+    // Con configuración abierta, ESC la cierra y vuelve a la pausa.
+    if (this.settingsPanel.isOpen) {
+      this.settingsPanel.hide();
+      return;
+    }
     if (this.isPaused) {
       this.resumeGame();
     } else {
@@ -231,7 +230,14 @@ export default class GameScene extends Phaser.Scene {
     this.player.setVelocity(0, 0);
     this.physics.world.pause();
     this.setTimersPaused(true);
-    this.pauseMenu.show(buildStatRows(this.stats, this.stage, this.stageMultiplier));
+    this.showPauseContent();
+  }
+
+  showPauseContent() {
+    this.pauseMenu.show(
+      buildStatRows(this.stats, this.stage, this.stageMultiplier),
+      buildWeaponSlots(this.stats),
+    );
   }
 
   resumeGame() {
@@ -239,6 +245,24 @@ export default class GameScene extends Phaser.Scene {
     this.physics.world.resume();
     this.setTimersPaused(false);
     this.pauseMenu.hide();
+  }
+
+  openSettings() {
+    // El overlay de la pausa se queda: el juego sigue viéndose atenuado detrás.
+    this.pauseMenu.hideContent();
+    this.settingsPanel.show();
+  }
+
+  // La física quedó pausada por pauseGame() y ese estado sobrevive al cambio de
+  // escena, así que hay que reanudarla antes de salir o el juego arranca congelado.
+  restartGame() {
+    this.physics.world.resume();
+    this.scene.restart();
+  }
+
+  quitToMenu() {
+    this.physics.world.resume();
+    this.scene.start('menu');
   }
 
   updateHud() {
@@ -253,7 +277,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    if (!this.hasStarted || this.isGameOver || this.hasWon || this.isLevelingUp || this.isPaused) {
+    if (this.isGameOver || this.hasWon || this.isLevelingUp || this.isPaused) {
       this.player.setVelocity(0, 0);
       return;
     }

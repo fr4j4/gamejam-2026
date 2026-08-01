@@ -714,6 +714,9 @@ export default class GameScene extends Phaser.Scene {
 
     this.stageMultiplier *= STAGE_BOSS_MULTIPLIER;
     this.spawnPortal();
+    // El level-up que sigue tapa toda la pantalla con sus cards, así que el aviso
+    // del portal se muestra recién al cerrarlo (ver chooseUpgrade), no ahora.
+    this.pendingPortalHint = true;
     this.levelUp();
   }
 
@@ -997,6 +1000,29 @@ export default class GameScene extends Phaser.Scene {
     this.physics.world.resume();
     // Respiro de invulnerabilidad al volver, para no comer un golpe al cerrar el menú.
     this.lastHitAt = this.time.now;
+
+    if (this.pendingPortalHint) {
+      this.pendingPortalHint = false;
+      this.showPortalHint();
+    }
+  }
+
+  // Guía al jugador hacia el portal recién abierto tras derrotar al jefe: sin esto,
+  // fácilmente pasa desapercibido entre la lluvia de números de daño y partículas.
+  showPortalHint() {
+    const cy = this.scale.height / 2;
+    const label = this.add.text(this.scale.width / 2, cy + 90, 'Busca el portal para pasar a la siguiente etapa', {
+      fontFamily: 'monospace', fontSize: FONT_SIZE.body, color: TEXT.gold,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(60);
+
+    this.tweens.add({
+      targets: label,
+      alpha: 0,
+      y: cy + 50,
+      duration: 1200,
+      delay: 2200,
+      onComplete: () => label.destroy(),
+    });
   }
 
   // Crea los objetos visuales de las armas recién desbloqueadas o ampliadas.

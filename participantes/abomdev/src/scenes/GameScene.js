@@ -26,6 +26,10 @@ const BOSS_PROJECTILE_LIFETIME = 3000;
 const BOSS_RANGED_PREFERRED_DIST = 260;
 const BOSS_SHOT_COOLDOWN_MS = 1800;
 const BOSS_TELEGRAPH_MS = 400;
+const CHEST_DELAY_MS = 25000;
+const CHEST_TRIGGER_RADIUS = 36;
+const SHIELD_REGEN_DELAY_MS = 4000;
+const DODGE_CAP = 0.6;
 
 const ENEMY_TYPES = {
   normal: { texture: 'enemy', color: 0xff5566, baseHp: 20, hpPerMin: 10, baseSpeed: 80, speedPerMin: 8, damage: 10 },
@@ -45,6 +49,26 @@ const STAT_UPGRADES = [
   { key: 'moveSpeed', describe: (b, a) => `Velocidad: ${b.moveSpeed} → ${a.moveSpeed}`, apply: (s) => { s.moveSpeed = Math.round(s.moveSpeed * 1.1); } },
   { key: 'maxHp', describe: (b, a) => `HP máximo: ${b.maxHp} → ${a.maxHp}`, apply: (s) => { s.maxHp += 20; s.hp += 20; } },
   { key: 'magnet', describe: (b, a) => `Radio de imán: ${b.magnetRadius} → ${a.magnetRadius}`, apply: (s) => { s.magnetRadius = Math.round(s.magnetRadius * 1.4); } },
+  {
+    key: 'hpRegen',
+    describe: (b, a) => `Regeneración: ${b.hpRegen.toFixed(1)}/s → ${a.hpRegen.toFixed(1)}/s`,
+    apply: (s) => { s.hpRegen += 0.8; },
+  },
+  {
+    key: 'lifesteal',
+    describe: (b, a) => `Robo de vida: ${(b.lifesteal * 100).toFixed(0)}% → ${(a.lifesteal * 100).toFixed(0)}%`,
+    apply: (s) => { s.lifesteal += 0.03; },
+  },
+  {
+    key: 'dodge',
+    describe: (b, a) => `Esquivar: ${(b.dodge * 100).toFixed(0)}% → ${(a.dodge * 100).toFixed(0)}%`,
+    apply: (s) => { s.dodge = Math.min(DODGE_CAP, s.dodge + 0.05); },
+  },
+  {
+    key: 'shield',
+    describe: (b, a) => `Escudo: ${b.shieldMax} → ${a.shieldMax}`,
+    apply: (s) => { s.shieldMax += 25; s.shield = s.shieldMax; },
+  },
 ];
 
 const WEAPON_UPGRADES = {
@@ -135,6 +159,11 @@ export default class GameScene extends Phaser.Scene {
       hasPierce: false,
       hasBurst: false,
       hasNova: false,
+      hpRegen: 0,
+      lifesteal: 0,
+      dodge: 0,
+      shieldMax: 0,
+      shield: 0,
     };
     this.xp = 0;
     this.level = 1;
@@ -144,6 +173,8 @@ export default class GameScene extends Phaser.Scene {
     this.isGameOver = false;
     this.hasStarted = false;
     this.lastHitAt = -Infinity;
+    this.lastDamageTakenAt = -Infinity;
+    this.chest = null;
     this.auraGfx = null;
     this.auraTickAt = 0;
     this.orbitOrbs = [];
@@ -192,10 +223,11 @@ export default class GameScene extends Phaser.Scene {
     this.novaTimer = this.time.addEvent({ delay: 2500, loop: true, callback: this.fireNova, callbackScope: this });
     this.difficultyTimer = this.time.addEvent({ delay: DIFFICULTY_RAMP_MS, loop: true, callback: this.rampDifficulty, callbackScope: this });
     this.bossTimer = this.time.addEvent({ delay: BOSS_DELAY_MS, loop: true, callback: this.warnBoss, callbackScope: this });
+    this.chestTimer = this.time.addEvent({ delay: CHEST_DELAY_MS, loop: true, callback: this.spawnChest, callbackScope: this });
 
     this.gameplayTimers = [
       this.spawnTimer, this.attackTimer, this.pierceTimer, this.burstTimer,
-      this.novaTimer, this.difficultyTimer, this.bossTimer,
+      this.novaTimer, this.difficultyTimer, this.bossTimer, this.chestTimer,
     ];
     this.setTimersPaused(true);
 
@@ -238,6 +270,7 @@ export default class GameScene extends Phaser.Scene {
   computeSpawnRadius() {
     this.spawnRadius = Math.hypot(this.scale.width, this.scale.height) / 2 + SPAWN_RADIUS_MARGIN;
     this.portalSpawnRadius = this.spawnRadius * 0.7;
+    this.chestSpawnRadius = this.spawnRadius * 0.5;
   }
 
   generateTextures() {
@@ -330,6 +363,16 @@ export default class GameScene extends Phaser.Scene {
     portal.fillCircle(32, 32, 8);
     portal.generateTexture('portal', 64, 64);
     portal.destroy();
+
+    const chest = this.add.graphics();
+    chest.fillStyle(0x8b5a2b, 1);
+    chest.fillRect(0, 8, 28, 20);
+    chest.fillStyle(0xffcc44, 1);
+    chest.fillRect(0, 8, 28, 6);
+    chest.lineStyle(2, 0x442200, 1);
+    chest.strokeRect(0, 8, 28, 20);
+    chest.generateTexture('chest', 28, 28);
+    chest.destroy();
   }
 
   buildStartScreen() {
@@ -389,10 +432,13 @@ export default class GameScene extends Phaser.Scene {
     this.hpBarFill = this.add.rectangle(22, 22, 196, 14, 0xff5566).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
     this.hpText = this.add.text(226, 20, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setScrollFactor(0).setDepth(151);
 
-    this.add.rectangle(20, 44, 200, 10, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150);
-    this.xpBarFill = this.add.rectangle(21, 45, 198, 8, 0xaa88ff).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
+    this.add.rectangle(20, 40, 200, 8, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150);
+    this.shieldBarFill = this.add.rectangle(21, 41, 0, 6, 0x66ddff).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
 
-    this.levelText = this.add.text(20, 58, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setScrollFactor(0).setDepth(151);
+    this.add.rectangle(20, 52, 200, 10, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150);
+    this.xpBarFill = this.add.rectangle(21, 53, 198, 8, 0xaa88ff).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
+
+    this.levelText = this.add.text(20, 66, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setScrollFactor(0).setDepth(151);
     this.timerText = this.add.text(0, 20, '', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff' }).setOrigin(1, 0).setScrollFactor(0).setDepth(151);
   }
 
@@ -437,6 +483,12 @@ export default class GameScene extends Phaser.Scene {
       gfx.fillCircle(p.x, p.y, isBoss ? 4 : 2);
     });
 
+    if (this.chest) {
+      const cp = toMinimap(this.chest.x, this.chest.y);
+      gfx.fillStyle(0xffcc44, 1);
+      gfx.fillCircle(cp.x, cp.y, 3);
+    }
+
     const pp = toMinimap(this.player.x, this.player.y);
     gfx.fillStyle(0x66ffcc, 1);
     gfx.fillCircle(pp.x, pp.y, 3);
@@ -444,7 +496,7 @@ export default class GameScene extends Phaser.Scene {
 
   buildPauseMenu() {
     this.pauseBoxW = 320;
-    this.pauseBoxH = 360;
+    this.pauseBoxH = 440;
 
     this.pauseTitle = this.add.text(0, 60, 'PAUSADO', {
       fontFamily: 'monospace', fontSize: '32px', color: '#ffffff',
@@ -490,6 +542,10 @@ export default class GameScene extends Phaser.Scene {
       `Radio de imán: ${s.magnetRadius}`,
       `Etapa: ${this.stage} (x${this.stageMultiplier.toFixed(2)})`,
     ];
+    if (s.hpRegen > 0) lines.push(`Regeneración: ${s.hpRegen.toFixed(1)}/s`);
+    if (s.lifesteal > 0) lines.push(`Robo de vida: ${(s.lifesteal * 100).toFixed(0)}%`);
+    if (s.dodge > 0) lines.push(`Esquivar: ${(s.dodge * 100).toFixed(0)}%`);
+    if (s.shieldMax > 0) lines.push(`Escudo: ${Math.ceil(s.shield)}/${s.shieldMax}`);
     if (s.hasAura) lines.push(`Aura — daño ${s.auraDamage}, radio ${s.auraRadius}`);
     if (s.hasOrbit) lines.push(`Orbe — daño ${s.orbitDamage}, cantidad ${s.orbitCount}, velocidad ${s.orbitSpeed.toFixed(2)}`);
     if (s.hasPierce) lines.push(`Perforante — daño ${s.pierceDamage}, cadencia ${(1000 / s.pierceRate).toFixed(1)}/s`);
@@ -520,6 +576,9 @@ export default class GameScene extends Phaser.Scene {
     const hpRatio = Phaser.Math.Clamp(this.stats.hp / this.stats.maxHp, 0, 1);
     this.hpBarFill.width = 196 * hpRatio;
     this.hpText.setText(`${Math.ceil(this.stats.hp)}/${this.stats.maxHp}`);
+
+    const shieldRatio = this.stats.shieldMax > 0 ? Phaser.Math.Clamp(this.stats.shield / this.stats.shieldMax, 0, 1) : 0;
+    this.shieldBarFill.width = 196 * shieldRatio;
 
     const xpRatio = Phaser.Math.Clamp(this.xp / this.xpToNext, 0, 1);
     this.xpBarFill.width = 198 * xpRatio;
@@ -610,6 +669,22 @@ export default class GameScene extends Phaser.Scene {
       }
     }
 
+    if (this.chest) {
+      const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.chest.x, this.chest.y);
+      if (d < CHEST_TRIGGER_RADIUS) {
+        this.openChest();
+      }
+    }
+
+    if (this.stats.hpRegen > 0 && this.stats.hp < this.stats.maxHp) {
+      this.stats.hp = Math.min(this.stats.maxHp, this.stats.hp + this.stats.hpRegen * (delta / 1000));
+    }
+
+    if (this.stats.shieldMax > 0 && this.stats.shield < this.stats.shieldMax
+      && time - this.lastDamageTakenAt > SHIELD_REGEN_DELAY_MS) {
+      this.stats.shield = this.stats.shieldMax;
+    }
+
     if (this.isBossAlive && this.currentBoss && this.currentBoss.active) {
       const ratio = Phaser.Math.Clamp(this.currentBoss.getData('hp') / this.currentBoss.getData('maxHp'), 0, 1);
       this.bossBarFill.width = this.bossBarMaxWidth * ratio;
@@ -652,13 +727,18 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
+  randomPointNear(radius) {
+    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    return {
+      x: Phaser.Math.Clamp(this.player.x + Math.cos(angle) * radius, 20, WORLD_SIZE - 20),
+      y: Phaser.Math.Clamp(this.player.y + Math.sin(angle) * radius, 20, WORLD_SIZE - 20),
+    };
+  }
+
   spawnEnemy() {
     if (this.isGameOver || this.isLevelingUp) return;
 
-    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    const x = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * this.spawnRadius, 20, WORLD_SIZE - 20);
-    const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * this.spawnRadius, 20, WORLD_SIZE - 20);
-
+    const { x, y } = this.randomPointNear(this.spawnRadius);
     const minutes = this.elapsed / 60000;
     const fastChance = Math.min(0.4, minutes * 0.12);
     const tankChance = Math.min(0.2, minutes * 0.05);
@@ -695,10 +775,7 @@ export default class GameScene extends Phaser.Scene {
   spawnBoss() {
     if (this.isGameOver || this.isLevelingUp || this.isBossAlive) return;
 
-    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    const x = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * this.spawnRadius, 20, WORLD_SIZE - 20);
-    const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * this.spawnRadius, 20, WORLD_SIZE - 20);
-
+    const { x, y } = this.randomPointNear(this.spawnRadius);
     const minutes = this.elapsed / 60000;
     const bossTypeKey = Math.random() < 0.5 ? 'boss' : 'bossRanged';
     const type = ENEMY_TYPES[bossTypeKey];
@@ -845,6 +922,10 @@ export default class GameScene extends Phaser.Scene {
 
     this.showDamageNumber(enemy.x, enemy.y, damage);
 
+    if (this.stats.lifesteal > 0) {
+      this.stats.hp = Math.min(this.stats.maxHp, this.stats.hp + damage * this.stats.lifesteal);
+    }
+
     const hp = enemy.getData('hp') - damage;
     if (hp <= 0) {
       const isBoss = enemy.getData('isBoss');
@@ -882,8 +963,12 @@ export default class GameScene extends Phaser.Scene {
   }
 
   showDamageNumber(x, y, amount) {
-    const text = this.add.text(x, y - 10, String(amount), {
-      fontFamily: 'monospace', fontSize: '14px', color: '#ffffff',
+    this.showFloatingText(x, y, String(amount), '#ffffff');
+  }
+
+  showFloatingText(x, y, message, color) {
+    const text = this.add.text(x, y - 10, message, {
+      fontFamily: 'monospace', fontSize: '14px', color,
     }).setOrigin(0.5).setDepth(30);
 
     this.tweens.add({
@@ -903,12 +988,29 @@ export default class GameScene extends Phaser.Scene {
   spawnPortal() {
     if (this.portal) this.portal.destroy();
 
-    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    const x = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * this.portalSpawnRadius, 20, WORLD_SIZE - 20);
-    const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * this.portalSpawnRadius, 20, WORLD_SIZE - 20);
-
+    const { x, y } = this.randomPointNear(this.portalSpawnRadius);
     this.portal = this.add.image(x, y, 'portal').setDepth(6);
     this.tweens.add({ targets: this.portal, angle: 360, duration: 3000, repeat: -1 });
+  }
+
+  spawnChest() {
+    if (this.isGameOver || this.isLevelingUp || this.chest) return;
+
+    const { x, y } = this.randomPointNear(this.chestSpawnRadius);
+    this.chest = this.add.image(x, y, 'chest').setDepth(6);
+    this.tweens.add({ targets: this.chest, y: y - 6, duration: 500, yoyo: true, repeat: -1 });
+  }
+
+  openChest() {
+    const { x, y } = this.chest;
+    this.chest.destroy();
+    this.chest = null;
+
+    this.deathEmitter.setParticleTint(0xffcc44);
+    this.deathEmitter.emitParticleAt(x, y, 15);
+
+    this.level += 1;
+    this.startLevelUp();
   }
 
   enterPortal() {
@@ -962,7 +1064,19 @@ export default class GameScene extends Phaser.Scene {
     if (now - this.lastHitAt < HIT_INVULN_MS) return;
     this.lastHitAt = now;
 
-    this.stats.hp -= amount;
+    if (Math.random() < this.stats.dodge) {
+      this.showFloatingText(this.player.x, this.player.y, '¡ESQUIVÉ!', '#88ddff');
+      return;
+    }
+
+    this.lastDamageTakenAt = now;
+    let remaining = amount;
+    if (this.stats.shield > 0) {
+      const absorbed = Math.min(this.stats.shield, remaining);
+      this.stats.shield -= absorbed;
+      remaining -= absorbed;
+    }
+    this.stats.hp -= remaining;
     this.cameras.main.shake(150, 0.008);
     this.player.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.time.delayedCall(80, () => this.player.active && this.player.clearTint());

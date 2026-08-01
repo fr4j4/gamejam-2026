@@ -30,6 +30,8 @@ const CHEST_DELAY_MS = 25000;
 const CHEST_TRIGGER_RADIUS = 36;
 const SHIELD_REGEN_DELAY_MS = 4000;
 const DODGE_CAP = 0.6;
+const VICTORY_STAGE = 6;
+const BEST_TIME_KEY = 'survivorsBestTimeMs';
 
 const ENEMY_TYPES = {
   normal: { texture: 'enemy', color: 0xff5566, baseHp: 20, hpPerMin: 10, baseSpeed: 80, speedPerMin: 8, damage: 10 },
@@ -44,11 +46,11 @@ const STAT_UPGRADES = [
   {
     key: 'fireRate',
     describe: (b, a) => `Cadencia: ${(1000 / b.fireRate).toFixed(1)}/s → ${(1000 / a.fireRate).toFixed(1)}/s`,
-    apply: (s) => { s.fireRate = Math.round(s.fireRate * 0.85); },
+    apply: (s) => { s.fireRate = Math.max(150, Math.round(s.fireRate * 0.85)); },
   },
-  { key: 'moveSpeed', describe: (b, a) => `Velocidad: ${b.moveSpeed} → ${a.moveSpeed}`, apply: (s) => { s.moveSpeed = Math.round(s.moveSpeed * 1.1); } },
+  { key: 'moveSpeed', describe: (b, a) => `Velocidad: ${b.moveSpeed} → ${a.moveSpeed}`, apply: (s) => { s.moveSpeed = Math.min(450, Math.round(s.moveSpeed * 1.1)); } },
   { key: 'maxHp', describe: (b, a) => `HP máximo: ${b.maxHp} → ${a.maxHp}`, apply: (s) => { s.maxHp += 20; s.hp += 20; } },
-  { key: 'magnet', describe: (b, a) => `Radio de imán: ${b.magnetRadius} → ${a.magnetRadius}`, apply: (s) => { s.magnetRadius = Math.round(s.magnetRadius * 1.4); } },
+  { key: 'magnet', describe: (b, a) => `Radio de imán: ${b.magnetRadius} → ${a.magnetRadius}`, apply: (s) => { s.magnetRadius = Math.min(500, Math.round(s.magnetRadius * 1.4)); } },
   {
     key: 'hpRegen',
     describe: (b, a) => `Regeneración: ${b.hpRegen.toFixed(1)}/s → ${a.hpRegen.toFixed(1)}/s`,
@@ -80,7 +82,7 @@ const WEAPON_UPGRADES = {
     },
     upgrades: [
       { key: 'auraDamage', describe: (b, a) => `Aura daño: ${b.auraDamage} → ${a.auraDamage}`, apply: (s) => { s.auraDamage += 5; } },
-      { key: 'auraRadius', describe: (b, a) => `Aura radio: ${b.auraRadius} → ${a.auraRadius}`, apply: (s) => { s.auraRadius = Math.round(s.auraRadius * 1.25); } },
+      { key: 'auraRadius', describe: (b, a) => `Aura radio: ${b.auraRadius} → ${a.auraRadius}`, apply: (s) => { s.auraRadius = Math.min(400, Math.round(s.auraRadius * 1.25)); } },
     ],
   },
   orbit: {
@@ -91,8 +93,8 @@ const WEAPON_UPGRADES = {
     },
     upgrades: [
       { key: 'orbitDamage', describe: (b, a) => `Orbe daño: ${b.orbitDamage} → ${a.orbitDamage}`, apply: (s) => { s.orbitDamage += 5; } },
-      { key: 'orbitCount', describe: (b, a) => `Orbe cantidad: ${b.orbitCount} → ${a.orbitCount}`, apply: (s) => { s.orbitCount += 1; } },
-      { key: 'orbitSpeed', describe: (b, a) => `Orbe velocidad: ${b.orbitSpeed.toFixed(2)} → ${a.orbitSpeed.toFixed(2)}`, apply: (s) => { s.orbitSpeed *= 1.25; } },
+      { key: 'orbitCount', describe: (b, a) => `Orbe cantidad: ${b.orbitCount} → ${a.orbitCount}`, apply: (s) => { s.orbitCount = Math.min(8, s.orbitCount + 1); } },
+      { key: 'orbitSpeed', describe: (b, a) => `Orbe velocidad: ${b.orbitSpeed.toFixed(2)} → ${a.orbitSpeed.toFixed(2)}`, apply: (s) => { s.orbitSpeed = Math.min(6, s.orbitSpeed * 1.25); } },
     ],
   },
   pierce: {
@@ -106,7 +108,7 @@ const WEAPON_UPGRADES = {
       {
         key: 'pierceRate',
         describe: (b, a) => `Perforante cadencia: ${(1000 / b.pierceRate).toFixed(1)}/s → ${(1000 / a.pierceRate).toFixed(1)}/s`,
-        apply: (s) => { s.pierceRate = Math.round(s.pierceRate * 0.85); },
+        apply: (s) => { s.pierceRate = Math.max(250, Math.round(s.pierceRate * 0.85)); },
       },
     ],
   },
@@ -118,11 +120,11 @@ const WEAPON_UPGRADES = {
     },
     upgrades: [
       { key: 'burstDamage', describe: (b, a) => `Ráfaga daño: ${b.burstDamage} → ${a.burstDamage}`, apply: (s) => { s.burstDamage += 5; } },
-      { key: 'burstCount', describe: (b, a) => `Ráfaga disparos: ${b.burstCount} → ${a.burstCount}`, apply: (s) => { s.burstCount += 1; } },
+      { key: 'burstCount', describe: (b, a) => `Ráfaga disparos: ${b.burstCount} → ${a.burstCount}`, apply: (s) => { s.burstCount = Math.min(10, s.burstCount + 1); } },
       {
         key: 'burstRate',
         describe: (b, a) => `Ráfaga cadencia: ${(1000 / b.burstRate).toFixed(1)}/s → ${(1000 / a.burstRate).toFixed(1)}/s`,
-        apply: (s) => { s.burstRate = Math.round(s.burstRate * 0.85); },
+        apply: (s) => { s.burstRate = Math.max(400, Math.round(s.burstRate * 0.85)); },
       },
     ],
   },
@@ -134,7 +136,7 @@ const WEAPON_UPGRADES = {
     },
     upgrades: [
       { key: 'novaDamage', describe: (b, a) => `Onda daño: ${b.novaDamage} → ${a.novaDamage}`, apply: (s) => { s.novaDamage += 10; } },
-      { key: 'novaRadius', describe: (b, a) => `Onda radio: ${b.novaRadius} → ${a.novaRadius}`, apply: (s) => { s.novaRadius = Math.round(s.novaRadius * 1.2); } },
+      { key: 'novaRadius', describe: (b, a) => `Onda radio: ${b.novaRadius} → ${a.novaRadius}`, apply: (s) => { s.novaRadius = Math.min(450, Math.round(s.novaRadius * 1.2)); } },
     ],
   },
 };
@@ -171,6 +173,7 @@ export default class GameScene extends Phaser.Scene {
     this.elapsed = 0;
     this.isLevelingUp = false;
     this.isGameOver = false;
+    this.hasWon = false;
     this.hasStarted = false;
     this.lastHitAt = -Infinity;
     this.lastDamageTakenAt = -Infinity;
@@ -376,8 +379,10 @@ export default class GameScene extends Phaser.Scene {
   }
 
   buildStartScreen() {
+    const bestTime = this.getBestTime();
+    const bestLine = bestTime > 0 ? `\nMejor tiempo: ${this.formatTime(bestTime)}` : '';
     this.startText = this.add.text(0, 0,
-      'SURVIVORS\n\nWASD / Flechas para moverte\nAtaque automático al enemigo más cercano\nF: pantalla completa · ESC: pausa\n\nPresiona una tecla para empezar',
+      `SURVIVORS\n\nWASD / Flechas para moverte\nAtaque automático al enemigo más cercano\nF: pantalla completa · ESC: pausa${bestLine}\n\nPresiona una tecla para empezar`,
       { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff', align: 'center' }
     ).setOrigin(0.5).setScrollFactor(0).setDepth(300);
 
@@ -519,7 +524,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   togglePause() {
-    if (!this.hasStarted || this.isGameOver || this.isLevelingUp) return;
+    if (!this.hasStarted || this.isGameOver || this.hasWon || this.isLevelingUp) return;
     if (this.isPaused) {
       this.resumeGame();
     } else {
@@ -595,7 +600,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    if (!this.hasStarted || this.isGameOver || this.isLevelingUp || this.isPaused) {
+    if (!this.hasStarted || this.isGameOver || this.hasWon || this.isLevelingUp || this.isPaused) {
       this.player.setVelocity(0, 0);
       return;
     }
@@ -1019,6 +1024,11 @@ export default class GameScene extends Phaser.Scene {
     this.portal.destroy();
     this.portal = null;
 
+    if (this.stage >= VICTORY_STAGE) {
+      this.onVictory();
+      return;
+    }
+
     const cy = this.scale.height / 2;
     const text = this.add.text(this.scale.width / 2, cy, `ETAPA ${this.stage}`, {
       fontFamily: 'monospace', fontSize: '32px', color: '#aa88ff',
@@ -1097,15 +1107,50 @@ export default class GameScene extends Phaser.Scene {
   onGameOver() {
     this.isGameOver = true;
     this.setTimersPaused(true);
+    this.showEndScreen('GAME OVER', '#ff5566');
+  }
+
+  onVictory() {
+    this.hasWon = true;
+    this.setTimersPaused(true);
+    this.showEndScreen('¡VICTORIA!', '#ffcc44');
+  }
+
+  getBestTime() {
+    try {
+      return Number(localStorage.getItem(BEST_TIME_KEY)) || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  saveBestTime(ms) {
+    try {
+      if (ms > this.getBestTime()) {
+        localStorage.setItem(BEST_TIME_KEY, String(Math.floor(ms)));
+        return true;
+      }
+    } catch {
+      // localStorage no disponible (ej. modo privado) - seguimos sin guardar
+    }
+    return false;
+  }
+
+  showEndScreen(title, color) {
+    const isNewBest = this.saveBestTime(this.elapsed);
+    const bestTime = this.getBestTime();
 
     const cx = this.scale.width / 2;
     const cy = this.scale.height / 2;
-    this.add.text(cx, cy - 20, 'GAME OVER', { fontFamily: 'monospace', fontSize: '40px', color: '#ff5566' })
+    this.add.text(cx, cy - 40, title, { fontFamily: 'monospace', fontSize: '40px', color })
       .setOrigin(0.5).setScrollFactor(0).setDepth(200);
-    this.add.text(cx, cy + 30, `Sobreviviste ${this.formatTime(this.elapsed)} - Nivel ${this.level}`, {
+    this.add.text(cx, cy + 10, `Sobreviviste ${this.formatTime(this.elapsed)} - Nivel ${this.level}`, {
       fontFamily: 'monospace', fontSize: '18px', color: '#ffffff',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
-    this.add.text(cx, cy + 65, 'Presiona R para reiniciar', {
+    this.add.text(cx, cy + 40, isNewBest ? `¡Nuevo mejor tiempo! ${this.formatTime(bestTime)}` : `Mejor tiempo: ${this.formatTime(bestTime)}`, {
+      fontFamily: 'monospace', fontSize: '16px', color: '#ffcc44',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+    this.add.text(cx, cy + 75, 'Presiona R para reiniciar', {
       fontFamily: 'monospace', fontSize: '16px', color: '#aaaaaa',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
 

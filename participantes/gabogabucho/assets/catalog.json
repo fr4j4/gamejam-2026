@@ -1,0 +1,1751 @@
+[
+ {
+  "file": "estado_00_17x23.png",
+  "seccion": "BURBUJAS DE ESTADO (Miedo, Fe, Hambre, Duda, Ciencia)",
+  "sub": "estado",
+  "idx": 0,
+  "w": 17,
+  "h": 23,
+  "tags": [
+   "BURBUJAS",
+   "ESTADOS",
+   "HAMBRE",
+   "FERVOR",
+   "DUDA"
+  ],
+  "src": "Estados_id00_17x23.png"
+ },
+ {
+  "file": "estado_01_16x23.png",
+  "seccion": "BURBUJAS DE ESTADO (Miedo, Fe, Hambre, Duda, Ciencia)",
+  "sub": "estado",
+  "idx": 1,
+  "w": 16,
+  "h": 23,
+  "tags": [
+   "BURBUJAS",
+   "ESTADOS",
+   "HAMBRE",
+   "FERVOR",
+   "DUDA"
+  ],
+  "src": "Estados_id01_16x23.png"
+ },
+ {
+  "file": "estado_02_18x22.png",
+  "seccion": "BURBUJAS DE ESTADO (Miedo, Fe, Hambre, Duda, Ciencia)",
+  "sub": "estado",
+  "idx": 2,
+  "w": 18,
+  "h": 22,
+  "tags": [
+   "BURBUJAS",
+   "ESTADOS",
+   "HAMBRE",
+   "FERVOR",
+   "DUDA"
+  ],
+  "src": "Estados_id02_18x22.png"
+ },
+ {
+  "file": "estado_03_15x21.png",
+  "seccion": "BURBUJAS DE ESTADO (Miedo, Fe, Hambre, Duda, Ciencia)",
+  "sub": "estado",
+  "idx": 3,
+  "w": 15,
+  "h": 21,
+  "tags": [
+   "BURBUJAS",
+   "ESTADOS",
+   "HAMBRE",
+   "FERVOR",
+   "DUDA"
+  ],
+  "src": "Estados_id03_15x21.png"
+ },
+ {
+  "file": "estado_04_16x21.png",
+  "seccion": "BURBUJAS DE ESTADO (Miedo, Fe, Hambre, Duda, Ciencia)",
+  "sub": "estado",
+  "idx": 4,
+  "w": 16,
+  "h": 21,
+  "tags": [
+   "BURBUJAS",
+   "ESTADOS",
+   "HAMBRE",
+   "FERVOR",
+   "DUDA"
+  ],
+  "src": "Estados_id04_16x21.png"
+ },
+ {
+  "file": "estructura_00_53x90.png",
+  "seccion": "ESTRUCTURAS 2",
+  "sub": "estructura",
+  "idx": 0,
+  "w": 53,
+  "h": 90,
+  "tags": [
+   "ESTRUCTURAS"
+  ],
+  "src": "Estructuras 2_id00_53x90.png"
+ },
+ {
+  "file": "estructura_01_55x90.png",
+  "seccion": "ESTRUCTURAS 2",
+  "sub": "estructura",
+  "idx": 1,
+  "w": 55,
+  "h": 90,
+  "tags": [
+   "ESTRUCTURAS"
+  ],
+  "src": "Estructuras 2_id01_55x90.png"
+ },
+ {
+  "file": "estructura_02_89x68.png",
+  "seccion": "ESTRUCTURAS 2",
+  "sub": "estructura",
+  "idx": 2,
+  "w": 89,
+  "h": 68,
+  "tags": [
+   "ESTRUCTURAS"
+  ],
+  "src": "Estructuras 2_id02_89x68.png"
+ },
+ {
+  "file": "estructura_03_77x65.png",
+  "seccion": "ESTRUCTURAS 2",
+  "sub": "estructura",
+  "idx": 3,
+  "w": 77,
+  "h": 65,
+  "tags": [
+   "ESTRUCTURAS"
+  ],
+  "src": "Estructuras 2_id03_77x65.png"
+ },
+ {
+  "file": "estructura_04_64x59.png",
+  "seccion": "ESTRUCTURAS 2",
+  "sub": "estructura",
+  "idx": 4,
+  "w": 64,
+  "h": 59,
+  "tags": [
+   "ESTRUCTURAS"
+  ],
+  "src": "Estructuras 2_id04_64x59.png"
+ },
+ {
+  "file": "agua_00_436x19.png",
+  "seccion": "AGUA (TIRA REPETIBLE)",
+  "sub": "agua",
+  "idx": 0,
+  "w": 436,
+  "h": 19,
+  "tags": [
+   "AGUA"
+  ],
+  "src": "agua repetible_id00_436x19.png"
+ },
+ {
+  "file": "aldeano_00_25x46.png",
+  "seccion": "ALDEANOS (3 variantes)",
+  "sub": "aldeano",
+  "idx": 0,
+  "w": 25,
+  "h": 46,
+  "tags": [
+   "ALDEANOS"
+  ],
+  "src": "aldeanos_id00_25x46.png"
+ },
+ {
+  "file": "aldeano_01_26x45.png",
+  "seccion": "ALDEANOS (3 variantes)",
+  "sub": "aldeano",
+  "idx": 1,
+  "w": 26,
+  "h": 45,
+  "tags": [
+   "ALDEANOS"
+  ],
+  "src": "aldeanos_id01_26x45.png"
+ },
+ {
+  "file": "aldeano_02_25x43.png",
+  "seccion": "ALDEANOS (3 variantes)",
+  "sub": "aldeano",
+  "idx": 2,
+  "w": 25,
+  "h": 43,
+  "tags": [
+   "ALDEANOS"
+  ],
+  "src": "aldeanos_id02_25x43.png"
+ },
+ {
+  "file": "aldeano_03_24x43.png",
+  "seccion": "ALDEANOS (3 variantes)",
+  "sub": "aldeano",
+  "idx": 3,
+  "w": 24,
+  "h": 43,
+  "tags": [
+   "ALDEANOS"
+  ],
+  "src": "aldeanos_id03_24x43.png"
+ },
+ {
+  "file": "aldeano_04_38x41.png",
+  "seccion": "ALDEANOS (3 variantes)",
+  "sub": "aldeano",
+  "idx": 4,
+  "w": 38,
+  "h": 41,
+  "tags": [
+   "ALDEANOS"
+  ],
+  "src": "aldeanos_id04_38x41.png"
+ },
+ {
+  "file": "aldeano_05_24x41.png",
+  "seccion": "ALDEANOS (3 variantes)",
+  "sub": "aldeano",
+  "idx": 5,
+  "w": 24,
+  "h": 41,
+  "tags": [
+   "ALDEANOS"
+  ],
+  "src": "aldeanos_id05_24x41.png"
+ },
+ {
+  "file": "efecto_amb_00_73x49.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 0,
+  "w": 73,
+  "h": 49,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id00_73x49.png"
+ },
+ {
+  "file": "efecto_amb_01_28x44.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 1,
+  "w": 28,
+  "h": 44,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id01_28x44.png"
+ },
+ {
+  "file": "efecto_amb_02_5x5.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 2,
+  "w": 5,
+  "h": 5,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id02_5x5.png"
+ },
+ {
+  "file": "efecto_amb_03_66x42.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 3,
+  "w": 66,
+  "h": 42,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id03_66x42.png"
+ },
+ {
+  "file": "efecto_amb_04_6x6.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 4,
+  "w": 6,
+  "h": 6,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id04_6x6.png"
+ },
+ {
+  "file": "efecto_amb_05_17x14.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 5,
+  "w": 17,
+  "h": 14,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id05_17x14.png"
+ },
+ {
+  "file": "efecto_amb_06_8x16.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 6,
+  "w": 8,
+  "h": 16,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id06_8x16.png"
+ },
+ {
+  "file": "efecto_amb_07_6x5.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 7,
+  "w": 6,
+  "h": 5,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id07_6x5.png"
+ },
+ {
+  "file": "efecto_amb_08_7x6.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 8,
+  "w": 7,
+  "h": 6,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id08_7x6.png"
+ },
+ {
+  "file": "efecto_amb_09_6x6.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 9,
+  "w": 6,
+  "h": 6,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id09_6x6.png"
+ },
+ {
+  "file": "efecto_amb_10_7x6.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 10,
+  "w": 7,
+  "h": 6,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id10_7x6.png"
+ },
+ {
+  "file": "efecto_amb_11_6x6.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 11,
+  "w": 6,
+  "h": 6,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id11_6x6.png"
+ },
+ {
+  "file": "efecto_amb_12_7x15.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 12,
+  "w": 7,
+  "h": 15,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id12_7x15.png"
+ },
+ {
+  "file": "efecto_amb_13_7x5.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 13,
+  "w": 7,
+  "h": 5,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id13_7x5.png"
+ },
+ {
+  "file": "efecto_amb_14_6x6.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 14,
+  "w": 6,
+  "h": 6,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id14_6x6.png"
+ },
+ {
+  "file": "efecto_amb_15_3x3.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 15,
+  "w": 3,
+  "h": 3,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id15_3x3.png"
+ },
+ {
+  "file": "efecto_amb_16_3x2.png",
+  "seccion": "EFECTOS AMBIENTALES (Lluvia, Niebla...)",
+  "sub": "efecto_amb",
+  "idx": 16,
+  "w": 3,
+  "h": 2,
+  "tags": [
+   "AMBIENTALES",
+   "LLUVIA",
+   "NIEBLA"
+  ],
+  "src": "ambiente_id16_3x2.png"
+ },
+ {
+  "file": "efecto_amb_00_47x49.png",
+  "seccion": "EFECTOS AMBIENTALES 2",
+  "sub": "efecto_amb",
+  "idx": 0,
+  "w": 47,
+  "h": 49,
+  "tags": [
+   "AMBIENTALES"
+  ],
+  "src": "ambientes2_id00_47x49.png"
+ },
+ {
+  "file": "efecto_amb_01_44x47.png",
+  "seccion": "EFECTOS AMBIENTALES 2",
+  "sub": "efecto_amb",
+  "idx": 1,
+  "w": 44,
+  "h": 47,
+  "tags": [
+   "AMBIENTALES"
+  ],
+  "src": "ambientes2_id01_44x47.png"
+ },
+ {
+  "file": "efecto_amb_02_40x47.png",
+  "seccion": "EFECTOS AMBIENTALES 2",
+  "sub": "efecto_amb",
+  "idx": 2,
+  "w": 40,
+  "h": 47,
+  "tags": [
+   "AMBIENTALES"
+  ],
+  "src": "ambientes2_id02_40x47.png"
+ },
+ {
+  "file": "efecto_amb_03_66x18.png",
+  "seccion": "EFECTOS AMBIENTALES 2",
+  "sub": "efecto_amb",
+  "idx": 3,
+  "w": 66,
+  "h": 18,
+  "tags": [
+   "AMBIENTALES"
+  ],
+  "src": "ambientes2_id03_66x18.png"
+ },
+ {
+  "file": "animal_00_41x43.png",
+  "seccion": "ANIMALES (Caballo, Pato...)",
+  "sub": "animal",
+  "idx": 0,
+  "w": 41,
+  "h": 43,
+  "tags": [
+   "ANIMALES",
+   "CABALLO",
+   "PATO"
+  ],
+  "src": "animales_id00_41x43.png"
+ },
+ {
+  "file": "animal_01_57x42.png",
+  "seccion": "ANIMALES (Caballo, Pato...)",
+  "sub": "animal",
+  "idx": 1,
+  "w": 57,
+  "h": 42,
+  "tags": [
+   "ANIMALES",
+   "CABALLO",
+   "PATO"
+  ],
+  "src": "animales_id01_57x42.png"
+ },
+ {
+  "file": "animal_02_54x35.png",
+  "seccion": "ANIMALES (Caballo, Pato...)",
+  "sub": "animal",
+  "idx": 2,
+  "w": 54,
+  "h": 35,
+  "tags": [
+   "ANIMALES",
+   "CABALLO",
+   "PATO"
+  ],
+  "src": "animales_id02_54x35.png"
+ },
+ {
+  "file": "animal_03_31x35.png",
+  "seccion": "ANIMALES (Caballo, Pato...)",
+  "sub": "animal",
+  "idx": 3,
+  "w": 31,
+  "h": 35,
+  "tags": [
+   "ANIMALES",
+   "CABALLO",
+   "PATO"
+  ],
+  "src": "animales_id03_31x35.png"
+ },
+ {
+  "file": "animal_04_40x32.png",
+  "seccion": "ANIMALES (Caballo, Pato...)",
+  "sub": "animal",
+  "idx": 4,
+  "w": 40,
+  "h": 32,
+  "tags": [
+   "ANIMALES",
+   "CABALLO",
+   "PATO"
+  ],
+  "src": "animales_id04_40x32.png"
+ },
+ {
+  "file": "animal_05_55x30.png",
+  "seccion": "ANIMALES (Caballo, Pato...)",
+  "sub": "animal",
+  "idx": 5,
+  "w": 55,
+  "h": 30,
+  "tags": [
+   "ANIMALES",
+   "CABALLO",
+   "PATO"
+  ],
+  "src": "animales_id05_55x30.png"
+ },
+ {
+  "file": "animal_06_39x25.png",
+  "seccion": "ANIMALES (Caballo, Pato...)",
+  "sub": "animal",
+  "idx": 6,
+  "w": 39,
+  "h": 25,
+  "tags": [
+   "ANIMALES",
+   "CABALLO",
+   "PATO"
+  ],
+  "src": "animales_id06_39x25.png"
+ },
+ {
+  "file": "arbolada_00_395x98.png",
+  "seccion": "ARBOLEDA (TIRA REPETIBLE)",
+  "sub": "arbolada",
+  "idx": 0,
+  "w": 395,
+  "h": 98,
+  "tags": [
+   "ARBOLEDA"
+  ],
+  "src": "arbolada_id00_395x98.png"
+ },
+ {
+  "file": "arbol_00_65x68.png",
+  "seccion": "ARBOLES (Variante 1, 2)",
+  "sub": "arbol",
+  "idx": 0,
+  "w": 65,
+  "h": 68,
+  "tags": [
+   "ARBOLES",
+   "VARIANTE"
+  ],
+  "src": "arboles_id00_65x68.png"
+ },
+ {
+  "file": "arbol_01_55x93.png",
+  "seccion": "ARBOLES (Variante 1, 2)",
+  "sub": "arbol",
+  "idx": 1,
+  "w": 55,
+  "h": 93,
+  "tags": [
+   "ARBOLES",
+   "VARIANTE"
+  ],
+  "src": "arboles_id01_55x93.png"
+ },
+ {
+  "file": "barco_00_78x54.png",
+  "seccion": "BARCOS Y AGUA",
+  "sub": "barco",
+  "idx": 0,
+  "w": 78,
+  "h": 54,
+  "tags": [
+   "BARCAS",
+   "AGUA"
+  ],
+  "src": "barcos_id00_78x54.png"
+ },
+ {
+  "file": "barco_01_70x49.png",
+  "seccion": "BARCOS Y AGUA",
+  "sub": "barco",
+  "idx": 1,
+  "w": 70,
+  "h": 49,
+  "tags": [
+   "BARCAS",
+   "AGUA"
+  ],
+  "src": "barcos_id01_70x49.png"
+ },
+ {
+  "file": "barco_02_55x43.png",
+  "seccion": "BARCOS Y AGUA",
+  "sub": "barco",
+  "idx": 2,
+  "w": 55,
+  "h": 43,
+  "tags": [
+   "BARCAS",
+   "AGUA"
+  ],
+  "src": "barcos_id02_55x43.png"
+ },
+ {
+  "file": "barco_03_57x19.png",
+  "seccion": "BARCOS Y AGUA",
+  "sub": "barco",
+  "idx": 3,
+  "w": 57,
+  "h": 19,
+  "tags": [
+   "BARCAS",
+   "AGUA"
+  ],
+  "src": "barcos_id03_57x19.png"
+ },
+ {
+  "file": "erudito_00_12x1.png",
+  "seccion": "ERUDITO",
+  "sub": "erudito",
+  "idx": 0,
+  "w": 12,
+  "h": 1,
+  "tags": [
+   "ERUDITO"
+  ],
+  "src": "eruditos_id00_12x1.png"
+ },
+ {
+  "file": "erudito_01_36x42.png",
+  "seccion": "ERUDITO",
+  "sub": "erudito",
+  "idx": 1,
+  "w": 36,
+  "h": 42,
+  "tags": [
+   "ERUDITO"
+  ],
+  "src": "eruditos_id01_36x42.png"
+ },
+ {
+  "file": "erudito_02_27x34.png",
+  "seccion": "ERUDITO",
+  "sub": "erudito",
+  "idx": 2,
+  "w": 27,
+  "h": 34,
+  "tags": [
+   "ERUDITO"
+  ],
+  "src": "eruditos_id02_27x34.png"
+ },
+ {
+  "file": "estructura_00_96x146.png",
+  "seccion": "ESTRUCTURAS (Choza, Catedral, Torre piedra, Muralla)",
+  "sub": "estructura",
+  "idx": 0,
+  "w": 96,
+  "h": 146,
+  "tags": [
+   "ESTRUCTURAS",
+   "CHOZA",
+   "CATEDRAL",
+   "TORRE",
+   "MURALLA"
+  ],
+  "src": "estructuras1_id00_96x146.png"
+ },
+ {
+  "file": "estructura_01_120x116.png",
+  "seccion": "ESTRUCTURAS (Choza, Catedral, Torre piedra, Muralla)",
+  "sub": "estructura",
+  "idx": 1,
+  "w": 120,
+  "h": 116,
+  "tags": [
+   "ESTRUCTURAS",
+   "CHOZA",
+   "CATEDRAL",
+   "TORRE",
+   "MURALLA"
+  ],
+  "src": "estructuras1_id01_120x116.png"
+ },
+ {
+  "file": "estructura_02_130x111.png",
+  "seccion": "ESTRUCTURAS (Choza, Catedral, Torre piedra, Muralla)",
+  "sub": "estructura",
+  "idx": 2,
+  "w": 130,
+  "h": 111,
+  "tags": [
+   "ESTRUCTURAS",
+   "CHOZA",
+   "CATEDRAL",
+   "TORRE",
+   "MURALLA"
+  ],
+  "src": "estructuras1_id02_130x111.png"
+ },
+ {
+  "file": "estructura_03_101x91.png",
+  "seccion": "ESTRUCTURAS (Choza, Catedral, Torre piedra, Muralla)",
+  "sub": "estructura",
+  "idx": 3,
+  "w": 101,
+  "h": 91,
+  "tags": [
+   "ESTRUCTURAS",
+   "CHOZA",
+   "CATEDRAL",
+   "TORRE",
+   "MURALLA"
+  ],
+  "src": "estructuras1_id03_101x91.png"
+ },
+ {
+  "file": "objeto_00_41x37.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 0,
+  "w": 41,
+  "h": 37,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id00_41x37.png"
+ },
+ {
+  "file": "objeto_01_56x33.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 1,
+  "w": 56,
+  "h": 33,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id01_56x33.png"
+ },
+ {
+  "file": "objeto_02_83x32.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 2,
+  "w": 83,
+  "h": 32,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id02_83x32.png"
+ },
+ {
+  "file": "objeto_03_60x29.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 3,
+  "w": 60,
+  "h": 29,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id03_60x29.png"
+ },
+ {
+  "file": "objeto_04_60x25.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 4,
+  "w": 60,
+  "h": 25,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id04_60x25.png"
+ },
+ {
+  "file": "objeto_05_35x49.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 5,
+  "w": 35,
+  "h": 49,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id05_35x49.png"
+ },
+ {
+  "file": "objeto_06_40x34.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 6,
+  "w": 40,
+  "h": 34,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id06_40x34.png"
+ },
+ {
+  "file": "objeto_07_56x33.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 7,
+  "w": 56,
+  "h": 33,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id07_56x33.png"
+ },
+ {
+  "file": "objeto_08_51x33.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 8,
+  "w": 51,
+  "h": 33,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id08_51x33.png"
+ },
+ {
+  "file": "objeto_09_57x21.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 9,
+  "w": 57,
+  "h": 21,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id09_57x21.png"
+ },
+ {
+  "file": "objeto_10_53x41.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 10,
+  "w": 53,
+  "h": 41,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id10_53x41.png"
+ },
+ {
+  "file": "objeto_11_48x35.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 11,
+  "w": 48,
+  "h": 35,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id11_48x35.png"
+ },
+ {
+  "file": "objeto_12_48x33.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 12,
+  "w": 48,
+  "h": 33,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id12_48x33.png"
+ },
+ {
+  "file": "objeto_13_68x24.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 13,
+  "w": 68,
+  "h": 24,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id13_68x24.png"
+ },
+ {
+  "file": "objeto_14_69x24.png",
+  "seccion": "OBJETOS Y CONSTRUCCIONES MENORES (Paso, Granja, Asador, Hoguera, Tablon/Cartel, Taller)",
+  "sub": "objeto",
+  "idx": 14,
+  "w": 69,
+  "h": 24,
+  "tags": [
+   "OBJETOS",
+   "PASO",
+   "GRANJA",
+   "HOGUERA",
+   "TALLER",
+   "TABLON"
+  ],
+  "src": "estructuraspequeñas_id14_69x24.png"
+ },
+ {
+  "file": "icono_00_22x25.png",
+  "seccion": "ICONOS VARIOS (Espada, Escudo, Corona...)",
+  "sub": "icono",
+  "idx": 0,
+  "w": 22,
+  "h": 25,
+  "tags": [
+   "ICONOS",
+   "ESPADA",
+   "ESCUDO",
+   "CORONA"
+  ],
+  "src": "iconos varios_id00_22x25.png"
+ },
+ {
+  "file": "icono_01_25x24.png",
+  "seccion": "ICONOS VARIOS (Espada, Escudo, Corona...)",
+  "sub": "icono",
+  "idx": 1,
+  "w": 25,
+  "h": 24,
+  "tags": [
+   "ICONOS",
+   "ESPADA",
+   "ESCUDO",
+   "CORONA"
+  ],
+  "src": "iconos varios_id01_25x24.png"
+ },
+ {
+  "file": "icono_02_26x21.png",
+  "seccion": "ICONOS VARIOS (Espada, Escudo, Corona...)",
+  "sub": "icono",
+  "idx": 2,
+  "w": 26,
+  "h": 21,
+  "tags": [
+   "ICONOS",
+   "ESPADA",
+   "ESCUDO",
+   "CORONA"
+  ],
+  "src": "iconos varios_id02_26x21.png"
+ },
+ {
+  "file": "icono_03_35x21.png",
+  "seccion": "ICONOS VARIOS (Espada, Escudo, Corona...)",
+  "sub": "icono",
+  "idx": 3,
+  "w": 35,
+  "h": 21,
+  "tags": [
+   "ICONOS",
+   "ESPADA",
+   "ESCUDO",
+   "CORONA"
+  ],
+  "src": "iconos varios_id03_35x21.png"
+ },
+ {
+  "file": "icono_04_28x21.png",
+  "seccion": "ICONOS VARIOS (Espada, Escudo, Corona...)",
+  "sub": "icono",
+  "idx": 4,
+  "w": 28,
+  "h": 21,
+  "tags": [
+   "ICONOS",
+   "ESPADA",
+   "ESCUDO",
+   "CORONA"
+  ],
+  "src": "iconos varios_id04_28x21.png"
+ },
+ {
+  "file": "icono_05_26x21.png",
+  "seccion": "ICONOS VARIOS (Espada, Escudo, Corona...)",
+  "sub": "icono",
+  "idx": 5,
+  "w": 26,
+  "h": 21,
+  "tags": [
+   "ICONOS",
+   "ESPADA",
+   "ESCUDO",
+   "CORONA"
+  ],
+  "src": "iconos varios_id05_26x21.png"
+ },
+ {
+  "file": "icono_06_27x31.png",
+  "seccion": "ICONOS VARIOS (Espada, Escudo, Corona...)",
+  "sub": "icono",
+  "idx": 6,
+  "w": 27,
+  "h": 31,
+  "tags": [
+   "ICONOS",
+   "ESPADA",
+   "ESCUDO",
+   "CORONA"
+  ],
+  "src": "iconos varios_id06_27x31.png"
+ },
+ {
+  "file": "icono_07_25x25.png",
+  "seccion": "ICONOS VARIOS (Espada, Escudo, Corona...)",
+  "sub": "icono",
+  "idx": 7,
+  "w": 25,
+  "h": 25,
+  "tags": [
+   "ICONOS",
+   "ESPADA",
+   "ESCUDO",
+   "CORONA"
+  ],
+  "src": "iconos varios_id07_25x25.png"
+ },
+ {
+  "file": "icono_08_22x24.png",
+  "seccion": "ICONOS VARIOS (Espada, Escudo, Corona...)",
+  "sub": "icono",
+  "idx": 8,
+  "w": 22,
+  "h": 24,
+  "tags": [
+   "ICONOS",
+   "ESPADA",
+   "ESCUDO",
+   "CORONA"
+  ],
+  "src": "iconos varios_id08_22x24.png"
+ },
+ {
+  "file": "icono_09_24x23.png",
+  "seccion": "ICONOS VARIOS (Espada, Escudo, Corona...)",
+  "sub": "icono",
+  "idx": 9,
+  "w": 24,
+  "h": 23,
+  "tags": [
+   "ICONOS",
+   "ESPADA",
+   "ESCUDO",
+   "CORONA"
+  ],
+  "src": "iconos varios_id09_24x23.png"
+ },
+ {
+  "file": "icono_10_30x21.png",
+  "seccion": "ICONOS VARIOS (Espada, Escudo, Corona...)",
+  "sub": "icono",
+  "idx": 10,
+  "w": 30,
+  "h": 21,
+  "tags": [
+   "ICONOS",
+   "ESPADA",
+   "ESCUDO",
+   "CORONA"
+  ],
+  "src": "iconos varios_id10_30x21.png"
+ },
+ {
+  "file": "icono_11_23x22.png",
+  "seccion": "ICONOS VARIOS (Espada, Escudo, Corona...)",
+  "sub": "icono",
+  "idx": 11,
+  "w": 23,
+  "h": 22,
+  "tags": [
+   "ICONOS",
+   "ESPADA",
+   "ESCUDO",
+   "CORONA"
+  ],
+  "src": "iconos varios_id11_23x22.png"
+ },
+ {
+  "file": "indicador_00_23x32.png",
+  "seccion": "INTERFAZ: INDICADORES",
+  "sub": "indicador",
+  "idx": 0,
+  "w": 23,
+  "h": 32,
+  "tags": [
+   "INDICADORES"
+  ],
+  "src": "indicadores_id00_23x32.png"
+ },
+ {
+  "file": "indicador_01_30x29.png",
+  "seccion": "INTERFAZ: INDICADORES",
+  "sub": "indicador",
+  "idx": 1,
+  "w": 30,
+  "h": 29,
+  "tags": [
+   "INDICADORES"
+  ],
+  "src": "indicadores_id01_30x29.png"
+ },
+ {
+  "file": "indicador_02_39x22.png",
+  "seccion": "INTERFAZ: INDICADORES",
+  "sub": "indicador",
+  "idx": 2,
+  "w": 39,
+  "h": 22,
+  "tags": [
+   "INDICADORES"
+  ],
+  "src": "indicadores_id02_39x22.png"
+ },
+ {
+  "file": "montanas_00_369x63.png",
+  "seccion": "MONTAÑAS (TIRA REPETIBLE)",
+  "sub": "montanas",
+  "idx": 0,
+  "w": 369,
+  "h": 63,
+  "tags": [
+   "MONTAAAS"
+  ],
+  "src": "montanas_id00_369x63.png"
+ },
+ {
+  "file": "notificacion_00_37x29.png",
+  "seccion": "INTERFAZ: NOTIFICACIONES",
+  "sub": "notificacion",
+  "idx": 0,
+  "w": 37,
+  "h": 29,
+  "tags": [
+   "NOTIFICACIONES"
+  ],
+  "src": "notificaciones_id00_37x29.png"
+ },
+ {
+  "file": "notificacion_01_33x33.png",
+  "seccion": "INTERFAZ: NOTIFICACIONES",
+  "sub": "notificacion",
+  "idx": 1,
+  "w": 33,
+  "h": 33,
+  "tags": [
+   "NOTIFICACIONES"
+  ],
+  "src": "notificaciones_id01_33x33.png"
+ },
+ {
+  "file": "poder_consuelo_00_46x46.png",
+  "seccion": "CONSUELO (Calor, viento...)",
+  "sub": "poder_consuelo",
+  "idx": 0,
+  "w": 46,
+  "h": 46,
+  "tags": [
+   "CONSUELA",
+   "CALOR"
+  ],
+  "src": "poderes consuelo_id00_46x46.png"
+ },
+ {
+  "file": "poder_consuelo_01_48x37.png",
+  "seccion": "CONSUELO (Calor, viento...)",
+  "sub": "poder_consuelo",
+  "idx": 1,
+  "w": 48,
+  "h": 37,
+  "tags": [
+   "CONSUELA",
+   "CALOR"
+  ],
+  "src": "poderes consuelo_id01_48x37.png"
+ },
+ {
+  "file": "poder_consuelo_02_58x33.png",
+  "seccion": "CONSUELO (Calor, viento...)",
+  "sub": "poder_consuelo",
+  "idx": 2,
+  "w": 58,
+  "h": 33,
+  "tags": [
+   "CONSUELA",
+   "CALOR"
+  ],
+  "src": "poderes consuelo_id02_58x33.png"
+ },
+ {
+  "file": "poder_efecto_00_51x52.png",
+  "seccion": "PODERES / EFECTOS (Luz divina, Rayo...)",
+  "sub": "poder_efecto",
+  "idx": 0,
+  "w": 51,
+  "h": 52,
+  "tags": [
+   "PODERES",
+   "LUE AFSINE",
+   "ARCOIRIS",
+   "RAYO"
+  ],
+  "src": "poderes efectos_id00_51x52.png"
+ },
+ {
+  "file": "poder_efecto_01_59x49.png",
+  "seccion": "PODERES / EFECTOS (Luz divina, Rayo...)",
+  "sub": "poder_efecto",
+  "idx": 1,
+  "w": 59,
+  "h": 49,
+  "tags": [
+   "PODERES",
+   "LUE AFSINE",
+   "ARCOIRIS",
+   "RAYO"
+  ],
+  "src": "poderes efectos_id01_59x49.png"
+ },
+ {
+  "file": "poder_efecto_02_42x40.png",
+  "seccion": "PODERES / EFECTOS (Luz divina, Rayo...)",
+  "sub": "poder_efecto",
+  "idx": 2,
+  "w": 42,
+  "h": 40,
+  "tags": [
+   "PODERES",
+   "LUE AFSINE",
+   "ARCOIRIS",
+   "RAYO"
+  ],
+  "src": "poderes efectos_id02_42x40.png"
+ },
+ {
+  "file": "poder_efecto_03_56x32.png",
+  "seccion": "PODERES / EFECTOS (Luz divina, Rayo...)",
+  "sub": "poder_efecto",
+  "idx": 3,
+  "w": 56,
+  "h": 32,
+  "tags": [
+   "PODERES",
+   "LUE AFSINE",
+   "ARCOIRIS",
+   "RAYO"
+  ],
+  "src": "poderes efectos_id03_56x32.png"
+ },
+ {
+  "file": "poder_efecto_04_58x38.png",
+  "seccion": "PODERES / EFECTOS (Luz divina, Rayo...)",
+  "sub": "poder_efecto",
+  "idx": 4,
+  "w": 58,
+  "h": 38,
+  "tags": [
+   "PODERES",
+   "LUE AFSINE",
+   "ARCOIRIS",
+   "RAYO"
+  ],
+  "src": "poderes efectos_id04_58x38.png"
+ },
+ {
+  "file": "poder_efecto_05_60x24.png",
+  "seccion": "PODERES / EFECTOS (Luz divina, Rayo...)",
+  "sub": "poder_efecto",
+  "idx": 5,
+  "w": 60,
+  "h": 24,
+  "tags": [
+   "PODERES",
+   "LUE AFSINE",
+   "ARCOIRIS",
+   "RAYO"
+  ],
+  "src": "poderes efectos_id05_60x24.png"
+ },
+ {
+  "file": "poder_humilla_00_47x42.png",
+  "seccion": "HUMILLACION (Tropiezo, caida...)",
+  "sub": "poder_humilla",
+  "idx": 0,
+  "w": 47,
+  "h": 42,
+  "tags": [
+   "HUMILLASION"
+  ],
+  "src": "poderes humilla_id00_47x42.png"
+ },
+ {
+  "file": "poder_humilla_01_40x34.png",
+  "seccion": "HUMILLACION (Tropiezo, caida...)",
+  "sub": "poder_humilla",
+  "idx": 1,
+  "w": 40,
+  "h": 34,
+  "tags": [
+   "HUMILLASION"
+  ],
+  "src": "poderes humilla_id01_40x34.png"
+ },
+ {
+  "file": "poder_humilla_02_53x30.png",
+  "seccion": "HUMILLACION (Tropiezo, caida...)",
+  "sub": "poder_humilla",
+  "idx": 2,
+  "w": 53,
+  "h": 30,
+  "tags": [
+   "HUMILLASION"
+  ],
+  "src": "poderes humilla_id02_53x30.png"
+ },
+ {
+  "file": "sacerdote_00_40x46.png",
+  "seccion": "LIDER / SACERDOTE",
+  "sub": "sacerdote",
+  "idx": 0,
+  "w": 40,
+  "h": 46,
+  "tags": [
+   "LIDER",
+   "SACERDATE"
+  ],
+  "src": "sacerdotes_id00_40x46.png"
+ },
+ {
+  "file": "sacerdote_01_35x44.png",
+  "seccion": "LIDER / SACERDOTE",
+  "sub": "sacerdote",
+  "idx": 1,
+  "w": 35,
+  "h": 44,
+  "tags": [
+   "LIDER",
+   "SACERDATE"
+  ],
+  "src": "sacerdotes_id01_35x44.png"
+ },
+ {
+  "file": "sacerdote_02_40x43.png",
+  "seccion": "LIDER / SACERDOTE",
+  "sub": "sacerdote",
+  "idx": 2,
+  "w": 40,
+  "h": 43,
+  "tags": [
+   "LIDER",
+   "SACERDATE"
+  ],
+  "src": "sacerdotes_id02_40x43.png"
+ },
+ {
+  "file": "soldado_00_39x69.png",
+  "seccion": "SOLDADOS",
+  "sub": "soldado",
+  "idx": 0,
+  "w": 39,
+  "h": 69,
+  "tags": [
+   "SOLDADOS"
+  ],
+  "src": "soldados_id00_39x69.png"
+ },
+ {
+  "file": "soldado_01_44x61.png",
+  "seccion": "SOLDADOS",
+  "sub": "soldado",
+  "idx": 1,
+  "w": 44,
+  "h": 61,
+  "tags": [
+   "SOLDADOS"
+  ],
+  "src": "soldados_id01_44x61.png"
+ },
+ {
+  "file": "soldado_02_40x50.png",
+  "seccion": "SOLDADOS",
+  "sub": "soldado",
+  "idx": 2,
+  "w": 40,
+  "h": 50,
+  "tags": [
+   "SOLDADOS"
+  ],
+  "src": "soldados_id02_40x50.png"
+ },
+ {
+  "file": "soldado_03_36x45.png",
+  "seccion": "SOLDADOS",
+  "sub": "soldado",
+  "idx": 3,
+  "w": 36,
+  "h": 45,
+  "tags": [
+   "SOLDADOS"
+  ],
+  "src": "soldados_id03_36x45.png"
+ },
+ {
+  "file": "soldado_04_33x42.png",
+  "seccion": "SOLDADOS",
+  "sub": "soldado",
+  "idx": 4,
+  "w": 33,
+  "h": 42,
+  "tags": [
+   "SOLDADOS"
+  ],
+  "src": "soldados_id04_33x42.png"
+ },
+ {
+  "file": "terreno_00_208x26.png",
+  "seccion": "TERRENOS (TIRA REPETIBLE)",
+  "sub": "terreno",
+  "idx": 0,
+  "w": 208,
+  "h": 26,
+  "tags": [
+   "TERRENOS"
+  ],
+  "src": "terrenosrepetibles_id00_208x26.png"
+ },
+ {
+  "file": "terreno_01_208x26.png",
+  "seccion": "TERRENOS (TIRA REPETIBLE)",
+  "sub": "terreno",
+  "idx": 1,
+  "w": 208,
+  "h": 26,
+  "tags": [
+   "TERRENOS"
+  ],
+  "src": "terrenosrepetibles_id01_208x26.png"
+ },
+ {
+  "file": "terreno_02_208x24.png",
+  "seccion": "TERRENOS (TIRA REPETIBLE)",
+  "sub": "terreno",
+  "idx": 2,
+  "w": 208,
+  "h": 24,
+  "tags": [
+   "TERRENOS"
+  ],
+  "src": "terrenosrepetibles_id02_208x24.png"
+ },
+ {
+  "file": "trabajador_00_31x45.png",
+  "seccion": "TRABAJADORES (2)",
+  "sub": "trabajador",
+  "idx": 0,
+  "w": 31,
+  "h": 45,
+  "tags": [
+   "TRABAJADORES"
+  ],
+  "src": "trabajadores_2_id00_31x45.png"
+ },
+ {
+  "file": "trabajador_01_40x45.png",
+  "seccion": "TRABAJADORES (2)",
+  "sub": "trabajador",
+  "idx": 1,
+  "w": 40,
+  "h": 45,
+  "tags": [
+   "TRABAJADORES"
+  ],
+  "src": "trabajadores_2_id01_40x45.png"
+ },
+ {
+  "file": "trabajador_02_41x45.png",
+  "seccion": "TRABAJADORES (2)",
+  "sub": "trabajador",
+  "idx": 2,
+  "w": 41,
+  "h": 45,
+  "tags": [
+   "TRABAJADORES"
+  ],
+  "src": "trabajadores_2_id02_41x45.png"
+ },
+ {
+  "file": "trabajador_03_34x45.png",
+  "seccion": "TRABAJADORES (2)",
+  "sub": "trabajador",
+  "idx": 3,
+  "w": 34,
+  "h": 45,
+  "tags": [
+   "TRABAJADORES"
+  ],
+  "src": "trabajadores_2_id03_34x45.png"
+ },
+ {
+  "file": "trabajador_04_37x40.png",
+  "seccion": "TRABAJADORES (2)",
+  "sub": "trabajador",
+  "idx": 4,
+  "w": 37,
+  "h": 40,
+  "tags": [
+   "TRABAJADORES"
+  ],
+  "src": "trabajadores_2_id04_37x40.png"
+ },
+ {
+  "file": "trabajador_05_37x37.png",
+  "seccion": "TRABAJADORES (2)",
+  "sub": "trabajador",
+  "idx": 5,
+  "w": 37,
+  "h": 37,
+  "tags": [
+   "TRABAJADORES"
+  ],
+  "src": "trabajadores_2_id05_37x37.png"
+ },
+ {
+  "file": "trabajador_00_34x46.png",
+  "seccion": "TRABAJADORES",
+  "sub": "trabajador",
+  "idx": 0,
+  "w": 34,
+  "h": 46,
+  "tags": [
+   "TRABAJADORES"
+  ],
+  "src": "trabajadores_id00_34x46.png"
+ },
+ {
+  "file": "trabajador_01_31x45.png",
+  "seccion": "TRABAJADORES",
+  "sub": "trabajador",
+  "idx": 1,
+  "w": 31,
+  "h": 45,
+  "tags": [
+   "TRABAJADORES"
+  ],
+  "src": "trabajadores_id01_31x45.png"
+ },
+ {
+  "file": "trabajador_02_40x45.png",
+  "seccion": "TRABAJADORES",
+  "sub": "trabajador",
+  "idx": 2,
+  "w": 40,
+  "h": 45,
+  "tags": [
+   "TRABAJADORES"
+  ],
+  "src": "trabajadores_id02_40x45.png"
+ },
+ {
+  "file": "trabajador_03_41x45.png",
+  "seccion": "TRABAJADORES",
+  "sub": "trabajador",
+  "idx": 3,
+  "w": 41,
+  "h": 45,
+  "tags": [
+   "TRABAJADORES"
+  ],
+  "src": "trabajadores_id03_41x45.png"
+ },
+ {
+  "file": "trabajador_04_37x40.png",
+  "seccion": "TRABAJADORES",
+  "sub": "trabajador",
+  "idx": 4,
+  "w": 37,
+  "h": 40,
+  "tags": [
+   "TRABAJADORES"
+  ],
+  "src": "trabajadores_id04_37x40.png"
+ },
+ {
+  "file": "trabajador_05_37x37.png",
+  "seccion": "TRABAJADORES",
+  "sub": "trabajador",
+  "idx": 5,
+  "w": 37,
+  "h": 37,
+  "tags": [
+   "TRABAJADORES"
+  ],
+  "src": "trabajadores_id05_37x37.png"
+ }
+]

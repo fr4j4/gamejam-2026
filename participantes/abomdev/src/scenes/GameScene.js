@@ -10,8 +10,13 @@ const HIT_INVULN_MS = 500;
 const SPAWN_DELAY_MIN = 300;
 const DIFFICULTY_RAMP_MS = 12000;
 const BOSS_DELAY_MS = 150000;
+const BOSS_WARNING_MS = 2500;
 const ORBIT_HIT_RADIUS = 22;
 const ORBIT_HIT_COOLDOWN_MS = 300;
+const ENEMY_KNOCKBACK_SPEED = 220;
+const ENEMY_KNOCKBACK_MS = 150;
+const PLAYER_KNOCKBACK_SPEED = 260;
+const PLAYER_KNOCKBACK_MS = 150;
 
 const ENEMY_TYPES = {
   normal: { texture: 'enemy', color: 0xff5566, baseHp: 20, hpPerMin: 10, baseSpeed: 80, speedPerMin: 8, damage: 10 },
@@ -80,6 +85,7 @@ export default class GameScene extends Phaser.Scene {
     this.orbitOrbs = [];
     this.isBossAlive = false;
     this.currentBoss = null;
+    this.playerKnockbackUntil = 0;
 
     this.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
 
@@ -109,7 +115,7 @@ export default class GameScene extends Phaser.Scene {
     this.spawnTimer = this.time.addEvent({ delay: 1000, loop: true, callback: this.spawnEnemy, callbackScope: this });
     this.attackTimer = this.time.addEvent({ delay: this.stats.fireRate, loop: true, callback: this.fireAtNearest, callbackScope: this });
     this.difficultyTimer = this.time.addEvent({ delay: DIFFICULTY_RAMP_MS, loop: true, callback: this.rampDifficulty, callbackScope: this });
-    this.bossTimer = this.time.addEvent({ delay: BOSS_DELAY_MS, loop: true, callback: this.spawnBoss, callbackScope: this });
+    this.bossTimer = this.time.addEvent({ delay: BOSS_DELAY_MS, loop: true, callback: this.warnBoss, callbackScope: this });
     this.spawnTimer.paused = true;
     this.attackTimer.paused = true;
     this.difficultyTimer.paused = true;
@@ -299,16 +305,19 @@ export default class GameScene extends Phaser.Scene {
     const up = this.cursors.up.isDown || this.wasd.W.isDown;
     const down = this.cursors.down.isDown || this.wasd.S.isDown;
 
-    const dir = new Phaser.Math.Vector2((right ? 1 : 0) - (left ? 1 : 0), (down ? 1 : 0) - (up ? 1 : 0));
-    if (dir.lengthSq() > 0) {
-      dir.normalize().scale(this.stats.moveSpeed);
-      this.player.setVelocity(dir.x, dir.y);
-    } else {
-      this.player.setVelocity(0, 0);
+    if (time >= this.playerKnockbackUntil) {
+      const dir = new Phaser.Math.Vector2((right ? 1 : 0) - (left ? 1 : 0), (down ? 1 : 0) - (up ? 1 : 0));
+      if (dir.lengthSq() > 0) {
+        dir.normalize().scale(this.stats.moveSpeed);
+        this.player.setVelocity(dir.x, dir.y);
+      } else {
+        this.player.setVelocity(0, 0);
+      }
     }
 
     this.enemies.getChildren().forEach((e) => {
       if (!e.active) return;
+      if (time < (e.getData('knockbackUntil') || 0)) return;
       this.physics.moveToObject(e, this.player, e.getData('speed'));
     });
 
@@ -391,6 +400,25 @@ export default class GameScene extends Phaser.Scene {
     enemy.setData('hp', Math.round(type.baseHp + minutes * type.hpPerMin));
     enemy.setData('speed', Math.round(type.baseSpeed + minutes * type.speedPerMin));
     enemy.setData('damage', type.damage);
+  }
+
+  warnBoss() {
+    if (this.isGameOver || this.isLevelingUp || this.isBossAlive) return;
+
+    const warning = this.add.text(400, 300, '¡EL JEFE SE ACERCA!', {
+      fontFamily: 'monospace', fontSize: '28px', color: '#ff33aa',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(250);
+
+    this.tweens.add({
+      targets: warning,
+      alpha: 0.2,
+      duration: 300,
+      yoyo: true,
+      repeat: 3,
+      onComplete: () => warning.destroy(),
+    });
+
+    this.time.delayedCall(BOSS_WARNING_MS, () => this.spawnBoss());
   }
 
   spawnBoss() {
@@ -484,6 +512,13 @@ export default class GameScene extends Phaser.Scene {
       enemy.setData('hp', hp);
       enemy.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
       this.time.delayedCall(60, () => enemy.active && enemy.clearTint());
+
+      const push = new Phaser.Math.Vector2(enemy.x - this.player.x, enemy.y - this.player.y);
+      if (push.lengthSq() > 0) {
+        push.normalize().scale(ENEMY_KNOCKBACK_SPEED);
+        enemy.setVelocity(push.x, push.y);
+        enemy.setData('knockbackUntil', this.time.now + ENEMY_KNOCKBACK_MS);
+      }
     }
   }
 
@@ -527,6 +562,13 @@ export default class GameScene extends Phaser.Scene {
     this.cameras.main.shake(150, 0.008);
     this.player.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.time.delayedCall(80, () => this.player.active && this.player.clearTint());
+
+    const push = new Phaser.Math.Vector2(this.player.x - enemy.x, this.player.y - enemy.y);
+    if (push.lengthSq() > 0) {
+      push.normalize().scale(PLAYER_KNOCKBACK_SPEED);
+      this.player.setVelocity(push.x, push.y);
+      this.playerKnockbackUntil = now + PLAYER_KNOCKBACK_MS;
+    }
 
     if (this.stats.hp <= 0) {
       this.stats.hp = 0;

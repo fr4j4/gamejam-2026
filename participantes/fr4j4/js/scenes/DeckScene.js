@@ -18,6 +18,7 @@ class DeckScene extends Phaser.Scene {
 
   init(data) {
     this.mode = data.mode || null;
+    this.fromPicker = data.fromPicker || false;
   }
 
   create() {
@@ -37,12 +38,6 @@ class DeckScene extends Phaser.Scene {
     this.typeFilters = new Set();
     this.showOnlyInDeck = false;
     this.modalLayer = null;
-
-    const saved = JSON.parse(localStorage.getItem('deckstiny_deck') || '{}');
-    if (saved.classId) {
-      this.selectedClass = saved.classId;
-      this.activeSlot = saved.activeSlot || 0;
-    }
 
     this.L = this.isMobile
       ? { gridCols: 1, panelSide: 'bottom' }
@@ -184,7 +179,10 @@ class DeckScene extends Phaser.Scene {
       fontFamily: '"VT323"', fontSize: '11px', color: '#e0e0e0'
     }).setOrigin(0, 0.5));
 
-    VFX.switchButton(this, c, 60, this.H - 28, 80, 20, 'ATRAS', '#8892a0', () => this.scene.start('MenuScene'));
+    VFX.switchButton(this, c, 60, this.H - 28, 80, 20, 'ATRAS', '#8892a0', () => {
+      if (this.fromPicker) this.scene.start('DeckPickerScene', { mode: this.mode || 'test' });
+      else this.scene.start('MenuScene');
+    });
     VFX.switchButton(this, c, this.W - 80, this.H - 28, 120, 24, 'SELECCIONAR', selectedCls.colorHex, () => this.showStep(2));
   }
 
@@ -822,7 +820,7 @@ class DeckScene extends Phaser.Scene {
       }
       // Lift GUARDAR/PROBAR above the bottom navigation strip so nothing overlaps ATRAS/SIGUIENTE
       VFX.switchButton(this, c, leftW / 2 - 40, this.H - 52, 90, 24, 'GUARDAR', '#faba72', () => this.saveDeck());
-      VFX.switchButton(this, c, leftW / 2 + 70, this.H - 52, 70, 24, 'PROBAR', '#bdcd9c', () => { this.saveDeck(); this.scene.start('GameScene', { mode: 'test' }); });
+      VFX.switchButton(this, c, leftW / 2 + 70, this.H - 52, 70, 24, 'PROBAR', '#bdcd9c', () => { this.saveDeck(); this.scene.start('DeckPickerScene', { mode: 'test' }); });
 
       const listX = leftW + 24;
       const listW = this.W - listX - 8;
@@ -863,11 +861,6 @@ class DeckScene extends Phaser.Scene {
     const total = Object.values(this.currentCards).reduce((a, b) => a + b, 0);
     if (total < 5) { this.showToast('Minimo 5 cartas!'); return; }
     this.saveAllDecks();
-    localStorage.setItem('deckstiny_deck', JSON.stringify({
-      classId: this.selectedClass,
-      activeSlot: this.activeSlot,
-      cards: this.allDecks
-    }));
     this.dirty = false;
     this.showToast('Baraja guardada!');
   }

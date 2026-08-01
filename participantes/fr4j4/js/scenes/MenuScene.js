@@ -87,10 +87,10 @@ class MenuScene extends Phaser.Scene {
   createButtons() {
     const W = 640;
     const btnData = [
-      { label: 'Online', scene: 'GameScene', mode: 'online', color: '#ff6b6b' },
-      { label: 'VS IA', scene: 'GameScene', mode: 'ai', color: '#faba72' },
+      { label: 'Online', scene: 'DeckPickerScene', mode: 'online', color: '#ff6b6b' },
+      { label: 'VS IA', scene: 'DeckPickerScene', mode: 'ai', color: '#faba72' },
       { label: 'Deckbuilder', scene: 'DeckScene', mode: null, color: '#9fcafd' },
-      { label: 'Practice', scene: 'GameScene', mode: 'test', color: '#bdcd9c' }
+      { label: 'Practice', scene: 'DeckPickerScene', mode: 'test', color: '#bdcd9c' }
     ];
 
     const startY = 188;
@@ -100,28 +100,7 @@ class MenuScene extends Phaser.Scene {
       const group = this.createInteractiveButton(W / 2, y, 320, 38, btn.label, btn.color, () => {
         ensureStarterDecks();
         let targetScene = btn.scene;
-        let targetMode = btn.mode;
-        let payload = targetMode ? { mode: targetMode } : {};
-
-        if (btn.mode) {
-          const decks = JSON.parse(localStorage.getItem('deckstiny_decks') || '{}');
-          if (btn.mode === 'test') {
-            const hasAny = CLASSES.some(cls => (decks[cls.id] || []).length > 0);
-            if (!hasAny) {
-              targetScene = 'DeckScene';
-              payload = {};
-              this.showToast('NO TIENES BARAJAS — CREA UNA PRIMERO');
-            }
-          } else {
-            const saved = JSON.parse(localStorage.getItem('deckstiny_deck') || '{}');
-            const targetClass = saved.classId || 'mago';
-            if (!(decks[targetClass] || []).length) {
-              targetScene = 'DeckScene';
-              payload = {};
-              this.showToast('NO TIENES BARAJA PARA ESA CLASE — CREA UNA PRIMERO');
-            }
-          }
-        }
+        let payload = btn.mode ? { mode: btn.mode } : {};
 
         this.cameras.main.fadeOut(200, 13, 13, 26);
         this.time.delayedCall(220, () => {

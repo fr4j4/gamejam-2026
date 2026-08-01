@@ -6,6 +6,8 @@ class GameScene extends Phaser.Scene {
 
   init(data) {
     this.mode = data.mode || 'test';
+    this.classId = data.classId || null;
+    this.slotIndex = data.slotIndex || 0;
     this.endTurnBtn = null;
     this.menuBtn = null;
     this.handCards = [];
@@ -22,29 +24,8 @@ class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#0d0d1a');
 
     ensureStarterDecks();
-    const saved = JSON.parse(localStorage.getItem('deckstiny_deck') || '{}');
-    if (!saved.classId) {
-      if (this.mode === 'test') {
-        const mago = ALL_CARDS.mago || [];
-        const firstMago = mago[0];
-        if (firstMago) {
-          const decks = JSON.parse(localStorage.getItem('deckstiny_decks') || '{}');
-          const slot = (decks.mago && decks.mago[0]) ? decks.mago[0] : { name: 'INICIAL', cards: getStarterDeck('mago').cards };
-          if (!decks.mago || !decks.mago[0]) {
-            decks.mago = [slot];
-            localStorage.setItem('deckstiny_decks', JSON.stringify(decks));
-          }
-          localStorage.setItem('deckstiny_deck', JSON.stringify({
-            classId: 'mago',
-            activeSlot: 0,
-            cards: decks
-          }));
-        }
-      }
-    }
 
-    const savedFinal = JSON.parse(localStorage.getItem('deckstiny_deck') || '{}');
-    if (!savedFinal.classId) {
+    if (!this.classId) {
       this.add.text(W / 2, H / 2, 'NO TIENES BARAJA — VUELVE AL MENÚ', {
         fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#ff6b6b'
       }).setOrigin(0.5);
@@ -52,10 +33,10 @@ class GameScene extends Phaser.Scene {
       return;
     }
 
-    this.cls = CLASSES.find(c => c.id === savedFinal.classId);
-    this.selectedClass = savedFinal.classId;
+    this.cls = CLASSES.find(c => c.id === this.classId);
+    this.selectedClass = this.classId;
     this.selectedAttacker = null;
-    this.buildDeck(savedFinal);
+    this.buildDeck();
     this.initState();
     this.renderLayout();
     CRT.addScanlines(this);
@@ -69,14 +50,12 @@ class GameScene extends Phaser.Scene {
     // per-card input listeners are destroyed with their zones
   }
 
-  buildDeck(saved) {
+  buildDeck() {
     const cardList = [];
-    const classCards = ALL_CARDS[saved.classId] || [];
-    // Cargar baraja desde el slot activo
-    const allDecks = saved.cards || {};
-    const classDecks = allDecks[saved.classId] || [];
-    const activeSlot = saved.activeSlot || 0;
-    const slotData = classDecks[activeSlot] || { cards: {} };
+    const classCards = ALL_CARDS[this.classId] || [];
+    const allDecks = JSON.parse(localStorage.getItem('deckstiny_decks') || '{}');
+    const classDecks = allDecks[this.classId] || [];
+    const slotData = classDecks[this.slotIndex] || { cards: {} };
     const deckData = slotData.cards || {};
     for (const [id, count] of Object.entries(deckData)) {
       const card = classCards.find(c => c.id === id);
@@ -838,7 +817,7 @@ class GameScene extends Phaser.Scene {
     this.hideCreatureCard();
     this.tweens.killTweensOf(this.handContainer.list);
     this.collapseHand();
-    this.handHotZones.forEach(z => z.disableInteractive());
+    this.handZones.forEach(z => z.disableInteractive());
 
     const W = 640, H = 360;
     const layer = this.add.container(0, 0).setDepth(5000);
@@ -877,7 +856,7 @@ class GameScene extends Phaser.Scene {
     if (!this.menuOpen) return;
     this.menuOpen = false;
     if (this.menuOverlay) { this.menuOverlay.destroy(true); this.menuOverlay = null; }
-    this.handHotZones.forEach((z, i) => {
+    this.handZones.forEach((z, i) => {
       const entry = this.handCards[i];
       if (entry && entry.canPlay) z.setInteractive({ useHandCursor: true });
     });

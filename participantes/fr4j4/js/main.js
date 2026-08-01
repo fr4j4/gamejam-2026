@@ -17,7 +17,7 @@ const config = {
   },
   pixelArt: true,
   backgroundColor: '#0d0d1a',
-  scene: [BootScene, MenuScene, DeckScene, GameScene, GameOverScene]
+  scene: [BootScene, MenuScene, DeckPickerScene, DeckScene, GameScene, GameOverScene]
 };
 
 const game = new Phaser.Game(config);

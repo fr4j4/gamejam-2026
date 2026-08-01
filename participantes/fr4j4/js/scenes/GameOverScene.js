@@ -43,7 +43,7 @@ class GameOverScene extends Phaser.Scene {
 
     if (this.result.mode !== 'test') {
       VFX.switchButton(this, this, W / 2, H - 16, 160, 28, 'REVANCHA', '#9fcafd', () => {
-        this.scene.start('GameScene', { mode: this.result.mode });
+        this.scene.start('DeckPickerScene', { mode: this.result.mode });
       });
     }
 

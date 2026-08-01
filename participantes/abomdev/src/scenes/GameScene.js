@@ -37,6 +37,12 @@ const BEST_TIME_KEY = 'survivorsBestTimeMs';
 const MAX_ENEMIES = 150;
 const MAX_SPAWN_PER_TICK = 6;
 
+const STAGE_THEMES = {
+  1: { fill: 0x1a1a2e, line: 0x2a2a4e, bg: '#111122' },
+  2: { fill: 0x2a1414, line: 0x4e2424, bg: '#1a0e0e' },
+  3: { fill: 0x1a0e2a, line: 0x36204e, bg: '#120a1a' },
+};
+
 const ENEMY_TYPES = {
   normal: { texture: 'enemy', color: 0xff5566, baseHp: 20, hpPerMin: 10, baseSpeed: 80, speedPerMin: 8, damage: 10, xpValue: 1 },
   fast: { texture: 'enemyFast', color: 0xffaa33, baseHp: 8, hpPerMin: 4, baseSpeed: 160, speedPerMin: 12, damage: 6, xpValue: 1 },
@@ -236,8 +242,8 @@ export default class GameScene extends Phaser.Scene {
 
     this.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
 
-    const grid = this.add.grid(WORLD_SIZE / 2, WORLD_SIZE / 2, WORLD_SIZE, WORLD_SIZE, 64, 64, 0x1a1a2e, 1, 0x2a2a4e, 1);
-    grid.setDepth(-1);
+    this.worldGrid = this.add.grid(WORLD_SIZE / 2, WORLD_SIZE / 2, WORLD_SIZE, WORLD_SIZE, 64, 64, 0x1a1a2e, 1, 0x2a2a4e, 1);
+    this.worldGrid.setDepth(-1);
 
     this.generateTextures();
 
@@ -1162,6 +1168,13 @@ export default class GameScene extends Phaser.Scene {
     this.levelUp();
   }
 
+  applyStageTheme() {
+    const theme = STAGE_THEMES[this.stage] || STAGE_THEMES[1];
+    this.worldGrid.setFillStyle(theme.fill, 1);
+    this.worldGrid.setStrokeStyle(1, theme.line, 1);
+    this.cameras.main.setBackgroundColor(theme.bg);
+  }
+
   enterPortal() {
     this.stage += 1;
     this.stageMultiplier *= STAGE_PORTAL_MULTIPLIER;
@@ -1176,6 +1189,7 @@ export default class GameScene extends Phaser.Scene {
     this.player.setPosition(WORLD_SIZE / 2, WORLD_SIZE / 2);
     this.player.setVelocity(0, 0);
     this.cameras.main.centerOn(this.player.x, this.player.y);
+    this.applyStageTheme();
     // No destruyo un jefe si justo hay uno vivo (pudo aparecer otro por el cronometro
     // mientras este portal seguia sin cruzarse) - solo despejo la oleada comun.
     this.enemies.getChildren().slice().forEach((e) => {

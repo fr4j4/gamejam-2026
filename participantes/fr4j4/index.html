@@ -24,6 +24,7 @@ canvas {
 <div id="game-container"></div>
 <script src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js"></script>
 <script src="js/phaser-compat.js"></script>
+<script src="js/constants.js"></script>
 <script src="js/data/classes.js"></script>
 <script src="js/data/cards.js"></script>
 <script src="js/ui/card.js"></script>
@@ -35,44 +36,5 @@ canvas {
 <script src="js/scenes/GameScene.js"></script>
 <script src="js/scenes/GameOverScene.js"></script>
 <script src="js/main.js"></script>
-<script>
-(function() {
-  const params = new URLSearchParams(window.location.search);
-  const targetStep = parseInt(params.get('step') || '0');
-  const autoFill = params.get('autofill') === '1';
-  const openModal = params.get('modal') === '1';
-  const scrollTo = parseInt(params.get('scroll') || '0');
-  if (!targetStep) return;
-  function start() {
-    if (typeof game === 'undefined') { setTimeout(start, 100); return; }
-    setTimeout(() => {
-      if (autoFill) {
-        const cards = ALL_CARDS.mago || [];
-        const deck = {};
-        cards.forEach(c => deck[c.id] = c.maxCopies);
-        const slots = [{ name: 'TEST DECK', cards: deck }];
-        localStorage.setItem('deckstiny_decks', JSON.stringify({ mago: slots }));
-        localStorage.setItem('deckstiny_deck', JSON.stringify({ classId: 'mago', activeSlot: 0, cards: { mago: slots } }));
-      }
-      game.scene.start('DeckScene');
-      setTimeout(() => {
-        const scene = game.scene.getScene('DeckScene');
-        if (!scene) return;
-        scene.showStep(targetStep);
-        if (autoFill && targetStep === 3) scene.quickFill();
-        if (openModal && targetStep === 3) {
-          const firstCard = (ALL_CARDS.mago || [])[0];
-          if (firstCard) scene.openCardModal(firstCard);
-        }
-        if (scrollTo > 0 && targetStep === 3) {
-          scene.scrollCardGrid(scrollTo);
-        }
-      }, 200);
-    }, 500);
-  }
-  if (document.readyState === 'complete') start();
-  else window.addEventListener('load', start);
-})();
-</script>
 </body>
 </html>

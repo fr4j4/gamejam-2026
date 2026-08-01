@@ -17,18 +17,18 @@ class GameScene extends Phaser.Scene {
   }
 
   create() {
-    const W = 640;
-    const H = 360;
+    const W = GAME_W;
+    const H = GAME_H;
     this.cameras.main.setBackgroundColor('#0d0d1a');
 
     ensureStarterDecks();
-    const saved = JSON.parse(localStorage.getItem('deckstiny_deck') || '{}');
+    const saved = safeJSONParse(localStorage.getItem('deckstiny_deck'), {});
     if (!saved.classId) {
       if (this.mode === 'test') {
         const mago = ALL_CARDS.mago || [];
         const firstMago = mago[0];
         if (firstMago) {
-          const decks = JSON.parse(localStorage.getItem('deckstiny_decks') || '{}');
+          const decks = safeJSONParse(localStorage.getItem('deckstiny_decks'), {});
           const slot = (decks.mago && decks.mago[0]) ? decks.mago[0] : { name: 'INICIAL', cards: getStarterDeck('mago').cards };
           if (!decks.mago || !decks.mago[0]) {
             decks.mago = [slot];
@@ -43,7 +43,7 @@ class GameScene extends Phaser.Scene {
       }
     }
 
-    const savedFinal = JSON.parse(localStorage.getItem('deckstiny_deck') || '{}');
+    const savedFinal = safeJSONParse(localStorage.getItem('deckstiny_deck'), {});
     if (!savedFinal.classId) {
       this.add.text(W / 2, H / 2, 'NO TIENES BARAJA — VUELVE AL MENÚ', {
         fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#ff6b6b'
@@ -108,13 +108,13 @@ class GameScene extends Phaser.Scene {
       heroUsed: false, cardsPlayed: 0, costReduction: 0, isDummy: false
     };
 
-    this.player.hand = this.player.deck.splice(0, 4);
-    if (!isTest) this.opponent.hand = this.opponent.deck.splice(0, 4);
+    this.player.hand = this.player.deck.splice(0, STARTING_HAND_SIZE);
+    if (!isTest) this.opponent.hand = this.opponent.deck.splice(0, OPPONENT_STARTING_HAND_SIZE);
   }
 
   // ===== LAYOUT =====
   renderLayout() {
-    const W = 640, H = 360;
+    const W = GAME_W, H = GAME_H;
     const clsColor = this.cls ? this.cls.colorHex : '#9fcafd';
 
     VFX.stars(this, this, 20);
@@ -170,7 +170,7 @@ class GameScene extends Phaser.Scene {
   renderAll() { this.renderInfo(); this.renderBoards(); this.renderHand(); }
 
   renderInfo() {
-    const W = 640;
+    const W = GAME_W;
     const p = this.player, e = this.opponent;
     this.pInfoContainer.removeAll(true);
     const pCls = CLASSES.find(c => c.id === p.classId) || { name: 'Tu', icon: '🧙', colorHex: '#9fcafd' };
@@ -316,20 +316,20 @@ class GameScene extends Phaser.Scene {
     this.handCards = [];
     this.handZones = [];
     this.handFocused = -1;
-    const W = 640;
+    const W = GAME_W;
     const p = this.player;
     const cardW = 88;
     const cardH = 120;
-    const compactY = 380;
+    const compactY = GAME_H + 20;
     const focusY = 220;
     const fanGap = -60;
-    const count = Math.min(p.hand.length, 8);
+    const count = Math.min(p.hand.length, MAX_HAND);
     const totalW = cardW + (count - 1) * (cardW + fanGap);
     const startX = (W - totalW) / 2 + cardW / 2;
     const clsColor = this.cls.colorHex;
 
     p.hand.forEach((card, i) => {
-      if (i >= 8) return;
+      if (i >= MAX_HAND) return;
       const x = startX + i * (cardW + fanGap);
       const cost = Math.max(0, card.cost - (p.costReduction || 0));
       const canPlay = this.state.phase === 'player' && cost <= p.mana;
@@ -431,8 +431,8 @@ class GameScene extends Phaser.Scene {
     }
     if (this.checkGameOver()) return;
     for (let i = 0; i < 2; i++) this.drawCard('player');
-    if (p.hand.length > 8) p.hand = p.hand.slice(0, 8);
-    p.maxMana = Math.min(p.maxMana + 1, 7);
+    if (p.hand.length > MAX_HAND) p.hand = p.hand.slice(0, MAX_HAND);
+    p.maxMana = Math.min(p.maxMana + 1, MAX_MANA);
     p.mana = p.maxMana;
     p.heroUsed = false; p.cardsPlayed = 0; p.costReduction = 0;
     p.board.forEach(c => { if (!c.justSummoned) c.canAttack = true; c.justSummoned = false; });
@@ -448,10 +448,10 @@ class GameScene extends Phaser.Scene {
 
   startTimer() {
     if (this.state.timerEvent) this.state.timerEvent.remove();
-    this.state.timer = 60;
-    this.timerText.setText('60s');
+    this.state.timer = TURN_SECONDS;
+    this.timerText.setText(`${TURN_SECONDS}s`);
     this.state.timerEvent = this.time.addEvent({
-      delay: 1000, repeat: 59,
+      delay: 1000, repeat: TURN_SECONDS - 1,
       callback: () => {
         this.state.timer--;
         this.timerText.setText(`${this.state.timer}s`);
@@ -485,8 +485,8 @@ class GameScene extends Phaser.Scene {
     if (this.state.gameOver) return;
     const e = this.opponent;
     this.drawCard('opponent');
-    if (e.hand.length > 8) e.hand = e.hand.slice(0, 8);
-    e.maxMana = Math.min(e.maxMana + 1, 7);
+    if (e.hand.length > MAX_HAND) e.hand = e.hand.slice(0, MAX_HAND);
+    e.maxMana = Math.min(e.maxMana + 1, MAX_MANA);
     e.mana = e.maxMana; e.heroUsed = false; e.cardsPlayed = 0;
     e.board.forEach(c => { if (!c.justSummoned) c.canAttack = true; c.justSummoned = false; });
     if (e.venom > 0) { this.applyDamage('opponent', e.venom); e.venom = Math.max(0, e.venom - 1); }
@@ -580,7 +580,7 @@ class GameScene extends Phaser.Scene {
         case 'venom': enemy.venom += eff.amount; break;
         case 'inspiration': who.inspiration += eff.amount; break;
         case 'summon':
-          if (who.board.length < 4) {
+          if (who.board.length < MAX_BOARD) {
             who.board.push({
               uid: Math.random().toString(36).slice(2, 8), cardId: card.id,
               name: card.name.replace('Invocar ', ''),
@@ -716,7 +716,7 @@ class GameScene extends Phaser.Scene {
     switch (cls.id) {
       case 'mago': this.applyDamage(isPlayer ? 'opponent' : 'player', 2); break;
       case 'necromancer':
-        if (who.board.length < 4)
+        if (who.board.length < MAX_BOARD)
           who.board.push({ uid: Math.random().toString(36).slice(2,8), cardId: 'n_esqueleto', name: 'Esqueleto', atk: 1, hp: 1, maxHp: 1, canAttack: false, justSummoned: true });
         break;
       case 'guerrero':
@@ -838,7 +838,7 @@ class GameScene extends Phaser.Scene {
     this.hideCreatureCard();
     this.tweens.killTweensOf(this.handContainer.list);
     this.collapseHand();
-    this.handHotZones.forEach(z => z.disableInteractive());
+    this.handZones.forEach(z => z.disableInteractive());
 
     const W = 640, H = 360;
     const layer = this.add.container(0, 0).setDepth(5000);
@@ -857,27 +857,27 @@ class GameScene extends Phaser.Scene {
     const continuar = this.add.rectangle(W / 2, H / 2 - 10, 160, 26, 0x16213e)
       .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#bdcd9c').color)
       .setInteractive({ useHandCursor: true });
-    this.add.text(W / 2, H / 2 - 10, 'CONTINUAR', {
+    const continuarText = this.add.text(W / 2, H / 2 - 10, 'CONTINUAR', {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#bdcd9c'
     }).setOrigin(0.5);
     continuar.on('pointerdown', () => this.closeMenu());
-    layer.add(continuar);
+    layer.add([continuar, continuarText]);
 
     const rendirse = this.add.rectangle(W / 2, H / 2 + 30, 160, 26, 0x16213e)
       .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#ff6b6b').color)
       .setInteractive({ useHandCursor: true });
-    this.add.text(W / 2, H / 2 + 30, 'RENDIRSE', {
+    const rendirseText = this.add.text(W / 2, H / 2 + 30, 'RENDIRSE', {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
     }).setOrigin(0.5);
     rendirse.on('pointerdown', () => this.surrender());
-    layer.add(rendirse);
+    layer.add([rendirse, rendirseText]);
   }
 
   closeMenu() {
     if (!this.menuOpen) return;
     this.menuOpen = false;
     if (this.menuOverlay) { this.menuOverlay.destroy(true); this.menuOverlay = null; }
-    this.handHotZones.forEach((z, i) => {
+    this.handZones.forEach((z, i) => {
       const entry = this.handCards[i];
       if (entry && entry.canPlay) z.setInteractive({ useHandCursor: true });
     });

@@ -38,7 +38,7 @@ class DeckScene extends Phaser.Scene {
     this.showOnlyInDeck = false;
     this.modalLayer = null;
 
-    const saved = JSON.parse(localStorage.getItem('deckstiny_deck') || '{}');
+    const saved = safeJSONParse(localStorage.getItem('deckstiny_deck'), {});
     if (saved.classId) {
       this.selectedClass = saved.classId;
       this.activeSlot = saved.activeSlot || 0;
@@ -94,6 +94,7 @@ class DeckScene extends Phaser.Scene {
     });
     this.currentStep = n;
     this.stars = [];
+    this.clearModalLayer();
     if (n === 1) this.renderStep1();
     if (n === 2) this.renderStep2();
     if (n === 3) this.renderStep3();
@@ -318,13 +319,14 @@ class DeckScene extends Phaser.Scene {
     dragZone.on('pointerout', () => { dragStartY = null; });
 
     if (!this._slotWheelAdded) {
-      this.input.on('wheel', (pointer, gameObjects, dx, dy) => {
+      this._slotWheelHandler = (pointer, gameObjects, dx, dy) => {
         if (this.currentStep !== 2) return;
         if (pointer.x >= slotAreaX && pointer.x <= slotAreaX + slotAreaW &&
             pointer.y >= slotAreaY && pointer.y <= slotAreaY + slotAreaH) {
           this.scrollSlotGrid(dy * 0.3);
         }
-      });
+      };
+      this.input.on('wheel', this._slotWheelHandler);
       this._slotWheelAdded = true;
     }
   }
@@ -483,12 +485,17 @@ class DeckScene extends Phaser.Scene {
       dragZone.on('pointerup', () => { dragStartY = null; });
       dragZone.on('pointerout', () => { dragStartY = null; });
 
-      this.input.on('wheel', (pointer, gameObjects, dx, dy) => {
-        if (pointer.x >= gridAreaX && pointer.x <= gridAreaX + gridAreaW &&
-            pointer.y >= gridAreaY && pointer.y <= gridAreaY + gridAreaH) {
-          this.scrollCardGrid(dy * 0.5);
-        }
-      });
+      if (!this._cardWheelAdded) {
+        this._cardWheelHandler = (pointer, gameObjects, dx, dy) => {
+          if (this.currentStep !== 3) return;
+          if (pointer.x >= gridAreaX && pointer.x <= gridAreaX + gridAreaW &&
+              pointer.y >= gridAreaY && pointer.y <= gridAreaY + gridAreaH) {
+            this.scrollCardGrid(dy * 0.5);
+          }
+        };
+        this.input.on('wheel', this._cardWheelHandler);
+        this._cardWheelAdded = true;
+      }
     } else {
       c.add(this.add.text(gridAreaX + gridAreaW / 2, gridAreaY + gridAreaH / 2,
         'Sin cartas.\nAjusta los filtros.', {
@@ -861,7 +868,7 @@ class DeckScene extends Phaser.Scene {
 
   saveDeck() {
     const total = Object.values(this.currentCards).reduce((a, b) => a + b, 0);
-    if (total < 5) { this.showToast('Minimo 5 cartas!'); return; }
+    if (total < MIN_DECK) { this.showToast(`Minimo ${MIN_DECK} cartas!`); return; }
     this.saveAllDecks();
     localStorage.setItem('deckstiny_deck', JSON.stringify({
       classId: this.selectedClass,
@@ -1017,9 +1024,9 @@ class DeckScene extends Phaser.Scene {
     m.add(bg);
 
     const actions = [
-      { label: 'RENOMBRAR', color: '#e0e0e0', cb: () => { this.closeModalLayer(); this.renameSlot(slotIndex); } },
-      { label: 'DUPLICAR', color: '#e0e0e0', cb: () => { this.closeModalLayer(); this.duplicateSlot(slotIndex); } },
-      { label: 'ELIMINAR', color: '#ff6b6b', cb: () => { this.closeModalLayer(); this.deleteSlot(slotIndex); } }
+      { label: 'RENOMBRAR', color: '#e0e0e0', cb: () => { this.clearModalLayer(); this.renameSlot(slotIndex); } },
+      { label: 'DUPLICAR', color: '#e0e0e0', cb: () => { this.clearModalLayer(); this.duplicateSlot(slotIndex); } },
+      { label: 'ELIMINAR', color: '#ff6b6b', cb: () => { this.clearModalLayer(); this.deleteSlot(slotIndex); } }
     ];
     actions.forEach((a, i) => {
       const by = my + 8 + i * 26;
@@ -1037,7 +1044,7 @@ class DeckScene extends Phaser.Scene {
     // Dismiss on outside tap
     const overlay = this.add.rectangle(this.W / 2, this.H / 2, this.W, this.H, 0x000000, 0.001)
       .setInteractive().setDepth(499);
-    overlay.on('pointerdown', () => { this.closeModalLayer(); overlay.destroy(); });
+    overlay.on('pointerdown', () => { this.clearModalLayer(); overlay.destroy(); });
   }
 
   createSlot() {

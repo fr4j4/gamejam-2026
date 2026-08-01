@@ -1,6 +1,18 @@
-// js/phaser-compat.js — Compat layer for Phaser 3 → 4 migration
-// Re-exposes Phaser 3 APIs that Phaser 4 moved or renamed.
-// Use this in scenes and UI modules instead of touching every file.
+// js/phaser-compat.js — Compatibilidad entre Phaser 3 y Phaser 4
+// =================================================================
+// El proyecto comenzó con Phaser 3.80.1 y se migró a Phaser 4.2.1.
+// Phaser 4 mantiene la mayoría de APIs, pero algunos nombres de
+// espacio o funciones auxiliares no se exponen en la build minificada
+// de jsDelivr. Este archivo polyfilla solo lo imprescindible para que
+// las escenas antiguas sigan funcionando sin reescribirlas.
+//
+// APIs cubiertas:
+//   - Phaser.Display.Color.HexStringToColor (conversión #hex -> int)
+//   - Phaser.Math.Between / FloatBetween (utilidades de rango)
+//   - Phaser.BlendModes (modos de mezcla para efectos glow)
+//
+// Nota: GeometryMask no se usa en producción; el scroll del deckbuilder
+// se implementa con clipping manual de containers.
 
 (function () {
   if (!window.Phaser) {
@@ -8,17 +20,17 @@
     return;
   }
 
-  // HexStringToColor: Phaser 3 used Phaser.Display.Color.HexStringToColor.
-  // Phaser 4: Color class is still exposed under Phaser.Display, but namespace
-  // may not be. Try to find it; fall back to a direct hex parser.
+  // --- Phaser.Display.Color.HexStringToColor ---
+  // Phaser 3 la exponía como Phaser.Display.Color.HexStringToColor.
+  // Phaser 4 sigue teniendo la clase Color, pero la build minificada de
+  // CDN no siempre expone el namespace Display. Buscamos candidatos y,
+  // si no hay ninguno, devolvemos una implementación mínima equivalente.
   function ensureDisplayColor() {
     if (window.Phaser.Display && window.Phaser.Display.Color) return window.Phaser.Display.Color;
-    // In v4 the Color class may be exported under a different path. Search.
     const candidates = ['Color', 'DisplayColor', 'Colors'];
     for (const c of candidates) {
       if (window.Phaser[c] && window.Phaser[c].HexStringToColor) return window.Phaser[c];
     }
-    // Last resort: provide a minimal implementation
     if (!window.Phaser.__CompatColor) {
       window.Phaser.__CompatColor = function () {};
       window.Phaser.__CompatColor.HexStringToColor = function (hex) {
@@ -40,8 +52,9 @@
   if (!window.Phaser.Display) window.Phaser.Display = {};
   if (!window.Phaser.Display.Color) window.Phaser.Display.Color = ColorMod;
 
-  // Phaser.Math.Between / FloatBetween — Phaser 4 still exports these.
-  // Wrap in case they were tree-shaken.
+  // --- Phaser.Math.Between / FloatBetween ---
+  // Phaser 4 todavía exporta estas funciones; este guard las recrea
+  // si alguna build futura no las incluyera.
   if (!window.Phaser.Math) window.Phaser.Math = {};
   if (typeof window.Phaser.Math.Between !== 'function') {
     window.Phaser.Math.Between = function (min, max) {
@@ -54,7 +67,9 @@
     };
   }
 
-  // Phaser.BlendModes — Phaser 4 still exports these (ADD, MULTIPLY, etc.)
+  // --- Phaser.BlendModes ---
+  // Usado por VFX.lcdPanel y glows. Phaser 4 usa los mismos valores
+  // internos, pero no siempre expone la constante global.
   if (!window.Phaser.BlendModes) {
     window.Phaser.BlendModes = {
       NORMAL: 0,
@@ -64,11 +79,4 @@
       ERASE: 4
     };
   }
-
-  // GeometryMask support — Phaser 4 only supports this in Canvas renderer.
-  // If we're using WebGL, we need to fall back to clipping via Container.setSize
-  // or using scrollFactor. For now, expose a no-op helper that throws if used
-  // on WebGL.
-  // (The DeckScene scrollable card grid uses createGeometryMask; we'll fix that
-  // in the next step by switching to a different approach.)
 })();

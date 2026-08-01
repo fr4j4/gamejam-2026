@@ -104,7 +104,7 @@ class MenuScene extends Phaser.Scene {
         let payload = targetMode ? { mode: targetMode } : {};
 
         if (btn.mode) {
-          const decks = JSON.parse(localStorage.getItem('deckstiny_decks') || '{}');
+          const decks = safeJSONParse(localStorage.getItem('deckstiny_decks'), {});
           if (btn.mode === 'test') {
             const hasAny = CLASSES.some(cls => (decks[cls.id] || []).length > 0);
             if (!hasAny) {
@@ -113,7 +113,7 @@ class MenuScene extends Phaser.Scene {
               this.showToast('NO TIENES BARAJAS — CREA UNA PRIMERO');
             }
           } else {
-            const saved = JSON.parse(localStorage.getItem('deckstiny_deck') || '{}');
+            const saved = safeJSONParse(localStorage.getItem('deckstiny_deck'), {});
             const targetClass = saved.classId || 'mago';
             if (!(decks[targetClass] || []).length) {
               targetScene = 'DeckScene';

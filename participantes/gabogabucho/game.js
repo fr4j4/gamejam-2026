@@ -190,12 +190,10 @@ class ApocryphaScene extends Phaser.Scene {
     // 0 = medianoche, 0.5 = mediodía
     this.dayFactor = Math.max(0, Math.sin(phase * Math.PI * 2));
 
-    // colores interpolados
+    // colores interpolados (solo objetos Shape; Graphics no tiene setFillStyle en v4)
     this.skyHigh.setFillStyle(mixColor(PAL.skyHighN, PAL.skyHighD, this.dayFactor));
     this.skyMid.setFillStyle(mixColor(PAL.skyMidN, PAL.skyMidD, this.dayFactor));
     this.horizon.setFillStyle(mixColor(PAL.horizonN, PAL.horizonD, this.dayFactor));
-    this.mountains.setFillStyle(mixColor(PAL.mtnN, PAL.mtnD, this.dayFactor));
-    this.grove.setFillStyle(mixColor(PAL.groveN, PAL.groveD, this.dayFactor));
     this.ground.setFillStyle(mixColor(PAL.groundN, PAL.groundD, this.dayFactor));
     this.front.setFillStyle(mixColor(PAL.frontN, PAL.frontD, this.dayFactor));
 

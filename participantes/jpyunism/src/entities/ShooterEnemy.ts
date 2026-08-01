@@ -54,17 +54,20 @@ export class ShooterEnemy extends Enemy {
     const vy = Math.sin(angle) * 200;
 
     const projectile = this.scene.add.circle(this.x, this.y, 5, 0xffff00);
-    this.scene.physics.add.existing(projectile);
+
+    // Add to the enemy projectiles group FIRST so the group owns the body.
+    // Setting velocity after group.add() ensures the group doesn't reset it.
+    const group = this.scene.data.get("enemyProjectiles") as Phaser.Physics.Arcade.Group | undefined;
+    if (group) {
+      group.add(projectile);
+    } else {
+      this.scene.physics.add.existing(projectile);
+    }
+
     const body = projectile.body as Phaser.Physics.Arcade.Body;
     body.setVelocity(vx, vy);
     body.setCollideWorldBounds(true);
     body.onWorldBounds = true;
-
-    // Add to enemy projectiles group so GameScene can detect player hits
-    const group = this.scene.data.get("enemyProjectiles") as Phaser.Physics.Arcade.Group | undefined;
-    if (group) {
-      group.add(projectile);
-    }
 
     projectile.once("worldbounds", () => {
       projectile.destroy();

@@ -49,6 +49,11 @@ export class GameOverScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
+    // Hard-stop any music still playing on entry — spec mandates silence
+    // on the game-over screen. No fade; battle audio disappears the
+    // moment this scene comes up.
+    this.sound.stopAll();
+
     // Title
     const title = this.add
       .text(width / 2, 100, "GAME OVER", {

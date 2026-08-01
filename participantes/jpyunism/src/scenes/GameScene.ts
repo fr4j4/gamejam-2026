@@ -12,6 +12,16 @@ import { WaveManager } from "../systems/WaveManager";
 import { LevelUpManager } from "../systems/LevelUpManager";
 import { MetaProgress, applyMetaBonuses } from "../store/MetaProgress";
 import { HUD } from "../ui/HUD";
+import { AudioManager } from "../audio/AudioManager";
+import { SettingsPanel } from "../ui/SettingsPanel";
+
+/** Battle-track pool. Keys are mirrored in the preload() loader below. */
+const BATTLE_TRACK_KEYS = [
+  "battle-1",
+  "battle-2",
+  "battle-3",
+  "battle-4",
+] as const;
 
 export class GameScene extends Phaser.Scene {
   private player!: Player;
@@ -27,9 +37,13 @@ export class GameScene extends Phaser.Scene {
   private waveManager!: WaveManager;
   private levelUpManager!: LevelUpManager;
   private hud!: HUD;
-  private pauseLabel: Phaser.GameObjects.Text | null = null;
+  private pauseOverlay: Phaser.GameObjects.Container | null = null;
   private isPaused: boolean = false;
   private runCoins: number = 0;
+  /** Per-scene audio wrapper. Owns the active battle-music BaseSound. */
+  private audio!: AudioManager;
+  /** Settings overlay. Created lazily on first pause. */
+  private settingsPanel: SettingsPanel | null = null;
   /**
    * Weapon IDs chosen by the player in MenuScene. Defaults to Plasma + Pulse
    * if MenuScene didn't pass any (e.g. restart from GameOverScene with no
@@ -45,6 +59,18 @@ export class GameScene extends Phaser.Scene {
 
   constructor() {
     super("GameScene");
+  }
+
+  /**
+   * Preload battle tracks. Each entry maps to `assets/music/neon_drift_battle_N.mp3`.
+   * All four are queued up-front so the random pick below never blocks on
+   * a fresh load.
+   */
+  preload(): void {
+    for (let i = 0; i < BATTLE_TRACK_KEYS.length; i++) {
+      const key = BATTLE_TRACK_KEYS[i];
+      this.load.audio(key, `assets/music/neon_drift_battle_${i + 1}.mp3`);
+    }
   }
 
   /**
@@ -123,6 +149,15 @@ export class GameScene extends Phaser.Scene {
 
     // Camera follows the player so the arena feels bigger than the viewport.
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+
+    // Battle music — randomly pick one track per run. AudioManager's
+    // `crossFadeTo` fades out whatever was playing (e.g. menu music) and
+    // fades the new track in over 1000 ms.
+    this.audio = new AudioManager(this);
+    const pick = BATTLE_TRACK_KEYS[
+      Math.floor(Math.random() * BATTLE_TRACK_KEYS.length)
+    ];
+    this.audio.crossFadeTo(pick, { loop: true, fadeInMs: 1000 });
 
     // Enemy group
     this.enemies = this.physics.add.group();
@@ -472,25 +507,58 @@ export class GameScene extends Phaser.Scene {
       this.time.paused = false;
       this.anims.paused = false;
       this.physics.world.isPaused = false;
-      if (this.pauseLabel) {
-        this.pauseLabel.destroy();
-        this.pauseLabel = null;
+      if (this.pauseOverlay) {
+        this.pauseOverlay.destroy(true);
+        this.pauseOverlay = null;
+      }
+      if (this.settingsPanel) {
+        this.settingsPanel.hide();
       }
     } else {
       this.isPaused = true;
       this.time.paused = true;
       this.anims.paused = true;
       this.physics.world.isPaused = true;
-      this.pauseLabel = this.add
-        .text(this.scale.width / 2, this.scale.height / 2, "PAUSED\nPress ESC to resume", {
+
+      // Build a container so the PAUSED text and the SettingsPanel share
+      // one depth and one scroll factor. Container sits above the HUD.
+      const overlay = this.add.container(0, 0);
+      overlay.setDepth(2000);
+      overlay.setScrollFactor(0);
+
+      const { width, height } = this.scale;
+
+      // Semi-transparent backdrop to dim the scene while paused.
+      const backdrop = this.add.rectangle(
+        width / 2,
+        height / 2,
+        width,
+        height,
+        0x000000,
+        0.55,
+      );
+      backdrop.setScrollFactor(0);
+      overlay.add(backdrop);
+
+      const pauseText = this.add
+        .text(width / 2, height / 2 - 130, "PAUSED\nPress ESC to resume", {
           fontFamily: "monospace",
           fontSize: "32px",
           color: "#00ffff",
           align: "center",
         })
         .setOrigin(0.5)
-        .setScrollFactor(0)
-        .setDepth(2000);
+        .setScrollFactor(0);
+      overlay.add(pauseText);
+
+      this.pauseOverlay = overlay;
+
+      // Mount the settings panel — it lives inside the pause overlay's
+      // visual hierarchy so it shares the depth/scale. ESC closes both.
+      if (!this.settingsPanel) {
+        this.settingsPanel = new SettingsPanel(this, this.audio);
+      }
+      this.settingsPanel.show();
     }
   }
 

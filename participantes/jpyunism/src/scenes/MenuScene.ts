@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import { MetaProgress } from "../store/MetaProgress";
+import { AudioManager } from "../audio/AudioManager";
+import { SettingsPanel } from "../ui/SettingsPanel";
 
 /**
  * Catalog of weapons the player can pick from in the menu. Keep the IDs in
@@ -67,19 +69,73 @@ export class MenuScene extends Phaser.Scene {
   private startHint!: Phaser.GameObjects.Text;
   private cardsByWeaponId: Map<string, WeaponCardRefs> = new Map();
 
+  /** Per-scene audio wrapper. Owns the menu-music BaseSound. */
+  private audio!: AudioManager;
+  /** Settings overlay. Created lazily on first click. */
+  private settingsPanel: SettingsPanel | null = null;
+
   constructor() {
     super("MenuScene");
   }
 
+  /**
+   * Preload runs before create(). The menu track is loaded here so it
+   * queues behind any menu-scene UI assets. Phaser caches by key, so a
+   * re-enter in the same session is a no-op.
+   */
+  preload(): void {
+    this.load.audio("menu-music", "assets/music/neon_drift_menu.mp3");
+  }
+
   create(): void {
     const { width, height } = this.scale;
+
+    // Background music — starts on first user interaction (gated by
+    // `this.sound.locked` inside AudioManager). When the player returns to
+    // the menu from GameOverScene, battle music was already hard-stopped,
+    // so a 1000 ms fade-in here gives a smooth re-entry without needing a
+    // full cross-fade.
+    this.audio = new AudioManager(this);
+    this.audio.play("menu-music", { loop: true, fadeInMs: 1000 });
 
     this.drawTitle(width, height);
     this.drawWeaponRow(width, height);
     this.drawInstruction(width, height);
     this.drawStartHint(width, height);
     this.drawTotalCoins(width, height);
+    this.drawSettingsButton(width, height);
     this.bindInput();
+  }
+
+  private drawSettingsButton(width: number, height: number): void {
+    const btn = this.add
+      .text(width - 90, height - 30, "[ SETTINGS ]", {
+        fontFamily: "monospace",
+        fontSize: "14px",
+        color: "#00ffff",
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    btn.on("pointerover", () => btn.setColor("#66ddff"));
+    btn.on("pointerout", () => btn.setColor("#00ffff"));
+    btn.on("pointerdown", () => this.openSettings());
+  }
+
+  private openSettings(): void {
+    if (this.settingsPanel && this.settingsPanel.isVisible()) {
+      return;
+    }
+    if (!this.settingsPanel) {
+      this.settingsPanel = new SettingsPanel(this, this.audio);
+    }
+    this.settingsPanel.show();
+  }
+
+  private closeSettings(): void {
+    if (this.settingsPanel) {
+      this.settingsPanel.hide();
+    }
   }
 
   private drawTitle(width: number, height: number): void {
@@ -237,6 +293,12 @@ export class MenuScene extends Phaser.Scene {
   private bindInput(): void {
     this.input.keyboard?.on("keydown-ENTER", () => {
       this.tryStartRun();
+    });
+    // ESC closes the settings overlay if it's open.
+    this.input.keyboard?.on("keydown-ESC", () => {
+      if (this.settingsPanel && this.settingsPanel.isVisible()) {
+        this.closeSettings();
+      }
     });
   }
 

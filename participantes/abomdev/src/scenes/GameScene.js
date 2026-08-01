@@ -9,7 +9,9 @@ const PROJECTILE_LIFETIME = 2000;
 const HIT_INVULN_MS = 500;
 const SPAWN_DELAY_MIN = 300;
 const DIFFICULTY_RAMP_MS = 12000;
-const BOSS_DELAY_MS = 150000;
+const BOSS_COUNTDOWN_MS = 300000;
+const BOSS_FIGHT_LIMIT_MS = 60000;
+const BOSS_OVERSTAY_MULTIPLIER = 1.5;
 const BOSS_WARNING_MS = 2500;
 const ORBIT_HIT_RADIUS = 22;
 const ORBIT_HIT_COOLDOWN_MS = 300;
@@ -30,7 +32,7 @@ const CHEST_DELAY_MS = 25000;
 const CHEST_TRIGGER_RADIUS = 36;
 const SHIELD_REGEN_DELAY_MS = 4000;
 const DODGE_CAP = 0.6;
-const VICTORY_STAGE = 6;
+const VICTORY_STAGE = 3;
 const BEST_TIME_KEY = 'survivorsBestTimeMs';
 const MAX_ENEMIES = 150;
 const MAX_SPAWN_PER_TICK = 6;
@@ -222,6 +224,8 @@ export default class GameScene extends Phaser.Scene {
     this.orbitOrbs = [];
     this.isBossAlive = false;
     this.currentBoss = null;
+    this.bossCountdown = BOSS_COUNTDOWN_MS;
+    this.bossFightCountdown = null;
     this.playerKnockbackUntil = 0;
     this.stage = 1;
     this.stageMultiplier = 1;
@@ -264,12 +268,11 @@ export default class GameScene extends Phaser.Scene {
     this.burstTimer = this.time.addEvent({ delay: 1500, loop: true, callback: this.fireBurst, callbackScope: this });
     this.novaTimer = this.time.addEvent({ delay: 2500, loop: true, callback: this.fireNova, callbackScope: this });
     this.difficultyTimer = this.time.addEvent({ delay: DIFFICULTY_RAMP_MS, loop: true, callback: this.rampDifficulty, callbackScope: this });
-    this.bossTimer = this.time.addEvent({ delay: BOSS_DELAY_MS, loop: true, callback: this.warnBoss, callbackScope: this });
     this.chestTimer = this.time.addEvent({ delay: CHEST_DELAY_MS, loop: true, callback: this.spawnChest, callbackScope: this });
 
     this.gameplayTimers = [
       this.spawnTimer, this.attackTimer, this.pierceTimer, this.burstTimer,
-      this.novaTimer, this.difficultyTimer, this.bossTimer, this.chestTimer,
+      this.novaTimer, this.difficultyTimer, this.chestTimer,
     ];
     this.setTimersPaused(true);
 
@@ -436,6 +439,7 @@ export default class GameScene extends Phaser.Scene {
     const cy = h / 2;
 
     this.timerText.setPosition(w - 20, 20);
+    this.nextBossText.setPosition(w - 20, 44);
 
     const barY = h - 48;
     this.bossBarX = cx - this.bossBarW / 2;
@@ -484,6 +488,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.levelText = this.add.text(20, 66, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setScrollFactor(0).setDepth(151);
     this.timerText = this.add.text(0, 20, '', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff' }).setOrigin(1, 0).setScrollFactor(0).setDepth(151);
+    this.nextBossText = this.add.text(0, 44, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ff88cc' }).setOrigin(1, 0).setScrollFactor(0).setDepth(151);
   }
 
   buildBossBar() {
@@ -729,6 +734,27 @@ export default class GameScene extends Phaser.Scene {
       this.stats.shield = this.stats.shieldMax;
     }
 
+    if (this.bossCountdown !== null) {
+      this.bossCountdown = Math.max(0, this.bossCountdown - delta);
+      this.nextBossText.setText(`Próximo jefe: ${this.formatTime(this.bossCountdown)}`).setVisible(true);
+      if (this.bossCountdown <= 0) {
+        this.bossCountdown = null;
+        this.nextBossText.setVisible(false);
+        this.warnBoss();
+      }
+    } else {
+      this.nextBossText.setVisible(false);
+    }
+
+    if (this.bossFightCountdown !== null) {
+      this.bossFightCountdown -= delta;
+      if (this.bossFightCountdown <= 0) {
+        this.bossFightCountdown = BOSS_FIGHT_LIMIT_MS;
+        this.applyBossOverstayPenalty();
+      }
+      this.bossLabel.setText(`JEFE - ${this.formatTime(Math.max(0, this.bossFightCountdown))}`);
+    }
+
     if (this.isBossAlive && this.currentBoss && this.currentBoss.active) {
       const ratio = Phaser.Math.Clamp(this.currentBoss.getData('hp') / this.currentBoss.getData('maxHp'), 0, 1);
       this.bossBarFill.width = this.bossBarMaxWidth * ratio;
@@ -845,9 +871,15 @@ export default class GameScene extends Phaser.Scene {
 
     this.isBossAlive = true;
     this.currentBoss = boss;
+    this.bossFightCountdown = BOSS_FIGHT_LIMIT_MS;
     this.bossLabel.setVisible(true);
     this.bossBarBg.setVisible(true);
     this.bossBarFill.setVisible(true);
+  }
+
+  applyBossOverstayPenalty() {
+    this.stageMultiplier *= BOSS_OVERSTAY_MULTIPLIER;
+    this.showFloatingText(this.scale.width / 2, this.scale.height / 2 - 80, '¡Los enemigos se hacen más fuertes!', '#ff5566');
   }
 
   updateRangedBoss(boss, time) {
@@ -989,7 +1021,9 @@ export default class GameScene extends Phaser.Scene {
       if (isBoss) {
         this.isBossAlive = false;
         this.currentBoss = null;
-        this.bossLabel.setVisible(false);
+        this.bossFightCountdown = null;
+        this.bossCountdown = BOSS_COUNTDOWN_MS;
+        this.bossLabel.setText('JEFE').setVisible(false);
         this.bossBarBg.setVisible(false);
         this.bossBarFill.setVisible(false);
 
@@ -1076,6 +1110,15 @@ export default class GameScene extends Phaser.Scene {
       this.onVictory();
       return;
     }
+
+    this.player.setPosition(WORLD_SIZE / 2, WORLD_SIZE / 2);
+    this.player.setVelocity(0, 0);
+    this.cameras.main.centerOn(this.player.x, this.player.y);
+    // No destruyo un jefe si justo hay uno vivo (pudo aparecer otro por el cronometro
+    // mientras este portal seguia sin cruzarse) - solo despejo la oleada comun.
+    this.enemies.getChildren().slice().forEach((e) => {
+      if (!e.getData('isBoss')) e.destroy();
+    });
 
     const cy = this.scale.height / 2;
     const text = this.add.text(this.scale.width / 2, cy, `ETAPA ${this.stage}`, {

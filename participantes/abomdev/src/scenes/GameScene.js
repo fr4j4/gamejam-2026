@@ -87,7 +87,36 @@ const WEAPON_UPGRADES = {
       },
     ],
   },
+  burst: {
+    unlock: {
+      key: 'burstUnlock',
+      describe: (b, a) => `Nueva arma: Ráfaga (${a.burstCount} disparos, ${a.burstDamage} dmg)`,
+      apply: (s) => { s.hasBurst = true; s.burstDamage = 10; s.burstCount = 3; s.burstRate = 1500; },
+    },
+    upgrades: [
+      { key: 'burstDamage', describe: (b, a) => `Ráfaga daño: ${b.burstDamage} → ${a.burstDamage}`, apply: (s) => { s.burstDamage += 5; } },
+      { key: 'burstCount', describe: (b, a) => `Ráfaga disparos: ${b.burstCount} → ${a.burstCount}`, apply: (s) => { s.burstCount += 1; } },
+      {
+        key: 'burstRate',
+        describe: (b, a) => `Ráfaga cadencia: ${(1000 / b.burstRate).toFixed(1)}/s → ${(1000 / a.burstRate).toFixed(1)}/s`,
+        apply: (s) => { s.burstRate = Math.round(s.burstRate * 0.85); },
+      },
+    ],
+  },
+  nova: {
+    unlock: {
+      key: 'novaUnlock',
+      describe: (b, a) => `Nueva arma: Onda expansiva (${a.novaDamage} dmg, radio ${a.novaRadius})`,
+      apply: (s) => { s.hasNova = true; s.novaDamage = 20; s.novaRadius = 140; s.novaRate = 2500; },
+    },
+    upgrades: [
+      { key: 'novaDamage', describe: (b, a) => `Onda daño: ${b.novaDamage} → ${a.novaDamage}`, apply: (s) => { s.novaDamage += 10; } },
+      { key: 'novaRadius', describe: (b, a) => `Onda radio: ${b.novaRadius} → ${a.novaRadius}`, apply: (s) => { s.novaRadius = Math.round(s.novaRadius * 1.2); } },
+    ],
+  },
 };
+
+const WEAPON_KEYS = ['aura', 'orbit', 'pierce', 'burst', 'nova'];
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -105,6 +134,8 @@ export default class GameScene extends Phaser.Scene {
       hasAura: false,
       hasOrbit: false,
       hasPierce: false,
+      hasBurst: false,
+      hasNova: false,
     };
     this.xp = 0;
     this.level = 1;
@@ -157,13 +188,16 @@ export default class GameScene extends Phaser.Scene {
     this.spawnTimer = this.time.addEvent({ delay: 1000, loop: true, callback: this.spawnEnemy, callbackScope: this });
     this.attackTimer = this.time.addEvent({ delay: this.stats.fireRate, loop: true, callback: this.fireAtNearest, callbackScope: this });
     this.pierceTimer = this.time.addEvent({ delay: 1200, loop: true, callback: this.firePierce, callbackScope: this });
+    this.burstTimer = this.time.addEvent({ delay: 1500, loop: true, callback: this.fireBurst, callbackScope: this });
+    this.novaTimer = this.time.addEvent({ delay: 2500, loop: true, callback: this.fireNova, callbackScope: this });
     this.difficultyTimer = this.time.addEvent({ delay: DIFFICULTY_RAMP_MS, loop: true, callback: this.rampDifficulty, callbackScope: this });
     this.bossTimer = this.time.addEvent({ delay: BOSS_DELAY_MS, loop: true, callback: this.warnBoss, callbackScope: this });
-    this.spawnTimer.paused = true;
-    this.attackTimer.paused = true;
-    this.pierceTimer.paused = true;
-    this.difficultyTimer.paused = true;
-    this.bossTimer.paused = true;
+
+    this.gameplayTimers = [
+      this.spawnTimer, this.attackTimer, this.pierceTimer, this.burstTimer,
+      this.novaTimer, this.difficultyTimer, this.bossTimer,
+    ];
+    this.setTimersPaused(true);
 
     this.deathEmitter = this.add.particles(0, 0, 'spark', {
       speed: { min: 80, max: 220 },
@@ -279,7 +313,7 @@ export default class GameScene extends Phaser.Scene {
 
   buildStartScreen() {
     this.startText = this.add.text(400, 300,
-      'SURVIVORS\n\nWASD / Flechas para moverte\nAtaque automático al enemigo más cercano\n\nPresioná una tecla para empezar',
+      'SURVIVORS\n\nWASD / Flechas para moverte\nAtaque automático al enemigo más cercano\n\nPresiona una tecla para empezar',
       { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff', align: 'center' }
     ).setOrigin(0.5).setScrollFactor(0).setDepth(300);
 
@@ -287,15 +321,15 @@ export default class GameScene extends Phaser.Scene {
     this.input.once('pointerdown', () => this.startGame());
   }
 
+  setTimersPaused(paused) {
+    this.gameplayTimers.forEach((t) => { t.paused = paused; });
+  }
+
   startGame() {
     if (this.hasStarted) return;
     this.hasStarted = true;
     this.startText.destroy();
-    this.spawnTimer.paused = false;
-    this.attackTimer.paused = false;
-    this.pierceTimer.paused = false;
-    this.difficultyTimer.paused = false;
-    this.bossTimer.paused = false;
+    this.setTimersPaused(false);
   }
 
   buildHud() {
@@ -367,7 +401,7 @@ export default class GameScene extends Phaser.Scene {
       fontFamily: 'monospace', fontSize: '16px', color: '#66ffcc', align: 'center', lineSpacing: 6,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setVisible(false);
 
-    this.pauseHint = this.add.text(400, 520, 'Presioná ESC para continuar', {
+    this.pauseHint = this.add.text(400, 520, 'Presiona ESC para continuar', {
       fontFamily: 'monospace', fontSize: '14px', color: '#aaaaaa',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setVisible(false);
   }
@@ -385,11 +419,7 @@ export default class GameScene extends Phaser.Scene {
     this.isPaused = true;
     this.player.setVelocity(0, 0);
     this.physics.world.pause();
-    this.spawnTimer.paused = true;
-    this.attackTimer.paused = true;
-    this.pierceTimer.paused = true;
-    this.difficultyTimer.paused = true;
-    this.bossTimer.paused = true;
+    this.setTimersPaused(true);
 
     const s = this.stats;
     const lines = [
@@ -403,6 +433,8 @@ export default class GameScene extends Phaser.Scene {
     if (s.hasAura) lines.push(`Aura — daño ${s.auraDamage}, radio ${s.auraRadius}`);
     if (s.hasOrbit) lines.push(`Orbe — daño ${s.orbitDamage}, cantidad ${s.orbitCount}, velocidad ${s.orbitSpeed.toFixed(2)}`);
     if (s.hasPierce) lines.push(`Perforante — daño ${s.pierceDamage}, cadencia ${(1000 / s.pierceRate).toFixed(1)}/s`);
+    if (s.hasBurst) lines.push(`Ráfaga — daño ${s.burstDamage}, disparos ${s.burstCount}, cadencia ${(1000 / s.burstRate).toFixed(1)}/s`);
+    if (s.hasNova) lines.push(`Onda — daño ${s.novaDamage}, radio ${s.novaRadius}`);
 
     this.pauseStats.setText(lines.join('\n'));
     this.pauseTitle.setVisible(true);
@@ -413,11 +445,7 @@ export default class GameScene extends Phaser.Scene {
   resumeGame() {
     this.isPaused = false;
     this.physics.world.resume();
-    this.spawnTimer.paused = false;
-    this.attackTimer.paused = false;
-    this.pierceTimer.paused = false;
-    this.difficultyTimer.paused = false;
-    this.bossTimer.paused = false;
+    this.setTimersPaused(false);
 
     this.pauseTitle.setVisible(false);
     this.pauseStats.setVisible(false);
@@ -671,17 +699,16 @@ export default class GameScene extends Phaser.Scene {
   }
 
   getNearestEnemy() {
-    let nearest = null;
-    let nearestDist = Infinity;
-    this.enemies.getChildren().forEach((e) => {
-      if (!e.active) return;
-      const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y);
-      if (d < nearestDist) {
-        nearestDist = d;
-        nearest = e;
-      }
-    });
-    return nearest;
+    return this.getNearestEnemies(1)[0] || null;
+  }
+
+  getNearestEnemies(n) {
+    return this.enemies.getChildren()
+      .filter((e) => e.active)
+      .map((e) => ({ e, d: Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y) }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, n)
+      .map((item) => item.e);
   }
 
   fireAtNearest() {
@@ -720,6 +747,33 @@ export default class GameScene extends Phaser.Scene {
     if (hitSet.has(enemy)) return;
     hitSet.add(enemy);
     this.damageEnemy(enemy, proj.getData('damage'));
+  }
+
+  fireBurst() {
+    if (this.isGameOver || this.isLevelingUp || !this.stats.hasBurst) return;
+    const targets = this.getNearestEnemies(this.stats.burstCount);
+    targets.forEach((target) => {
+      const proj = this.projectiles.create(this.player.x, this.player.y, 'projectile');
+      proj.setData('damage', this.stats.burstDamage);
+      proj.setData('bornAt', this.time.now);
+      this.physics.moveToObject(proj, target, PROJECTILE_SPEED);
+    });
+  }
+
+  fireNova() {
+    if (this.isGameOver || this.isLevelingUp || !this.stats.hasNova) return;
+
+    const ring = this.add.circle(this.player.x, this.player.y, this.stats.novaRadius, 0xffaa00, 0.3)
+      .setDepth(4).setScale(0.1);
+    this.tweens.add({ targets: ring, scale: 1, alpha: 0, duration: 300, onComplete: () => ring.destroy() });
+
+    this.enemies.getChildren().forEach((e) => {
+      if (!e.active) return;
+      const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y);
+      if (d <= this.stats.novaRadius) {
+        this.damageEnemy(e, this.stats.novaDamage);
+      }
+    });
   }
 
   damageEnemy(enemy, damage) {
@@ -863,18 +917,14 @@ export default class GameScene extends Phaser.Scene {
 
   onGameOver() {
     this.isGameOver = true;
-    this.spawnTimer.paused = true;
-    this.attackTimer.paused = true;
-    this.pierceTimer.paused = true;
-    this.difficultyTimer.paused = true;
-    this.bossTimer.paused = true;
+    this.setTimersPaused(true);
 
     this.add.text(400, 280, 'GAME OVER', { fontFamily: 'monospace', fontSize: '40px', color: '#ff5566' })
       .setOrigin(0.5).setScrollFactor(0).setDepth(200);
     this.add.text(400, 330, `Sobreviviste ${this.formatTime(this.elapsed)} - Nivel ${this.level}`, {
       fontFamily: 'monospace', fontSize: '18px', color: '#ffffff',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
-    this.add.text(400, 365, 'Presioná R para reiniciar', {
+    this.add.text(400, 365, 'Presiona R para reiniciar', {
       fontFamily: 'monospace', fontSize: '16px', color: '#aaaaaa',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
 
@@ -903,9 +953,11 @@ export default class GameScene extends Phaser.Scene {
 
   getAvailableUpgrades() {
     const pool = [...STAT_UPGRADES];
-    pool.push(this.stats.hasAura ? Phaser.Utils.Array.GetRandom(WEAPON_UPGRADES.aura.upgrades) : WEAPON_UPGRADES.aura.unlock);
-    pool.push(this.stats.hasOrbit ? Phaser.Utils.Array.GetRandom(WEAPON_UPGRADES.orbit.upgrades) : WEAPON_UPGRADES.orbit.unlock);
-    pool.push(this.stats.hasPierce ? Phaser.Utils.Array.GetRandom(WEAPON_UPGRADES.pierce.upgrades) : WEAPON_UPGRADES.pierce.unlock);
+    WEAPON_KEYS.forEach((key) => {
+      const flag = `has${key[0].toUpperCase()}${key.slice(1)}`;
+      const weapon = WEAPON_UPGRADES[key];
+      pool.push(this.stats[flag] ? Phaser.Utils.Array.GetRandom(weapon.upgrades) : weapon.unlock);
+    });
     return pool;
   }
 
@@ -931,6 +983,8 @@ export default class GameScene extends Phaser.Scene {
     choice.apply(this.stats);
     this.attackTimer.delay = this.stats.fireRate;
     if (this.stats.hasPierce) this.pierceTimer.delay = this.stats.pierceRate;
+    if (this.stats.hasBurst) this.burstTimer.delay = this.stats.burstRate;
+    if (this.stats.hasNova) this.novaTimer.delay = this.stats.novaRate;
     this.syncWeapons();
 
     this.levelUpTitle.setVisible(false);

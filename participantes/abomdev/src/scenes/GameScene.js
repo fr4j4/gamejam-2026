@@ -9,19 +9,47 @@ const PROJECTILE_LIFETIME = 2000;
 const HIT_INVULN_MS = 500;
 const SPAWN_DELAY_MIN = 300;
 const DIFFICULTY_RAMP_MS = 12000;
+const BOSS_DELAY_MS = 150000;
+const ORBIT_HIT_RADIUS = 22;
+const ORBIT_HIT_COOLDOWN_MS = 300;
 
 const ENEMY_TYPES = {
   normal: { texture: 'enemy', color: 0xff5566, baseHp: 20, hpPerMin: 10, baseSpeed: 80, speedPerMin: 8, damage: 10 },
   fast: { texture: 'enemyFast', color: 0xffaa33, baseHp: 8, hpPerMin: 4, baseSpeed: 160, speedPerMin: 12, damage: 6 },
+  boss: { texture: 'boss', color: 0xff33aa, baseHp: 250, hpPerMin: 50, baseSpeed: 50, speedPerMin: 4, damage: 20 },
 };
 
-const UPGRADE_POOL = [
+const STAT_UPGRADES = [
   { key: 'damage', label: '+5 Daño', apply: (s) => { s.damage += 5; } },
   { key: 'fireRate', label: '+15% Cadencia de ataque', apply: (s) => { s.fireRate = Math.round(s.fireRate * 0.85); } },
   { key: 'moveSpeed', label: '+10% Velocidad', apply: (s) => { s.moveSpeed = Math.round(s.moveSpeed * 1.1); } },
   { key: 'maxHp', label: '+20 HP máximo', apply: (s) => { s.maxHp += 20; s.hp += 20; } },
   { key: 'magnet', label: '+40% Radio de imán', apply: (s) => { s.magnetRadius = Math.round(s.magnetRadius * 1.4); } },
 ];
+
+const WEAPON_UPGRADES = {
+  aura: {
+    unlock: {
+      key: 'auraUnlock', label: 'Nueva arma: Aura de daño',
+      apply: (s) => { s.hasAura = true; s.auraDamage = 8; s.auraRadius = 90; s.auraTickMs = 600; },
+    },
+    upgrades: [
+      { key: 'auraDamage', label: '+Aura: daño', apply: (s) => { s.auraDamage += 5; } },
+      { key: 'auraRadius', label: '+Aura: radio', apply: (s) => { s.auraRadius = Math.round(s.auraRadius * 1.25); } },
+    ],
+  },
+  orbit: {
+    unlock: {
+      key: 'orbitUnlock', label: 'Nueva arma: Orbe giratorio',
+      apply: (s) => { s.hasOrbit = true; s.orbitDamage = 8; s.orbitRadius = 70; s.orbitSpeed = 2.2; s.orbitCount = 1; },
+    },
+    upgrades: [
+      { key: 'orbitDamage', label: '+Orbe: daño', apply: (s) => { s.orbitDamage += 5; } },
+      { key: 'orbitCount', label: '+Orbe: cantidad', apply: (s) => { s.orbitCount += 1; } },
+      { key: 'orbitSpeed', label: '+Orbe: velocidad', apply: (s) => { s.orbitSpeed *= 1.25; } },
+    ],
+  },
+};
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -36,6 +64,8 @@ export default class GameScene extends Phaser.Scene {
       maxHp: PLAYER_MAX_HP,
       hp: PLAYER_MAX_HP,
       magnetRadius: 90,
+      hasAura: false,
+      hasOrbit: false,
     };
     this.xp = 0;
     this.level = 1;
@@ -45,6 +75,11 @@ export default class GameScene extends Phaser.Scene {
     this.isGameOver = false;
     this.hasStarted = false;
     this.lastHitAt = -Infinity;
+    this.auraGfx = null;
+    this.auraTickAt = 0;
+    this.orbitOrbs = [];
+    this.isBossAlive = false;
+    this.currentBoss = null;
 
     this.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
 
@@ -74,9 +109,11 @@ export default class GameScene extends Phaser.Scene {
     this.spawnTimer = this.time.addEvent({ delay: 1000, loop: true, callback: this.spawnEnemy, callbackScope: this });
     this.attackTimer = this.time.addEvent({ delay: this.stats.fireRate, loop: true, callback: this.fireAtNearest, callbackScope: this });
     this.difficultyTimer = this.time.addEvent({ delay: DIFFICULTY_RAMP_MS, loop: true, callback: this.rampDifficulty, callbackScope: this });
+    this.bossTimer = this.time.addEvent({ delay: BOSS_DELAY_MS, loop: true, callback: this.spawnBoss, callbackScope: this });
     this.spawnTimer.paused = true;
     this.attackTimer.paused = true;
     this.difficultyTimer.paused = true;
+    this.bossTimer.paused = true;
 
     this.deathEmitter = this.add.particles(0, 0, 'spark', {
       speed: { min: 80, max: 220 },
@@ -89,6 +126,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.buildLevelUpUI();
     this.buildHud();
+    this.buildBossBar();
     this.buildStartScreen();
     this.updateHud();
   }
@@ -131,6 +169,20 @@ export default class GameScene extends Phaser.Scene {
     spark.fillCircle(3, 3, 3);
     spark.generateTexture('spark', 6, 6);
     spark.destroy();
+
+    const boss = this.add.graphics();
+    boss.fillStyle(0x220022, 1);
+    boss.fillRect(0, 0, 44, 44);
+    boss.lineStyle(3, 0xff33aa, 1);
+    boss.strokeRect(1.5, 1.5, 41, 41);
+    boss.generateTexture('boss', 44, 44);
+    boss.destroy();
+
+    const orbit = this.add.graphics();
+    orbit.fillStyle(0x55ddff, 1);
+    orbit.fillCircle(6, 6, 6);
+    orbit.generateTexture('orbit', 12, 12);
+    orbit.destroy();
   }
 
   buildStartScreen() {
@@ -150,6 +202,7 @@ export default class GameScene extends Phaser.Scene {
     this.spawnTimer.paused = false;
     this.attackTimer.paused = false;
     this.difficultyTimer.paused = false;
+    this.bossTimer.paused = false;
   }
 
   buildHud() {
@@ -162,6 +215,20 @@ export default class GameScene extends Phaser.Scene {
 
     this.levelText = this.add.text(20, 58, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setScrollFactor(0).setDepth(151);
     this.timerText = this.add.text(780, 20, '', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff' }).setOrigin(1, 0).setScrollFactor(0).setDepth(151);
+  }
+
+  buildBossBar() {
+    const barX = 250;
+    const barY = 552;
+    const barW = 300;
+    const barH = 16;
+    this.bossBarMaxWidth = barW - 4;
+
+    this.bossLabel = this.add.text(400, barY - 18, 'JEFE', {
+      fontFamily: 'monospace', fontSize: '14px', color: '#ff88cc',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(151).setVisible(false);
+    this.bossBarBg = this.add.rectangle(barX, barY, barW, barH, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150).setVisible(false);
+    this.bossBarFill = this.add.rectangle(barX + 2, barY + 2, this.bossBarMaxWidth, barH - 4, 0xff33aa).setOrigin(0, 0).setScrollFactor(0).setDepth(151).setVisible(false);
   }
 
   updateHud() {
@@ -226,6 +293,49 @@ export default class GameScene extends Phaser.Scene {
         p.destroy();
       }
     });
+
+    this.updateWeapons(time);
+
+    if (this.isBossAlive && this.currentBoss && this.currentBoss.active) {
+      const ratio = Phaser.Math.Clamp(this.currentBoss.getData('hp') / this.currentBoss.getData('maxHp'), 0, 1);
+      this.bossBarFill.width = this.bossBarMaxWidth * ratio;
+    }
+  }
+
+  updateWeapons(time) {
+    if (this.stats.hasAura && this.auraGfx) {
+      this.auraGfx.setPosition(this.player.x, this.player.y);
+      this.auraGfx.setRadius(this.stats.auraRadius);
+
+      if (time >= this.auraTickAt) {
+        this.auraTickAt = time + this.stats.auraTickMs;
+        this.enemies.getChildren().forEach((e) => {
+          if (!e.active) return;
+          const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y);
+          if (d <= this.stats.auraRadius) {
+            this.damageEnemy(e, this.stats.auraDamage);
+          }
+        });
+      }
+    }
+
+    if (this.stats.hasOrbit && this.orbitOrbs.length > 0) {
+      this.orbitOrbs.forEach((orb, i) => {
+        const angle = (time / 1000) * this.stats.orbitSpeed + (i * (Math.PI * 2 / this.orbitOrbs.length));
+        orb.x = this.player.x + Math.cos(angle) * this.stats.orbitRadius;
+        orb.y = this.player.y + Math.sin(angle) * this.stats.orbitRadius;
+
+        this.enemies.getChildren().forEach((e) => {
+          if (!e.active) return;
+          const d = Phaser.Math.Distance.Between(orb.x, orb.y, e.x, e.y);
+          if (d > ORBIT_HIT_RADIUS) return;
+          const lastHit = e.getData('lastOrbitHit') || 0;
+          if (time - lastHit < ORBIT_HIT_COOLDOWN_MS) return;
+          e.setData('lastOrbitHit', time);
+          this.damageEnemy(e, this.stats.orbitDamage);
+        });
+      });
+    }
   }
 
   spawnEnemy() {
@@ -245,6 +355,33 @@ export default class GameScene extends Phaser.Scene {
     enemy.setData('hp', Math.round(type.baseHp + minutes * type.hpPerMin));
     enemy.setData('speed', Math.round(type.baseSpeed + minutes * type.speedPerMin));
     enemy.setData('damage', type.damage);
+  }
+
+  spawnBoss() {
+    if (this.isGameOver || this.isLevelingUp || this.isBossAlive) return;
+
+    const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+    const x = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * SPAWN_RADIUS, 20, WORLD_SIZE - 20);
+    const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * SPAWN_RADIUS, 20, WORLD_SIZE - 20);
+
+    const minutes = this.elapsed / 60000;
+    const type = ENEMY_TYPES.boss;
+    const maxHp = Math.round(type.baseHp + minutes * type.hpPerMin);
+
+    const boss = this.enemies.create(x, y, type.texture);
+    boss.setData('type', 'boss');
+    boss.setData('isBoss', true);
+    boss.setData('hp', maxHp);
+    boss.setData('maxHp', maxHp);
+    boss.setData('speed', Math.round(type.baseSpeed + minutes * type.speedPerMin));
+    boss.setData('damage', type.damage);
+    boss.setDepth(11);
+
+    this.isBossAlive = true;
+    this.currentBoss = boss;
+    this.bossLabel.setVisible(true);
+    this.bossBarBg.setVisible(true);
+    this.bossBarFill.setVisible(true);
   }
 
   rampDifficulty() {
@@ -279,13 +416,31 @@ export default class GameScene extends Phaser.Scene {
   onProjectileHitEnemy(proj, enemy) {
     const damage = proj.getData('damage');
     proj.destroy();
+    this.damageEnemy(enemy, damage);
+  }
+
+  damageEnemy(enemy, damage) {
+    if (!enemy.active) return;
 
     const hp = enemy.getData('hp') - damage;
     if (hp <= 0) {
+      const isBoss = enemy.getData('isBoss');
       const color = ENEMY_TYPES[enemy.getData('type')].color;
       this.deathEmitter.setParticleTint(color);
-      this.deathEmitter.emitParticleAt(enemy.x, enemy.y, 10);
-      this.spawnXpOrb(enemy.x, enemy.y);
+      this.deathEmitter.emitParticleAt(enemy.x, enemy.y, isBoss ? 30 : 10);
+
+      if (isBoss) {
+        for (let i = 0; i < 5; i++) {
+          this.spawnXpOrb(enemy.x + Phaser.Math.Between(-20, 20), enemy.y + Phaser.Math.Between(-20, 20));
+        }
+        this.isBossAlive = false;
+        this.currentBoss = null;
+        this.bossLabel.setVisible(false);
+        this.bossBarBg.setVisible(false);
+        this.bossBarFill.setVisible(false);
+      } else {
+        this.spawnXpOrb(enemy.x, enemy.y);
+      }
       enemy.destroy();
     } else {
       enemy.setData('hp', hp);
@@ -331,6 +486,7 @@ export default class GameScene extends Phaser.Scene {
     this.spawnTimer.paused = true;
     this.attackTimer.paused = true;
     this.difficultyTimer.paused = true;
+    this.bossTimer.paused = true;
 
     this.add.text(400, 280, 'GAME OVER', { fontFamily: 'monospace', fontSize: '40px', color: '#ff5566' })
       .setOrigin(0.5).setScrollFactor(0).setDepth(200);
@@ -363,11 +519,18 @@ export default class GameScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-THREE', () => this.chooseUpgrade(2));
   }
 
+  getAvailableUpgrades() {
+    const pool = [...STAT_UPGRADES];
+    pool.push(this.stats.hasAura ? Phaser.Utils.Array.GetRandom(WEAPON_UPGRADES.aura.upgrades) : WEAPON_UPGRADES.aura.unlock);
+    pool.push(this.stats.hasOrbit ? Phaser.Utils.Array.GetRandom(WEAPON_UPGRADES.orbit.upgrades) : WEAPON_UPGRADES.orbit.unlock);
+    return pool;
+  }
+
   startLevelUp() {
     this.isLevelingUp = true;
     this.player.setVelocity(0, 0);
 
-    this.levelUpChoices = Phaser.Utils.Array.Shuffle([...UPGRADE_POOL]).slice(0, 3);
+    this.levelUpChoices = Phaser.Utils.Array.Shuffle(this.getAvailableUpgrades()).slice(0, 3);
     this.levelUpChoices.forEach((choice, i) => {
       this.levelUpTexts[i].setText(`${i + 1}. ${choice.label}`).setVisible(true);
     });
@@ -381,9 +544,26 @@ export default class GameScene extends Phaser.Scene {
 
     choice.apply(this.stats);
     this.attackTimer.delay = this.stats.fireRate;
+    this.syncWeapons();
 
     this.levelUpTitle.setVisible(false);
     this.levelUpTexts.forEach((t) => t.setVisible(false));
     this.isLevelingUp = false;
+  }
+
+  syncWeapons() {
+    if (this.stats.hasAura && !this.auraGfx) {
+      this.auraGfx = this.add.circle(this.player.x, this.player.y, this.stats.auraRadius, 0x66ffcc, 0.15);
+      this.auraGfx.setDepth(5);
+      this.auraTickAt = 0;
+    }
+
+    if (this.stats.hasOrbit) {
+      while (this.orbitOrbs.length < this.stats.orbitCount) {
+        const orb = this.add.image(this.player.x, this.player.y, 'orbit');
+        orb.setDepth(12);
+        this.orbitOrbs.push(orb);
+      }
+    }
   }
 }

@@ -1,24 +1,17 @@
 import Phaser from 'phaser';
-
-class MainScene extends Phaser.Scene {
-  constructor() {
-    super('main');
-  }
-
-  create() {
-    this.add.text(this.scale.width / 2, this.scale.height / 2, 'listo', {
-      fontFamily: 'monospace',
-      fontSize: '32px',
-      color: '#ffffff',
-    }).setOrigin(0.5);
-  }
-}
+import GameScene from './scenes/GameScene.js';
 
 new Phaser.Game({
   type: Phaser.AUTO,
   width: 800,
   height: 600,
-  backgroundColor: '#222244',
+  backgroundColor: '#111122',
   parent: 'game',
-  scene: [MainScene],
+  physics: {
+    default: 'arcade',
+    arcade: {
+      debug: false,
+    },
+  },
+  scene: [GameScene],
 });

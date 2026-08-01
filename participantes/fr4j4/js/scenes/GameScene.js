@@ -44,6 +44,12 @@ class GameScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-E', () => this.tryEndTurn());
     this.input.keyboard.on('keydown-ENTER', () => this.tryEndTurn());
     this.input.keyboard.on('keydown-ESC', () => this.toggleMenu());
+
+    this.input.on('pointerdown', (pointer, gameObjects) => {
+      if (this.state.targetingMode && gameObjects.length === 0) {
+        this.cancelTargeting();
+      }
+    });
   }
 
   shutdown() {
@@ -214,10 +220,10 @@ class GameScene extends Phaser.Scene {
         if (!c) continue;
 
         const icon = this.add.text(cx, cy - 3, '🐾', { fontSize: '16px' }).setOrigin(0.5);
-        const atk = this.add.text(cx - 12, cy + 11, `${c.atk}`, {
+        const atk = this.add.text(cx - 12, cy + 11, `${this.getAtk(c)}`, {
           fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#faba72'
         }).setOrigin(0.5);
-        const hp = this.add.text(cx + 12, cy + 11, `${c.hp}`, {
+        const hp = this.add.text(cx + 12, cy + 11, `${this.getHp(c)}`, {
           fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
         }).setOrigin(0.5);
 
@@ -231,12 +237,20 @@ class GameScene extends Phaser.Scene {
         bg.on('pointerover', () => this.showCreatureCard(c, cx, cy));
         bg.on('pointerout', () => this.hideCreatureCard());
 
-        if (!isEnemy && c.canAttack && this.state.phase === 'player') {
+        const tm = this.state.targetingMode;
+        if (tm && tm.side === 'player' && !isEnemy && tm.effectType === 'sacrifice') {
+          bg.setFillStyle(0x4a1a1a);
+          bg.setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#ff6b6b').color);
+          bg.on('pointerdown', () => {
+            if (this.handleTargetingClick(c, board)) {
+              bg.removeAllListeners('pointerdown');
+            }
+          });
+        } else if (!isEnemy && c.canAttack && this.state.phase === 'player') {
           bg.setFillStyle(0x1a2a4e);
           bg.on('pointerdown', () => this.selectAttacker(c));
           container.add(this.add.text(cx, cy + 18, '⚔️', { fontSize: '7px' }).setOrigin(0.5));
-        }
-        if (isEnemy && this.selectedAttacker) {
+        } else if (isEnemy && this.selectedAttacker) {
           bg.setFillStyle(0x4a1a4a);
           bg.on('pointerdown', () => this.attackCreature(this.selectedAttacker, c));
         }
@@ -245,6 +259,14 @@ class GameScene extends Phaser.Scene {
     };
     renderBoard(this.pBoardContainer, this.player.board, false);
     renderBoard(this.eBoardContainer, this.opponent.board, true);
+  }
+
+  getAtk(c) { return (c.atkBase || 0) + (c.atkBoost || 0); }
+  getHp(c) { return (c.hpBase || 0) + (c.hpBoost || 0); }
+  getMaxHp(c) { return (c.maxHpBase || 0) + (c.maxHpBoost || 0); }
+  pickCreatureTarget(board) {
+    if (!board || board.length === 0) return -1;
+    return board.length - 1;
   }
 
   getCreatureCard(creature) {
@@ -259,7 +281,7 @@ class GameScene extends Phaser.Scene {
       cost: 0,
       maxCopies: 1,
       effects: [],
-      desc: `Criatura ${creature.atk}/${creature.hp}`
+      desc: `Criatura ${this.getAtk(creature)}/${this.getHp(creature)}`
     };
   }
 
@@ -410,10 +432,28 @@ class GameScene extends Phaser.Scene {
     }
     if (this.checkGameOver()) return;
     for (let i = 0; i < 2; i++) this.drawCard('player');
-    if (p.hand.length > 8) p.hand = p.hand.slice(0, 8);
+    while (p.hand.length > 8) {
+      const overflow = p.hand.pop();
+      p.discardPile.push(overflow);
+      this.addLog(`Mano llena — ${overflow.name} al descarte`, 'sys');
+    }
     p.maxMana = Math.min(p.maxMana + 1, 7);
     p.mana = p.maxMana;
     p.heroUsed = false; p.cardsPlayed = 0; p.costReduction = 0;
+    if (p.silencedTurns && p.silencedTurns > 0) {
+      p.silencedTurns = Math.max(0, p.silencedTurns - 1);
+    }
+    p.board.forEach(c => {
+      if (!c.buffs) c.buffs = [];
+      c.buffs = c.buffs.filter(b => {
+        if (b.duration === 'turn') {
+          if (b.type === 'atk') c.atkBoost = Math.max(0, (c.atkBoost || 0) - b.amount);
+          if (b.type === 'hp') c.hpBoost = Math.max(0, (c.hpBoost || 0) - b.amount);
+          return false;
+        }
+        return true;
+      });
+    });
     p.board.forEach(c => { if (!c.justSummoned) c.canAttack = true; c.justSummoned = false; });
     this.state.phase = 'player';
     this.turnText.setText(`Turno ${this.state.turn}`);
@@ -448,6 +488,15 @@ class GameScene extends Phaser.Scene {
   endTurn() {
     if (this.state.phase !== 'player' || this.state.gameOver) return;
     if (this.state.timerEvent) this.state.timerEvent.remove();
+    const returned = this.player.discardPile.filter(c => c.returnAtEndOfTurn);
+    if (returned.length > 0) {
+      this.player.discardPile = this.player.discardPile.filter(c => !c.returnAtEndOfTurn);
+      this.player.hand.push(...returned);
+      returned.forEach(c => {
+        c.returnAtEndOfTurn = false;
+        this.addLog(`${c.name} vuelve a tu mano`, 'info');
+      });
+    }
     this.state.phase = 'opponent';
     this.phaseText.setText('Turno oponente');
     this.updateEndTurnBtn();
@@ -464,9 +513,26 @@ class GameScene extends Phaser.Scene {
     if (this.state.gameOver) return;
     const e = this.opponent;
     this.drawCard('opponent');
-    if (e.hand.length > 8) e.hand = e.hand.slice(0, 8);
+    while (e.hand.length > 8) {
+      const overflow = e.hand.pop();
+      e.discardPile.push(overflow);
+    }
     e.maxMana = Math.min(e.maxMana + 1, 7);
     e.mana = e.maxMana; e.heroUsed = false; e.cardsPlayed = 0;
+    if (e.silencedTurns && e.silencedTurns > 0) {
+      e.silencedTurns = Math.max(0, e.silencedTurns - 1);
+    }
+    e.board.forEach(c => {
+      if (!c.buffs) c.buffs = [];
+      c.buffs = c.buffs.filter(b => {
+        if (b.duration === 'turn') {
+          if (b.type === 'atk') c.atkBoost = Math.max(0, (c.atkBoost || 0) - b.amount);
+          if (b.type === 'hp') c.hpBoost = Math.max(0, (c.hpBoost || 0) - b.amount);
+          return false;
+        }
+        return true;
+      });
+    });
     e.board.forEach(c => { if (!c.justSummoned) c.canAttack = true; c.justSummoned = false; });
     if (e.venom > 0) { this.applyDamage('opponent', e.venom); e.venom = Math.max(0, e.venom - 1); }
     if (this.checkGameOver()) return;
@@ -484,15 +550,27 @@ class GameScene extends Phaser.Scene {
       this.addLog(`Oponente: ${card.name}`, 'info');
       if (this.checkGameOver()) return;
     }
-    if (!e.heroUsed && e.mana >= 1) {
+    if (!e.heroUsed && (!e.silencedTurns || e.silencedTurns <= 0) && e.mana >= 1) {
       e.mana -= 1; e.heroUsed = true;
       this.useHeroPowerFor('opponent');
       this.addLog('Oponente: poder de heroe', 'info');
     }
     e.board.forEach(c => {
       if (c.canAttack) {
-        if (this.player.board.length > 0) this.combat(c, this.player.board[0], 'opponent');
-        else { this.applyDamage('player', c.atk); this.addLog(`${c.name} ataca: ${c.atk}`, 'dmg'); }
+        const guards = this.player.board.filter(x => x.guard);
+        let target = null;
+        if (guards.length > 0) {
+          target = guards[guards.length - 1];
+        } else if (this.player.board.length > 0) {
+          target = this.player.board[this.player.board.length - 1];
+        }
+        if (target) {
+          this.combat(c, target, 'opponent');
+        } else {
+          const atk = this.getAtk(c);
+          this.applyDamage('player', atk);
+          this.addLog(`${c.name} ataca: ${atk}`, 'dmg');
+        }
         c.canAttack = false;
       }
     });
@@ -516,12 +594,194 @@ class GameScene extends Phaser.Scene {
     const p = this.player;
     const card = p.hand[index];
     if (!card) return;
+
+    if (card.resourceCost) {
+      const rc = card.resourceCost;
+      if (rc.type === 'blood') {
+        if ((p.hp - rc.amount) < 1) {
+          this.addLog('HP insuficiente para pagar sangre', 'sys');
+          return;
+        }
+      } else if (rc.type === 'inspiration') {
+        const required = rc.amount === 'all' ? p.inspiration : rc.amount;
+        if (p.inspiration < required) {
+          this.addLog('Inspiración insuficiente', 'sys');
+          return;
+        }
+      }
+    }
+
     const cost = Math.max(0, card.cost - (p.costReduction || 0));
-    if (cost > p.mana) return;
+    let discount = 0;
+    if (card.costCondition) {
+      const cond = this.checkCondition(card.costCondition, p, this.opponent);
+      if (cond) discount = card.costCondition.discount || 0;
+    }
+    const finalCost = Math.max(0, cost - discount);
+    if (finalCost > p.mana) return;
+
+    const summonsNeeded = (card.effects || []).filter(e => e.type === 'summon').length;
+    const freeSlots = 4 - p.board.length;
+    if (summonsNeeded > 0 && freeSlots === 0) {
+      this.addLog('Tablero lleno — no se puede invocar', 'sys');
+      return;
+    }
+    if (summonsNeeded > 0 && freeSlots < summonsNeeded) {
+      this.openSummonConfirm(card, index, freeSlots, summonsNeeded);
+      return;
+    }
+
     this.playCardAnimation(index);
-    p.mana -= cost; p.hand.splice(index, 1); p.cardsPlayed++;
+    p.mana -= finalCost; p.hand.splice(index, 1); p.cardsPlayed++;
+    if (card.effects && card.effects.some(e => e.type === 'swap_hands')) {
+      card.returnAtEndOfTurn = true;
+    }
     if (!card.consumable) p.discardPile.push(card);
+
+    if (card.resourceCost) {
+      const rc = card.resourceCost;
+      if (rc.type === 'blood') {
+        const before = p.hp;
+        p.hp = Math.max(1, p.hp - rc.amount);
+        const lost = before - p.hp;
+        if (lost > 0) {
+          this.showFloatingNumber(120, 72, `-${lost} HP`, '#ff6b6b');
+          this.screenFlash('#ff6b6b');
+        }
+      }
+    }
+
+    const usesInspirationScale = (card.effects || []).some(e => e.scale === 'inspiration');
+    if (card.resourceCost && card.resourceCost.type === 'inspiration' && !usesInspirationScale) {
+      const amt = card.resourceCost.amount === 'all' ? p.inspiration : card.resourceCost.amount;
+      p.inspiration = Math.max(0, p.inspiration - amt);
+    }
+
     this.resolveEffects(card, 'player');
+
+    if (card.resourceCost && card.resourceCost.type === 'inspiration' && usesInspirationScale) {
+      const amt = card.resourceCost.amount === 'all' ? p.inspiration : card.resourceCost.amount;
+      p.inspiration = Math.max(0, p.inspiration - amt);
+    }
+
+    this.addLog(`Juegas: ${card.name}`, 'info');
+    p.costReduction = 0;
+    if (this.checkGameOver()) return;
+    this.renderAll();
+  }
+
+  openSummonConfirm(card, handIndex, freeSlots, summonsNeeded) {
+    if (this.summonConfirmLayer) { this.summonConfirmLayer.destroy(true); this.summonConfirmLayer = null; }
+    if (this.state.timerEvent) { this.state.timerEvent.remove(); this.state.timerEvent = null; }
+
+    const W = 640, H = 360;
+    const layer = this.add.container(0, 0).setDepth(5000);
+    this.summonConfirmLayer = layer;
+
+    const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7);
+    layer.add(dim);
+
+    const panel = this.add.rectangle(W / 2, H / 2, 280, 130, 0x16213e)
+      .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#faba72').color);
+    layer.add(panel);
+
+    layer.add(this.add.text(W / 2, H / 2 - 40, 'TABLERO CASI LLENO', {
+      fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#faba72'
+    }).setOrigin(0.5));
+    layer.add(this.add.text(W / 2, H / 2 - 15, `Solo caben ${freeSlots} de ${summonsNeeded}`, {
+      fontFamily: '"VT323"', fontSize: '16px', color: '#e0e0e0'
+    }).setOrigin(0.5));
+    layer.add(this.add.text(W / 2, H / 2 + 5, 'invocaciones. ¿Continuar?', {
+      fontFamily: '"VT323"', fontSize: '14px', color: '#9fcafd'
+    }).setOrigin(0.5));
+
+    const yesBtn = this.add.rectangle(W / 2 - 50, H / 2 + 40, 80, 24, 0x16213e)
+      .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#bdcd9c').color)
+      .setInteractive({ useHandCursor: true });
+    layer.add(yesBtn);
+    layer.add(this.add.text(W / 2 - 50, H / 2 + 40, 'INVOCAR', {
+      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#bdcd9c'
+    }).setOrigin(0.5));
+
+    const noBtn = this.add.rectangle(W / 2 + 50, H / 2 + 40, 80, 24, 0x16213e)
+      .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#ff6b6b').color)
+      .setInteractive({ useHandCursor: true });
+    layer.add(noBtn);
+    layer.add(this.add.text(W / 2 + 50, H / 2 + 40, 'CANCELAR', {
+      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
+    }).setOrigin(0.5));
+
+    yesBtn.on('pointerdown', () => {
+      this.closeSummonConfirm();
+      this.executePlayCardWithLimitedSummons(card, handIndex, freeSlots);
+    });
+    noBtn.on('pointerdown', () => {
+      this.closeSummonConfirm();
+      this.addLog('Carta cancelada', 'sys');
+    });
+  }
+
+  closeSummonConfirm() {
+    if (this.summonConfirmLayer) {
+      this.summonConfirmLayer.destroy(true);
+      this.summonConfirmLayer = null;
+    }
+    if (this.state.phase === 'player' && !this.state.gameOver && this.mode !== 'test') {
+      this.startTimer();
+    }
+  }
+
+  executePlayCardWithLimitedSummons(card, handIndex, freeSlots) {
+    const p = this.player;
+    const cost = Math.max(0, card.cost - (p.costReduction || 0));
+    let discount = 0;
+    if (card.costCondition) {
+      const cond = this.checkCondition(card.costCondition, p, this.opponent);
+      if (cond) discount = card.costCondition.discount || 0;
+    }
+    const finalCost = Math.max(0, cost - discount);
+    if (finalCost > p.mana) return;
+
+    this.playCardAnimation(handIndex);
+    p.mana -= finalCost; p.hand.splice(handIndex, 1); p.cardsPlayed++;
+    if (card.effects && card.effects.some(e => e.type === 'swap_hands')) {
+      card.returnAtEndOfTurn = true;
+    }
+    if (!card.consumable) p.discardPile.push(card);
+
+    if (card.resourceCost) {
+      const rc = card.resourceCost;
+      if (rc.type === 'blood') {
+        const before = p.hp;
+        p.hp = Math.max(1, p.hp - rc.amount);
+        const lost = before - p.hp;
+        if (lost > 0) {
+          this.showFloatingNumber(120, 72, `-${lost} HP`, '#ff6b6b');
+          this.screenFlash('#ff6b6b');
+        }
+      }
+    }
+
+    const usesInspirationScale = (card.effects || []).some(e => e.scale === 'inspiration');
+    if (card.resourceCost && card.resourceCost.type === 'inspiration' && !usesInspirationScale) {
+      const amt = card.resourceCost.amount === 'all' ? p.inspiration : card.resourceCost.amount;
+      p.inspiration = Math.max(0, p.inspiration - amt);
+    }
+
+    let summonCount = 0;
+    const limitedEffects = (card.effects || []).map(eff => {
+      if (eff.type === 'summon' && summonCount < freeSlots) {
+        summonCount++;
+        return eff;
+      }
+      if (eff.type === 'summon' && summonCount >= freeSlots) {
+        return null;
+      }
+      return eff;
+    }).filter(x => x !== null);
+
+    const limitedCard = { ...card, effects: limitedEffects };
+    this.resolveEffects(limitedCard, 'player');
     this.addLog(`Juegas: ${card.name}`, 'info');
     p.costReduction = 0;
     if (this.checkGameOver()) return;
@@ -532,75 +792,194 @@ class GameScene extends Phaser.Scene {
     const who = side === 'player' ? this.player : this.opponent;
     const enemy = side === 'player' ? this.opponent : this.player;
     if (!card.effects) return;
-    card.effects.forEach(eff => {
-      switch (eff.type) {
-        case 'damage':
-          if (eff.target === 'enemy_hero') this.applyDamage(side === 'player' ? 'opponent' : 'player', eff.amount);
-          else if (eff.target === 'enemy_creature' && enemy.board.length > 0) {
-            enemy.board[0].hp -= eff.amount;
-            if (enemy.board[0].hp <= 0) this.killCreature(enemy, 0);
-          }
-          break;
-        case 'heal':
-          who.hp = Math.min(who.maxHp, who.hp + eff.amount);
-          if (side === 'player') {
-            this.showFloatingNumber(120, 72, `+${eff.amount} HP`, '#bdcd9c');
-            this.screenFlash('#bdcd9c');
-          }
-          break;
-        case 'armor':
-          who.armor += eff.amount;
-          if (side === 'player') {
-            this.showFloatingNumber(120, 72, `+${eff.amount} ARM`, '#9fcafd');
-            this.screenFlash('#9fcafd');
-          }
-          break;
-        case 'draw': for (let i = 0; i < eff.amount; i++) this.drawCard(side); break;
-        case 'venom': enemy.venom += eff.amount; break;
-        case 'inspiration': who.inspiration += eff.amount; break;
-        case 'summon':
-          if (who.board.length < 4) {
-            who.board.push({
-              uid: Math.random().toString(36).slice(2, 8), cardId: card.id,
-              name: card.name.replace('Invocar ', ''),
-              atk: eff.atk, hp: eff.hp, maxHp: eff.hp, canAttack: false, justSummoned: true,
-              guard: !!eff.guard, evasive: !!eff.evasive, celerity: !!eff.celerity,
-              deathrattle: eff.deathrattle || null
-            });
-            if (eff.celerity) who.board[who.board.length - 1].canAttack = true;
-          }
-          break;
-        case 'damage_all_enemies':
-          enemy.board.forEach(c => { c.hp -= eff.amount; });
-          for (let i = enemy.board.length - 1; i >= 0; i--) if (enemy.board[i].hp <= 0) this.killCreature(enemy, i);
-          break;
-        case 'freeze': if (enemy.board.length > 0) enemy.board[0].canAttack = false; break;
-        case 'weaken': if (enemy.board.length > 0) enemy.board[0].atk = Math.max(0, enemy.board[0].atk - eff.amount); break;
-        case 'fortify': if (who.board.length > 0) who.board[0].atk += eff.amount; break;
-        case 'silence':
-          if (eff.target === 'self_hero') who.heroUsed = true;
-          else if (eff.target === 'enemy_hero') enemy.heroUsed = true;
-          break;
-        case 'cost_reduction': who.costReduction = (who.costReduction || 0) + eff.amount; break;
-        case 'board_buff': who.board.forEach(c => { c.atk += eff.atk; }); break;
-        case 'damage_conditional':
-          let dmg = eff.base;
-          if (eff.condition === 'enemy_venom' && enemy.venom > 0) dmg += eff.bonus;
-          this.applyDamage(side === 'player' ? 'opponent' : 'player', dmg);
-          break;
-        case 'conditional':
-          const cond = this.checkCondition(eff.condition, who, enemy);
-          const effects = cond ? eff.trueEffects : (eff.falseEffects || []);
-          effects.forEach(sub => this.resolveEffects({ effects: [sub] }, side));
-          break;
-        case 'sacrifice': if (who.board.length > 0) this.killCreature(who, 0); break;
-        case 'discard_random':
-          if (enemy.hand.length > 0) enemy.hand.splice(Math.floor(Math.random() * enemy.hand.length), 1);
-          break;
-        case 'swap_hands': const tmp = who.hand; who.hand = enemy.hand; enemy.hand = tmp; break;
-        case 'copy_card': this.drawCard(side); break;
+    let paused = false;
+    for (let i = 0; i < card.effects.length; i++) {
+      const eff = card.effects[i];
+      if (eff.type === 'sacrifice' && who.board.length > 1 && side === 'player' && !this.state.targetingMode) {
+        this.openSacrificeTargeting(card, side);
+        paused = true;
+        break;
       }
-    });
+      this.applySingleEffect(eff, card, side);
+    }
+  }
+
+  applySingleEffect(eff, card, side) {
+    const who = side === 'player' ? this.player : this.opponent;
+    const enemy = side === 'player' ? this.opponent : this.player;
+    switch (eff.type) {
+      case 'damage':
+        if (eff.target === 'enemy_hero' || eff.target === 'any') this.applyDamage(side === 'player' ? 'opponent' : 'player', eff.amount);
+        else if (eff.target === 'enemy_creature' && enemy.board.length > 0) {
+          const tgtIdx = this.pickCreatureTarget(enemy.board);
+          if (tgtIdx >= 0) {
+            const target = enemy.board[tgtIdx];
+            this.damageCreature(target, eff.amount);
+            if (this.getHp(target) <= 0) this.killCreature(enemy, tgtIdx);
+          }
+        }
+        break;
+      case 'heal':
+        who.hp = Math.min(who.maxHp, who.hp + eff.amount);
+        if (side === 'player') {
+          this.showFloatingNumber(120, 72, `+${eff.amount} HP`, '#bdcd9c');
+          this.screenFlash('#bdcd9c');
+        }
+        break;
+      case 'armor':
+        who.armor += eff.amount;
+        if (side === 'player') {
+          this.showFloatingNumber(120, 72, `+${eff.amount} ARM`, '#9fcafd');
+          this.screenFlash('#9fcafd');
+        }
+        break;
+      case 'draw': for (let i = 0; i < eff.amount; i++) this.drawCard(side); break;
+      case 'venom': enemy.venom += eff.amount; break;
+      case 'inspiration': who.inspiration += eff.amount; break;
+      case 'summon':
+        if (who.board.length < 4) {
+          who.board.push({
+            uid: Math.random().toString(36).slice(2, 8), cardId: card.id,
+            name: card.name.replace('Invocar ', ''),
+            atkBase: eff.atk, atkBoost: 0,
+            hpBase: eff.hp, hpBoost: 0,
+            maxHpBase: eff.hp, maxHpBoost: 0,
+            canAttack: false, justSummoned: true,
+            guard: !!eff.guard, evasive: !!eff.evasive, celerity: !!eff.celerity,
+            deathrattle: eff.deathrattle || null,
+            buffs: []
+          });
+          if (eff.celerity) who.board[who.board.length - 1].canAttack = true;
+        }
+        break;
+      case 'damage_all_enemies':
+        for (let i = enemy.board.length - 1; i >= 0; i--) {
+          this.damageCreature(enemy.board[i], eff.amount);
+          if (this.getHp(enemy.board[i]) <= 0) this.killCreature(enemy, i);
+        }
+        break;
+      case 'freeze':
+        const fIdx = this.pickCreatureTarget(enemy.board);
+        if (fIdx >= 0) enemy.board[fIdx].canAttack = false;
+        break;
+      case 'weaken':
+        const wIdx = this.pickCreatureTarget(enemy.board);
+        if (wIdx >= 0) enemy.board[wIdx].atkBoost = Math.max(0, (enemy.board[wIdx].atkBoost || 0) - eff.amount);
+        break;
+      case 'fortify':
+        const fortIdx = this.pickCreatureTarget(who.board);
+        if (fortIdx >= 0) who.board[fortIdx].atkBoost = (who.board[fortIdx].atkBoost || 0) + eff.amount;
+        break;
+      case 'silence':
+        const silTurns = eff.duration || 1;
+        if (eff.target === 'self_hero') who.silencedTurns = (who.silencedTurns || 0) + silTurns;
+        else if (eff.target === 'enemy_hero') enemy.silencedTurns = (enemy.silencedTurns || 0) + silTurns;
+        break;
+      case 'cost_reduction': who.costReduction = (who.costReduction || 0) + eff.amount; break;
+      case 'board_buff':
+        who.board.forEach(c => {
+          c.atkBoost = (c.atkBoost || 0) + eff.atk;
+          if (!c.buffs) c.buffs = [];
+          c.buffs.push({ type: 'atk', amount: eff.atk, duration: eff.duration || 'turn', source: 'board_buff' });
+        });
+        break;
+      case 'damage_conditional':
+        let dmg = eff.base;
+        if (eff.condition === 'enemy_venom' && enemy.venom > 0) dmg += eff.bonus;
+        this.applyDamage(side === 'player' ? 'opponent' : 'player', dmg);
+        break;
+      case 'conditional':
+        const cond = this.checkCondition(eff.condition, who, enemy);
+        const effects = cond ? eff.trueEffects : (eff.falseEffects || []);
+        effects.forEach(sub => this.applySingleEffect(sub, card, side));
+        break;
+      case 'sacrifice':
+        if (who.board.length === 0) {
+          this.addLog('Nada que sacrificar', 'sys');
+        } else {
+          this.killCreature(who, 0);
+        }
+        break;
+      case 'discard_random':
+        let count = 1;
+        if (eff.scale === 'inspiration') count = who.inspiration;
+        for (let i = 0; i < count && enemy.hand.length > 0; i++) {
+          enemy.hand.splice(Math.floor(Math.random() * enemy.hand.length), 1);
+        }
+        break;
+      case 'swap_hands': const tmp = who.hand; who.hand = enemy.hand; enemy.hand = tmp; break;
+      case 'copy_card':
+        if (enemy.discardPile.length > 0) {
+          const last = enemy.discardPile[enemy.discardPile.length - 1];
+          who.hand.push({ ...last, uid: Math.random().toString(36).slice(2, 8) });
+          this.addLog(`Bis: copia ${last.name}`, 'info');
+        } else {
+          this.addLog('Bis: el oponente no tiene cartas', 'sys');
+        }
+        break;
+    }
+  }
+
+  openSacrificeTargeting(card, side) {
+    this.state.targetingMode = {
+      card, side,
+      effectType: 'sacrifice',
+      remainingEffects: card.effects.slice(card.effects.findIndex(e => e.type === 'sacrifice') + 1)
+    };
+    if (this.state.timerEvent) { this.state.timerEvent.remove(); this.state.timerEvent = null; }
+    if (this.menuOpen) return;
+    this.renderBoards();
+    this.renderTargetingPrompt();
+  }
+
+  renderTargetingPrompt() {
+    if (this.targetingPrompt) { this.targetingPrompt.destroy(true); this.targetingPrompt = null; }
+    this.targetingPrompt = this.add.text(320, 220, 'SELECCIONA CRIATURA A SACRIFICAR', {
+      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b',
+      stroke: '#000000', strokeThickness: 3
+    }).setOrigin(0.5).setDepth(1500);
+  }
+
+  handleTargetingClick(creature, board) {
+    if (!this.state.targetingMode) return false;
+    const tm = this.state.targetingMode;
+    if (tm.effectType === 'sacrifice') {
+      const idx = board.indexOf(creature);
+      if (idx < 0) return false;
+      const who = tm.side === 'player' ? this.player : this.opponent;
+      this.killCreature(who, idx);
+      this.addLog(`Sacrificaste ${creature.name}`, 'info');
+      const remaining = tm.remainingEffects || [];
+      this.state.targetingMode = null;
+      if (this.targetingPrompt) { this.targetingPrompt.destroy(true); this.targetingPrompt = null; }
+      if (remaining.length > 0) {
+        this.resolveEffects({ effects: remaining }, tm.side);
+      }
+      if (this.checkGameOver()) return true;
+      this.renderAll();
+      if (this.state.phase === 'player' && this.mode !== 'test') this.startTimer();
+      return true;
+    }
+    return false;
+  }
+
+  cancelTargeting() {
+    if (!this.state.targetingMode) return;
+    const tm = this.state.targetingMode;
+    const who = tm.side === 'player' ? this.player : this.opponent;
+    const cardIdx = who.discardPile.indexOf(tm.card);
+    if (cardIdx >= 0) who.discardPile.splice(cardIdx, 1);
+    if (who.hand.length < 8) {
+      who.hand.push(tm.card);
+      this.addLog(`${tm.card.name} regresa a tu mano`, 'sys');
+    } else {
+      who.discardPile.push(tm.card);
+      this.addLog(`${tm.card.name} al descarte (mano llena)`, 'sys');
+    }
+    this.state.targetingMode = null;
+    if (this.targetingPrompt) { this.targetingPrompt.destroy(true); this.targetingPrompt = null; }
+    this.renderAll();
+    if (this.state.phase === 'player' && this.mode !== 'test') this.startTimer();
   }
 
   checkCondition(cond, who, enemy) {
@@ -638,18 +1017,32 @@ class GameScene extends Phaser.Scene {
   }
 
   combat(attacker, defender, side) {
-    defender.hp -= attacker.atk;
-    attacker.hp -= defender.atk;
+    const atkAttack = this.getAtk(attacker);
+    const defAttack = this.getAtk(defender);
+    this.damageCreature(defender, atkAttack);
+    this.damageCreature(attacker, defAttack);
     this.addLog(`${attacker.name} vs ${defender.name}`, 'dmg');
-    if (defender.hp <= 0) {
+    if (this.getHp(defender) <= 0) {
       const owner = side === 'player' ? this.opponent : this.player;
       const idx = owner.board.indexOf(defender);
       if (idx >= 0) this.killCreature(owner, idx);
     }
-    if (attacker.hp <= 0) {
+    if (this.getHp(attacker) <= 0) {
       const owner = side === 'player' ? this.player : this.opponent;
       const idx = owner.board.indexOf(attacker);
       if (idx >= 0) this.killCreature(owner, idx);
+    }
+  }
+
+  damageCreature(c, amount) {
+    if (amount <= 0) return;
+    let remaining = amount;
+    if (c.armor && c.armor > 0) {
+      if (remaining <= c.armor) { c.armor -= remaining; remaining = 0; }
+      else { remaining -= c.armor; c.armor = 0; }
+    }
+    if (remaining > 0) {
+      c.hpBase = (c.hpBase || 0) - remaining;
     }
   }
 
@@ -667,6 +1060,12 @@ class GameScene extends Phaser.Scene {
       this.renderBoards();
       return;
     }
+    if (target.evasive && !attacker.evasive) {
+      this.addLog(`${target.name} es evasivo`, 'sys');
+      this.selectedAttacker = null;
+      this.renderBoards();
+      return;
+    }
     this.combat(attacker, target, 'player');
     attacker.canAttack = false;
     this.selectedAttacker = null;
@@ -678,6 +1077,7 @@ class GameScene extends Phaser.Scene {
     if (this.state.phase !== 'player' || this.state.gameOver) return;
     const p = this.player;
     if (p.heroUsed) { this.addLog('Poder ya usado', 'sys'); return; }
+    if (p.silencedTurns && p.silencedTurns > 0) { this.addLog('Héroe silenciado', 'sys'); return; }
     if (p.mana < this.cls.heroPower.cost) { this.addLog('Maná insuficiente', 'sys'); return; }
     p.mana -= this.cls.heroPower.cost; p.heroUsed = true;
     this.useHeroPowerFor('player');
@@ -696,10 +1096,20 @@ class GameScene extends Phaser.Scene {
       case 'mago': this.applyDamage(isPlayer ? 'opponent' : 'player', 2); break;
       case 'necromancer':
         if (who.board.length < 4)
-          who.board.push({ uid: Math.random().toString(36).slice(2,8), cardId: 'n_esqueleto', name: 'Esqueleto', atk: 1, hp: 1, maxHp: 1, canAttack: false, justSummoned: true });
+          who.board.push({
+            uid: Math.random().toString(36).slice(2, 8), cardId: 'n_esqueleto',
+            name: 'Esqueleto',
+            atkBase: 1, atkBoost: 0, hpBase: 1, hpBoost: 0,
+            maxHpBase: 1, maxHpBoost: 0,
+            canAttack: false, justSummoned: true, buffs: []
+          });
         break;
       case 'guerrero':
-        if (enemy.board.length > 0) { enemy.board[0].hp -= 1; if (enemy.board[0].hp <= 0) this.killCreature(enemy, 0); }
+        const gIdx = this.pickCreatureTarget(enemy.board);
+        if (gIdx >= 0) {
+          this.damageCreature(enemy.board[gIdx], 1);
+          if (this.getHp(enemy.board[gIdx]) <= 0) this.killCreature(enemy, gIdx);
+        }
         who.armor += 1;
         this.showFloatingNumber(isPlayer ? 120 : 520, 72, `+1 ARM`, '#9fcafd');
         this.screenFlash('#9fcafd');

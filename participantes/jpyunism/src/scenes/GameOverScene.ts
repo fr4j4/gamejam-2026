@@ -36,6 +36,11 @@ export class GameOverScene extends Phaser.Scene {
   private isShopOpen: boolean = false;
   private shopHandlers: Array<{ event: string; fn: () => void }> = [];
 
+  /** Track keyboard handlers for cleanup in shutdown(). */
+  private keydownRHandler!: (event: KeyboardEvent) => void;
+  private keydownMHandler!: (event: KeyboardEvent) => void;
+  private keydownSHandler!: (event: KeyboardEvent) => void;
+
   constructor() {
     super("GameOverScene");
   }
@@ -137,17 +142,28 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     // Input — main menu
-    this.input.keyboard?.on("keydown-R", () => {
+    this.keydownRHandler = (): void => {
       this.scene.start("GameScene");
-    });
-    this.input.keyboard?.on("keydown-M", () => {
+    };
+    this.input.keyboard?.on("keydown-R", this.keydownRHandler);
+
+    this.keydownMHandler = (): void => {
       this.scene.start("MenuScene");
-    });
+    };
+    this.input.keyboard?.on("keydown-M", this.keydownMHandler);
 
     // Shop toggle
-    this.input.keyboard?.on("keydown-S", () => {
+    this.keydownSHandler = (): void => {
       this.toggleShop();
-    });
+    };
+    this.input.keyboard?.on("keydown-S", this.keydownSHandler);
+  }
+
+  shutdown(): void {
+    this.input.keyboard?.off("keydown-R", this.keydownRHandler);
+    this.input.keyboard?.off("keydown-M", this.keydownMHandler);
+    this.input.keyboard?.off("keydown-S", this.keydownSHandler);
+    this.closeShop();
   }
 
   private toggleShop(): void {

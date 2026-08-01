@@ -14,9 +14,8 @@ export class PulseRifle extends Weapon {
   }
 
   public fire(scene: Phaser.Scene, x: number, y: number, angle: number): void {
-    const projectiles = (scene as unknown as {
-      projectiles: Phaser.Physics.Arcade.Group;
-    }).projectiles;
+    const projectiles = scene.data.get("projectileGroup") as Phaser.Physics.Arcade.Group | undefined;
+    if (!projectiles) return;
 
     const angles = [angle - this.spreadRad, angle, angle + this.spreadRad];
     for (const a of angles) {

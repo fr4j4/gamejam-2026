@@ -18,9 +18,8 @@ export class GrenadeLauncher extends Weapon {
   }
 
   public fire(scene: Phaser.Scene, x: number, y: number, angle: number): void {
-    const projectiles = (scene as unknown as {
-      projectiles: Phaser.Physics.Arcade.Group;
-    }).projectiles;
+    const projectiles = scene.data.get("projectileGroup") as Phaser.Physics.Arcade.Group | undefined;
+    if (!projectiles) return;
 
     const proj = projectiles.get(x, y, "projectile-grenade") as
       | Phaser.Physics.Arcade.Image
@@ -101,10 +100,8 @@ export class GrenadeLauncher extends Weapon {
     });
 
     // Deal damage to every enemy inside the explosion radius
-    const gameScene = scene as unknown as {
-      enemies: Phaser.Physics.Arcade.Group;
-    };
-    const children = gameScene.enemies.getChildren() as Enemy[];
+    const enemyGroup = scene.data.get("enemyGroup") as Phaser.Physics.Arcade.Group | undefined;
+    const children = (enemyGroup?.getChildren() ?? []) as Enemy[];
     for (const enemy of children) {
       if (!enemy.isAlive) {
         continue;

@@ -73,10 +73,6 @@ export class Flamethrower extends Weapon {
     ex: number,
     ey: number,
   ): void {
-    const gameScene = scene as unknown as {
-      enemies: Phaser.Physics.Arcade.Group;
-    };
-
     const fx = scene.add.circle(ex, ey, ZONE_RADIUS, 0xff5522, 0.45);
     fx.setStrokeStyle(2, 0xffaa00, 0.85);
 
@@ -101,14 +97,16 @@ export class Flamethrower extends Weapon {
       },
     });
 
-    // Damage tick loop
-    scene.time.addEvent({
+    // Damage tick loop — tracked on scene data so shutdown() can clean it up.
+    const timer = scene.time.addEvent({
       delay: TICK_INTERVAL_MS,
       callback: () => {
         if (!fx.active) {
+          timer.remove(false);
           return;
         }
-        const children = gameScene.enemies.getChildren() as Enemy[];
+        const enemyGroup = scene.data.get("enemyGroup") as Phaser.Physics.Arcade.Group | undefined;
+        const children = (enemyGroup?.getChildren() ?? []) as Enemy[];
         for (const enemy of children) {
           if (!enemy.isAlive) {
             continue;
@@ -123,5 +121,9 @@ export class Flamethrower extends Weapon {
       callbackScope: scene,
       loop: true,
     });
+    // Track timer for cleanup on scene shutdown
+    const timers: Phaser.Time.TimerEvent[] = scene.data.get("fireZoneTimers") ?? [];
+    timers.push(timer);
+    scene.data.set("fireZoneTimers", timers);
   }
 }

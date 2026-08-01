@@ -14,6 +14,8 @@ import { MetaProgress, applyMetaBonuses } from "../store/MetaProgress";
 import { HUD } from "../ui/HUD";
 import { AudioManager } from "../audio/AudioManager";
 import { SettingsPanel } from "../ui/SettingsPanel";
+import { EventBus, SPECTACLE_ENTRANCE, SPECTACLE_ACTION, SPECTACLE_HIT } from "../core/EventBus";
+import { VirtualJoystick } from "../systems/VirtualJoystick";
 
 /** Battle-track pool. Keys are mirrored in the preload() loader below. */
 const BATTLE_TRACK_KEYS = [
@@ -44,6 +46,8 @@ export class GameScene extends Phaser.Scene {
   private audio!: AudioManager;
   /** Settings overlay. Created lazily on first pause. */
   private settingsPanel: SettingsPanel | null = null;
+  /** Virtual joystick for mobile input. */
+  private joystick: VirtualJoystick | null = null;
   /**
    * Weapon IDs chosen by the player in MenuScene. Defaults to Plasma + Pulse
    * if MenuScene didn't pass any (e.g. restart from GameOverScene with no
@@ -56,6 +60,10 @@ export class GameScene extends Phaser.Scene {
    * repositioned each frame so it follows the sprite without allocating.
    */
   private playerGlow: Phaser.GameObjects.Arc | null = null;
+
+  /** Track keyboard handlers for cleanup in shutdown(). */
+  private keydownQHandler!: (event: KeyboardEvent) => void;
+  private keydownEscHandler!: (event: KeyboardEvent) => void;
 
   constructor() {
     super("GameScene");
@@ -160,13 +168,15 @@ export class GameScene extends Phaser.Scene {
     this.audio.crossFadeTo(pick, { loop: true, fadeInMs: 1000 });
 
     // Enemy group
-    this.enemies = this.physics.add.group();
+    this.enemies = this.physics.add.group({ maxSize: 80 });
+    this.data.set("enemyGroup", this.enemies);
 
     // Projectile group (used by every weapon that emits a physics bullet)
-    this.projectiles = this.physics.add.group();
+    this.projectiles = this.physics.add.group({ maxSize: 60 });
+    this.data.set("projectileGroup", this.projectiles);
 
     // Enemy projectile group (ShooterEnemy projectiles)
-    this.enemyProjectiles = this.physics.add.group();
+    this.enemyProjectiles = this.physics.add.group({ maxSize: 30 });
     this.data.set("enemyProjectiles", this.enemyProjectiles);
 
     // Player-enemy contact damage (real damage now, not just a log)
@@ -237,17 +247,49 @@ export class GameScene extends Phaser.Scene {
     this.keyA = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A);
     this.keyS = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.S);
     this.keyD = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-    this.input.keyboard!.on("keydown-Q", () => {
+    this.keydownQHandler = (): void => {
       this.player.switchWeapon();
-    });
+    };
+    this.input.keyboard!.on("keydown-Q", this.keydownQHandler);
 
-    this.input.keyboard!.on("keydown-ESC", () => {
+    this.keydownEscHandler = (): void => {
       this.togglePause();
-    });
+    };
+    this.input.keyboard!.on("keydown-ESC", this.keydownEscHandler);
+
+    // Virtual joystick for mobile (auto-hides on desktop)
+    this.joystick = new VirtualJoystick(this, 120, height - 120, 50);
 
     // HUD (replaces the old debug text labels).
     this.hud = new HUD(this);
     this.hud.coins = this.runCoins;
+
+    // Spectacle: entrance — player and enemies are now in the arena
+    EventBus.emit(SPECTACLE_ENTRANCE, { x: this.player.x, y: this.player.y });
+  }
+
+  shutdown(): void {
+    this.input.keyboard?.off("keydown-Q", this.keydownQHandler);
+    this.input.keyboard?.off("keydown-ESC", this.keydownEscHandler);
+    this.events.off("enemy-killed", this.onEnemyKilled, this);
+    this.player.off("player-died", this.onPlayerDied, this);
+    this.waveManager?.stop();
+    this.audio?.destroy();
+    this.settingsPanel?.destroy();
+    this.settingsPanel = null;
+    this.hud?.destroy();
+    // Clean up persistent electric beam graphics
+    const beamGfx = this.data.get("electricBeamGraphics") as Phaser.GameObjects.Graphics | undefined;
+    if (beamGfx) {
+      beamGfx.destroy();
+      this.data.set("electricBeamGraphics", undefined);
+    }
+    // Clean up any active fire zone timers
+    const fireTimers: Phaser.Time.TimerEvent[] = this.data.get("fireZoneTimers") ?? [];
+    for (const t of fireTimers) {
+      t.remove(false);
+    }
+    this.data.set("fireZoneTimers", []);
   }
 
   /**
@@ -379,6 +421,7 @@ export class GameScene extends Phaser.Scene {
 
     const damage = (proj.getData("damage") as number | undefined) ?? 0;
     e.takeDamage(damage);
+    EventBus.emit(SPECTACLE_HIT, { x: proj.x, y: proj.y, enemy: e });
 
     const piercing = this.data.get("piercing-shots-active") === true;
     const bouncing = this.player.bouncingShots === true;
@@ -570,6 +613,15 @@ export class GameScene extends Phaser.Scene {
       right: this.keyD.isDown,
     };
 
+    // Merge virtual joystick input for mobile
+    if (this.joystick && this.joystick.isActive()) {
+      const dir = this.joystick.getDirection();
+      this.cursors.left = dir.x < -0.2;
+      this.cursors.right = dir.x > 0.2;
+      this.cursors.up = dir.y < -0.2;
+      this.cursors.down = dir.y > 0.2;
+    }
+
     this.player.update(time, delta, this.cursors, this.input.activePointer);
 
     // Keep the player glow anchored to the player (the tween handles alpha
@@ -609,6 +661,11 @@ export class GameScene extends Phaser.Scene {
 
     this.waveManager.update(time, delta);
     this.levelUpManager.update(time);
+
+    // Emit spectacle:action on every frame the player is firing
+    if (this.input.activePointer.isDown) {
+      EventBus.emit(SPECTACLE_ACTION, { x: this.player.x, y: this.player.y });
+    }
 
     // HUD last — it reads the latest state from the systems.
     this.hud.coins = this.runCoins;

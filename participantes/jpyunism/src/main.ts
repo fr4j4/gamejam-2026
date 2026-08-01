@@ -1,14 +1,17 @@
 import { MenuScene } from "./scenes/MenuScene";
 import { GameScene } from "./scenes/GameScene";
 import { GameOverScene } from "./scenes/GameOverScene";
+import { GAME } from "./core/Constants";
 import Phaser from "phaser";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: "game",
-  width: 1280,
-  height: 960,
-  backgroundColor: "#0a0a0f",
+  width: GAME.WIDTH,
+  height: GAME.HEIGHT,
+  backgroundColor: GAME.BG_COLOR,
+  pixelArt: true,
+  roundPixels: true,
   scene: [MenuScene, GameScene, GameOverScene],
   scale: {
     mode: Phaser.Scale.FIT,
@@ -20,9 +23,6 @@ const config: Phaser.Types.Core.GameConfig = {
       gravity: { x: 0, y: 0 },
       debug: false,
     },
-  },
-  audio: {
-    disableWebAudio: true,
   },
 };
 

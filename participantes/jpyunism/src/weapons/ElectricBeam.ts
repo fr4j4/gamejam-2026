@@ -17,10 +17,6 @@ export class ElectricBeam extends Weapon {
   }
 
   public fire(scene: Phaser.Scene, x: number, y: number, angle: number): void {
-    const gameScene = scene as unknown as {
-      enemies: Phaser.Physics.Arcade.Group;
-    };
-
     // Reuse one persistent Graphics object across frames.
     let gfx = scene.data.get(ElectricBeam.GRAPHICS_KEY) as
       | Phaser.GameObjects.Graphics
@@ -46,8 +42,8 @@ export class ElectricBeam extends Weapon {
     gfx.strokePath();
 
     // Damage every enemy inside the cone
-    const enemyGroup = gameScene.enemies;
-    const children = enemyGroup.getChildren() as Enemy[];
+    const enemyGroup = scene.data.get("enemyGroup") as Phaser.Physics.Arcade.Group | undefined;
+    const children = (enemyGroup?.getChildren() ?? []) as Enemy[];
     for (const enemy of children) {
       if (!enemy.isAlive) {
         continue;

@@ -74,6 +74,10 @@ export class MenuScene extends Phaser.Scene {
   /** Settings overlay. Created lazily on first click. */
   private settingsPanel: SettingsPanel | null = null;
 
+  /** Track keyboard handlers so we can detach them in shutdown(). */
+  private keydownEnterHandler!: (event: KeyboardEvent) => void;
+  private keydownEscHandler!: (event: KeyboardEvent) => void;
+
   constructor() {
     super("MenuScene");
   }
@@ -291,15 +295,25 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private bindInput(): void {
-    this.input.keyboard?.on("keydown-ENTER", () => {
+    this.keydownEnterHandler = (): void => {
       this.tryStartRun();
-    });
-    // ESC closes the settings overlay if it's open.
-    this.input.keyboard?.on("keydown-ESC", () => {
+    };
+    this.input.keyboard?.on("keydown-ENTER", this.keydownEnterHandler);
+
+    this.keydownEscHandler = (): void => {
       if (this.settingsPanel && this.settingsPanel.isVisible()) {
         this.closeSettings();
       }
-    });
+    };
+    this.input.keyboard?.on("keydown-ESC", this.keydownEscHandler);
+  }
+
+  shutdown(): void {
+    this.input.keyboard?.off("keydown-ENTER", this.keydownEnterHandler);
+    this.input.keyboard?.off("keydown-ESC", this.keydownEscHandler);
+    this.audio?.destroy();
+    this.settingsPanel?.destroy();
+    this.settingsPanel = null;
   }
 
   private toggleWeapon(id: string): void {

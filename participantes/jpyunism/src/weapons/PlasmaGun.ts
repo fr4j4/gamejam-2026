@@ -13,9 +13,8 @@ export class PlasmaGun extends Weapon {
   }
 
   public fire(scene: Phaser.Scene, x: number, y: number, angle: number): void {
-    const projectiles = (scene as unknown as {
-      projectiles: Phaser.Physics.Arcade.Group;
-    }).projectiles;
+    const projectiles = scene.data.get("projectileGroup") as Phaser.Physics.Arcade.Group | undefined;
+    if (!projectiles) return;
 
     const proj = projectiles.get(x, y, "projectile-plasma") as
       | Phaser.Physics.Arcade.Image

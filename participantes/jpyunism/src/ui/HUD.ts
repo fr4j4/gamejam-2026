@@ -263,6 +263,9 @@ export class HUD {
   /** Coin count the scene pokes when loot drops. HUD re-reads this. */
   public coins: number = 0;
 
+  /** Mute toggle button. */
+  private muteBtn!: Phaser.GameObjects.Text;
+
   constructor(scene: Phaser.Scene) {
     const { width, height } = scene.scale;
 
@@ -400,6 +403,22 @@ export class HUD {
       const slot = new WeaponSlot(scene, slotX, SLOTS_Y, SLOT_W, SLOT_H, i);
       this.weaponSlots.push(slot);
     }
+
+    // ── Mute toggle (top-right corner, above wave panel) ──
+    this.muteBtn = scene.add
+      .text(width - 10, RT_Y, scene.sound.mute ? "[UNMUTE]" : "[MUTE]", {
+        fontFamily: "monospace",
+        fontSize: "11px",
+        color: "#888888",
+      })
+      .setOrigin(1, 0)
+      .setScrollFactor(0)
+      .setDepth(903)
+      .setInteractive({ useHandCursor: true });
+    this.muteBtn.on("pointerdown", () => {
+      scene.sound.mute = !scene.sound.mute;
+      this.muteBtn.setText(scene.sound.mute ? "[UNMUTE]" : "[MUTE]");
+    });
   }
 
   /**

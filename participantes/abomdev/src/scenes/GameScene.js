@@ -44,15 +44,15 @@ const ENEMY_TYPES = {
 };
 
 const STAT_UPGRADES = [
-  { key: 'damage', rarity: 'common', describe: (b, a) => `Daño: ${b.damage} → ${a.damage}`, apply: (s) => { s.damage += 8; } },
+  { key: 'damage', rarity: 'common', describe: (b, a) => `Daño: ${Math.round(b.damage)} → ${Math.round(a.damage)}`, apply: (s) => { s.damage += 8; } },
   {
     key: 'fireRate', rarity: 'common',
     describe: (b, a) => `Cadencia: ${(1000 / b.fireRate).toFixed(1)}/s → ${(1000 / a.fireRate).toFixed(1)}/s`,
     apply: (s) => { s.fireRate = Math.max(130, Math.round(s.fireRate * 0.8)); },
   },
-  { key: 'moveSpeed', rarity: 'common', describe: (b, a) => `Velocidad: ${b.moveSpeed} → ${a.moveSpeed}`, apply: (s) => { s.moveSpeed = Math.min(480, Math.round(s.moveSpeed * 1.15)); } },
-  { key: 'maxHp', rarity: 'common', describe: (b, a) => `HP máximo: ${b.maxHp} → ${a.maxHp}`, apply: (s) => { s.maxHp += 30; s.hp += 30; } },
-  { key: 'magnet', rarity: 'common', describe: (b, a) => `Radio de imán: ${b.magnetRadius} → ${a.magnetRadius}`, apply: (s) => { s.magnetRadius = Math.min(550, Math.round(s.magnetRadius * 1.5)); } },
+  { key: 'moveSpeed', rarity: 'common', describe: (b, a) => `Velocidad: ${Math.round(b.moveSpeed)} → ${Math.round(a.moveSpeed)}`, apply: (s) => { s.moveSpeed = Math.min(480, Math.round(s.moveSpeed * 1.15)); } },
+  { key: 'maxHp', rarity: 'common', describe: (b, a) => `HP máximo: ${Math.round(b.maxHp)} → ${Math.round(a.maxHp)}`, apply: (s) => { s.maxHp += 30; s.hp += 30; } },
+  { key: 'magnet', rarity: 'common', describe: (b, a) => `Radio de imán: ${Math.round(b.magnetRadius)} → ${Math.round(a.magnetRadius)}`, apply: (s) => { s.magnetRadius = Math.min(550, Math.round(s.magnetRadius * 1.5)); } },
   {
     key: 'hpRegen', rarity: 'common',
     describe: (b, a) => `Regeneración: ${b.hpRegen.toFixed(1)}/s → ${a.hpRegen.toFixed(1)}/s`,
@@ -70,7 +70,7 @@ const STAT_UPGRADES = [
   },
   {
     key: 'shield', rarity: 'epic',
-    describe: (b, a) => `Escudo: ${b.shieldMax} → ${a.shieldMax}`,
+    describe: (b, a) => `Escudo: ${Math.round(b.shieldMax)} → ${Math.round(a.shieldMax)}`,
     apply: (s) => { s.shieldMax += 35; s.shield = s.shieldMax; },
   },
 ];
@@ -83,8 +83,8 @@ const WEAPON_UPGRADES = {
       apply: (s) => { s.hasAura = true; s.auraDamage = 10; s.auraRadius = 100; s.auraTickMs = 600; },
     },
     upgrades: [
-      { key: 'auraDamage', rarity: 'common', describe: (b, a) => `Aura daño: ${b.auraDamage} → ${a.auraDamage}`, apply: (s) => { s.auraDamage += 8; } },
-      { key: 'auraRadius', rarity: 'common', describe: (b, a) => `Aura radio: ${b.auraRadius} → ${a.auraRadius}`, apply: (s) => { s.auraRadius = Math.min(420, Math.round(s.auraRadius * 1.3)); } },
+      { key: 'auraDamage', rarity: 'common', describe: (b, a) => `Aura daño: ${Math.round(b.auraDamage)} → ${Math.round(a.auraDamage)}`, apply: (s) => { s.auraDamage += 8; } },
+      { key: 'auraRadius', rarity: 'common', describe: (b, a) => `Aura radio: ${Math.round(b.auraRadius)} → ${Math.round(a.auraRadius)}`, apply: (s) => { s.auraRadius = Math.min(420, Math.round(s.auraRadius * 1.3)); } },
     ],
   },
   orbit: {
@@ -94,7 +94,7 @@ const WEAPON_UPGRADES = {
       apply: (s) => { s.hasOrbit = true; s.orbitDamage = 10; s.orbitRadius = 70; s.orbitSpeed = 2.2; s.orbitCount = 2; },
     },
     upgrades: [
-      { key: 'orbitDamage', rarity: 'common', describe: (b, a) => `Orbe daño: ${b.orbitDamage} → ${a.orbitDamage}`, apply: (s) => { s.orbitDamage += 8; } },
+      { key: 'orbitDamage', rarity: 'common', describe: (b, a) => `Orbe daño: ${Math.round(b.orbitDamage)} → ${Math.round(a.orbitDamage)}`, apply: (s) => { s.orbitDamage += 8; } },
       { key: 'orbitCount', rarity: 'rare', describe: (b, a) => `Orbe cantidad: ${b.orbitCount} → ${a.orbitCount}`, apply: (s) => { s.orbitCount = Math.min(8, s.orbitCount + 1); } },
       { key: 'orbitSpeed', rarity: 'common', describe: (b, a) => `Orbe velocidad: ${b.orbitSpeed.toFixed(2)} → ${a.orbitSpeed.toFixed(2)}`, apply: (s) => { s.orbitSpeed = Math.min(6.5, s.orbitSpeed * 1.3); } },
     ],
@@ -106,7 +106,7 @@ const WEAPON_UPGRADES = {
       apply: (s) => { s.hasPierce = true; s.pierceDamage = 18; s.pierceRate = 1200; s.pierceSpeed = 600; },
     },
     upgrades: [
-      { key: 'pierceDamage', rarity: 'common', describe: (b, a) => `Perforante daño: ${b.pierceDamage} → ${a.pierceDamage}`, apply: (s) => { s.pierceDamage += 12; } },
+      { key: 'pierceDamage', rarity: 'common', describe: (b, a) => `Perforante daño: ${Math.round(b.pierceDamage)} → ${Math.round(a.pierceDamage)}`, apply: (s) => { s.pierceDamage += 12; } },
       {
         key: 'pierceRate', rarity: 'common',
         describe: (b, a) => `Perforante cadencia: ${(1000 / b.pierceRate).toFixed(1)}/s → ${(1000 / a.pierceRate).toFixed(1)}/s`,
@@ -121,7 +121,7 @@ const WEAPON_UPGRADES = {
       apply: (s) => { s.hasBurst = true; s.burstDamage = 12; s.burstCount = 3; s.burstRate = 1500; },
     },
     upgrades: [
-      { key: 'burstDamage', rarity: 'common', describe: (b, a) => `Ráfaga daño: ${b.burstDamage} → ${a.burstDamage}`, apply: (s) => { s.burstDamage += 8; } },
+      { key: 'burstDamage', rarity: 'common', describe: (b, a) => `Ráfaga daño: ${Math.round(b.burstDamage)} → ${Math.round(a.burstDamage)}`, apply: (s) => { s.burstDamage += 8; } },
       { key: 'burstCount', rarity: 'rare', describe: (b, a) => `Ráfaga disparos: ${b.burstCount} → ${a.burstCount}`, apply: (s) => { s.burstCount = Math.min(10, s.burstCount + 1); } },
       {
         key: 'burstRate', rarity: 'common',
@@ -137,8 +137,8 @@ const WEAPON_UPGRADES = {
       apply: (s) => { s.hasNova = true; s.novaDamage = 25; s.novaRadius = 140; s.novaRate = 2500; },
     },
     upgrades: [
-      { key: 'novaDamage', rarity: 'common', describe: (b, a) => `Onda daño: ${b.novaDamage} → ${a.novaDamage}`, apply: (s) => { s.novaDamage += 15; } },
-      { key: 'novaRadius', rarity: 'common', describe: (b, a) => `Onda radio: ${b.novaRadius} → ${a.novaRadius}`, apply: (s) => { s.novaRadius = Math.min(480, Math.round(s.novaRadius * 1.25)); } },
+      { key: 'novaDamage', rarity: 'common', describe: (b, a) => `Onda daño: ${Math.round(b.novaDamage)} → ${Math.round(a.novaDamage)}`, apply: (s) => { s.novaDamage += 15; } },
+      { key: 'novaRadius', rarity: 'common', describe: (b, a) => `Onda radio: ${Math.round(b.novaRadius)} → ${Math.round(a.novaRadius)}`, apply: (s) => { s.novaRadius = Math.min(480, Math.round(s.novaRadius * 1.25)); } },
     ],
   },
 };
@@ -148,6 +148,39 @@ const WEAPON_KEYS = ['aura', 'orbit', 'pierce', 'burst', 'nova'];
 const RARITY_WEIGHT = { common: 3, rare: 2, epic: 1 };
 const RARITY_COLOR = { common: '#66ffcc', rare: '#66aaff', epic: '#ffcc44' };
 const RARITY_LABEL = { common: '', rare: '[RARA] ', epic: '[ÉPICA] ' };
+
+// Escalado pasivo: +1% (o -1% en cadencias) en cada level-up, ademas de la mejora elegida.
+const LEVEL_SCALE_UP = 1.01;
+const LEVEL_SCALE_DOWN = 0.99;
+
+// stat que sube, con su mismo tope que ya usan las mejoras manuales. `requires` es opcional
+// (solo se aplica si esa arma ya esta desbloqueada). orbitCount/burstCount quedan afuera: un
+// 1% de un numero como 3 no significa nada, esas solo crecen por eleccion explicita.
+const GROWTH_STATS = [
+  { key: 'damage', cap: null },
+  { key: 'moveSpeed', cap: 480 },
+  { key: 'magnetRadius', cap: 550 },
+  { key: 'hpRegen', cap: null },
+  { key: 'lifesteal', cap: null },
+  { key: 'dodge', cap: DODGE_CAP },
+  { key: 'shieldMax', cap: null },
+  { key: 'auraDamage', cap: null, requires: 'hasAura' },
+  { key: 'auraRadius', cap: 420, requires: 'hasAura' },
+  { key: 'orbitDamage', cap: null, requires: 'hasOrbit' },
+  { key: 'orbitSpeed', cap: 6.5, requires: 'hasOrbit' },
+  { key: 'pierceDamage', cap: null, requires: 'hasPierce' },
+  { key: 'burstDamage', cap: null, requires: 'hasBurst' },
+  { key: 'novaDamage', cap: null, requires: 'hasNova' },
+  { key: 'novaRadius', cap: 480, requires: 'hasNova' },
+];
+
+// cadencias: "mejor" es un delay mas bajo, asi que bajan multiplicando, con piso.
+const COOLDOWN_STATS = [
+  { key: 'fireRate', floor: 130 },
+  { key: 'pierceRate', floor: 220, requires: 'hasPierce' },
+  { key: 'burstRate', floor: 350, requires: 'hasBurst' },
+  { key: 'novaRate', floor: 800, requires: 'hasNova' },
+];
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -546,22 +579,22 @@ export default class GameScene extends Phaser.Scene {
 
     const s = this.stats;
     const lines = [
-      `Daño: ${s.damage}`,
+      `Daño: ${Math.round(s.damage)}`,
       `Cadencia: ${(1000 / s.fireRate).toFixed(1)}/s`,
-      `Velocidad: ${s.moveSpeed}`,
-      `HP máximo: ${s.maxHp}`,
-      `Radio de imán: ${s.magnetRadius}`,
+      `Velocidad: ${Math.round(s.moveSpeed)}`,
+      `HP máximo: ${Math.round(s.maxHp)}`,
+      `Radio de imán: ${Math.round(s.magnetRadius)}`,
       `Etapa: ${this.stage} (x${this.stageMultiplier.toFixed(2)})`,
     ];
     if (s.hpRegen > 0) lines.push(`Regeneración: ${s.hpRegen.toFixed(1)}/s`);
     if (s.lifesteal > 0) lines.push(`Robo de vida: ${(s.lifesteal * 100).toFixed(0)}%`);
     if (s.dodge > 0) lines.push(`Esquivar: ${(s.dodge * 100).toFixed(0)}%`);
-    if (s.shieldMax > 0) lines.push(`Escudo: ${Math.ceil(s.shield)}/${s.shieldMax}`);
-    if (s.hasAura) lines.push(`Aura — daño ${s.auraDamage}, radio ${s.auraRadius}`);
-    if (s.hasOrbit) lines.push(`Orbe — daño ${s.orbitDamage}, cantidad ${s.orbitCount}, velocidad ${s.orbitSpeed.toFixed(2)}`);
-    if (s.hasPierce) lines.push(`Perforante — daño ${s.pierceDamage}, cadencia ${(1000 / s.pierceRate).toFixed(1)}/s`);
-    if (s.hasBurst) lines.push(`Ráfaga — daño ${s.burstDamage}, disparos ${s.burstCount}, cadencia ${(1000 / s.burstRate).toFixed(1)}/s`);
-    if (s.hasNova) lines.push(`Onda — daño ${s.novaDamage}, radio ${s.novaRadius}`);
+    if (s.shieldMax > 0) lines.push(`Escudo: ${Math.ceil(s.shield)}/${Math.round(s.shieldMax)}`);
+    if (s.hasAura) lines.push(`Aura — daño ${Math.round(s.auraDamage)}, radio ${Math.round(s.auraRadius)}`);
+    if (s.hasOrbit) lines.push(`Orbe — daño ${Math.round(s.orbitDamage)}, cantidad ${s.orbitCount}, velocidad ${s.orbitSpeed.toFixed(2)}`);
+    if (s.hasPierce) lines.push(`Perforante — daño ${Math.round(s.pierceDamage)}, cadencia ${(1000 / s.pierceRate).toFixed(1)}/s`);
+    if (s.hasBurst) lines.push(`Ráfaga — daño ${Math.round(s.burstDamage)}, disparos ${s.burstCount}, cadencia ${(1000 / s.burstRate).toFixed(1)}/s`);
+    if (s.hasNova) lines.push(`Onda — daño ${Math.round(s.novaDamage)}, radio ${Math.round(s.novaRadius)}`);
 
     this.pauseStats.setText(lines.join('\n'));
     this.pauseTitle.setVisible(true);
@@ -586,7 +619,7 @@ export default class GameScene extends Phaser.Scene {
   updateHud() {
     const hpRatio = Phaser.Math.Clamp(this.stats.hp / this.stats.maxHp, 0, 1);
     this.hpBarFill.width = 196 * hpRatio;
-    this.hpText.setText(`${Math.ceil(this.stats.hp)}/${this.stats.maxHp}`);
+    this.hpText.setText(`${Math.ceil(this.stats.hp)}/${Math.round(this.stats.maxHp)}`);
 
     const shieldRatio = this.stats.shieldMax > 0 ? Phaser.Math.Clamp(this.stats.shield / this.stats.shieldMax, 0, 1) : 0;
     this.shieldBarFill.width = 196 * shieldRatio;
@@ -936,8 +969,9 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  damageEnemy(enemy, damage) {
+  damageEnemy(enemy, rawDamage) {
     if (!enemy.active) return;
+    const damage = Math.max(1, Math.round(rawDamage));
 
     this.showDamageNumber(enemy.x, enemy.y, damage);
 
@@ -961,8 +995,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.stageMultiplier *= STAGE_BOSS_MULTIPLIER;
         this.spawnPortal();
-        this.level += 1;
-        this.startLevelUp();
+        this.levelUp();
       } else {
         const type = ENEMY_TYPES[enemy.getData('type')];
         this.spawnXpOrb(enemy.x, enemy.y, type.xpValue);
@@ -1030,8 +1063,7 @@ export default class GameScene extends Phaser.Scene {
     this.deathEmitter.setParticleTint(0xffcc44);
     this.deathEmitter.emitParticleAt(x, y, 15);
 
-    this.level += 1;
-    this.startLevelUp();
+    this.levelUp();
   }
 
   enterPortal() {
@@ -1067,8 +1099,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.xp >= this.xpToNext) {
       this.xp -= this.xpToNext;
       this.xpToNext = Math.round(this.xpToNext * 1.25);
-      this.level += 1;
-      this.startLevelUp();
+      this.levelUp();
     }
   }
 
@@ -1220,6 +1251,40 @@ export default class GameScene extends Phaser.Scene {
     return picked;
   }
 
+  syncTimerDelays() {
+    this.attackTimer.delay = this.stats.fireRate;
+    if (this.stats.hasPierce) this.pierceTimer.delay = this.stats.pierceRate;
+    if (this.stats.hasBurst) this.burstTimer.delay = this.stats.burstRate;
+    if (this.stats.hasNova) this.novaTimer.delay = this.stats.novaRate;
+  }
+
+  applyLevelScaling() {
+    const s = this.stats;
+
+    GROWTH_STATS.forEach(({ key, cap, requires }) => {
+      if (requires && !s[requires]) return;
+      const value = s[key] * LEVEL_SCALE_UP;
+      s[key] = cap != null ? Math.min(cap, value) : value;
+    });
+
+    COOLDOWN_STATS.forEach(({ key, floor, requires }) => {
+      if (requires && !s[requires]) return;
+      s[key] = Math.max(floor, s[key] * LEVEL_SCALE_DOWN);
+    });
+
+    const hpGain = s.maxHp * (LEVEL_SCALE_UP - 1);
+    s.maxHp += hpGain;
+    s.hp += hpGain;
+
+    this.syncTimerDelays();
+  }
+
+  levelUp() {
+    this.level += 1;
+    this.applyLevelScaling();
+    this.startLevelUp();
+  }
+
   startLevelUp() {
     this.isLevelingUp = true;
     this.player.setVelocity(0, 0);
@@ -1244,10 +1309,7 @@ export default class GameScene extends Phaser.Scene {
     if (!choice) return;
 
     choice.apply(this.stats);
-    this.attackTimer.delay = this.stats.fireRate;
-    if (this.stats.hasPierce) this.pierceTimer.delay = this.stats.pierceRate;
-    if (this.stats.hasBurst) this.burstTimer.delay = this.stats.burstRate;
-    if (this.stats.hasNova) this.novaTimer.delay = this.stats.novaRate;
+    this.syncTimerDelays();
     this.syncWeapons();
 
     this.levelUpTitle.setVisible(false);

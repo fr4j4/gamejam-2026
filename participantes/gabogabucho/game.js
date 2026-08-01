@@ -53,6 +53,8 @@ const BUBBLE_IMG = {
   ciencia: 'estado_01_16x23'
 };
 
+const { advanceWalker } = ApocryphaMovement;
+
 // ---- utilidades ----
 function lerp(a, b, t) { return a + (b - a) * t; }
 
@@ -235,6 +237,9 @@ class ApocryphaScene extends Phaser.Scene {
     const start = Math.random() < 0.5 ? 'hambre' : (Math.random() < 0.6 ? 'miedo' : 'duda');
     const villager = {
       x: x,
+      homeX: x,
+      direction: i % 2 === 0 ? 1 : -1,
+      speed: 4 + (i % 3) * 1.5,
       img: img,
       state: start,
       stateCd: 2000 + Math.random() * 4000,
@@ -378,6 +383,12 @@ class ApocryphaScene extends Phaser.Scene {
 
     // ---- aldeanos: sus estados migran con el tiempo ----
     for (const v of this.villagers) {
+      const moved = advanceWalker(v, delta, v.homeX - 10, v.homeX + 10);
+      v.x = moved.x;
+      v.direction = moved.direction;
+      v.img.setX(v.x).setFlipX(v.direction < 0);
+      v.bubble.setX(v.x);
+
       v.stateCd -= delta;
       if (v.stateCd <= 0) {
         this.setVillagerState(v, nextState(v.state));

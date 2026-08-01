@@ -34,6 +34,7 @@ python -m http.server 8080
 - [x] Corte 1: milagro de luz (rayo con parpadeo) + el pueblo lo lee (veredicto)
 - [x] Corte 2: estados emocionales (miedo/fe/hambre/duda/ciencia) que migran solos
 - [x] Corte 3: bucle jugable — Atención como recurso, victoria (Catedral) / derrota (olvidado) + reinicio
+- [x] Pulido: aldeanos caminando en carriles cortos sin solapar sus burbujas
 - [ ] Pulido: balance de Atención, feedback visual de la Catedral, sonido
 
 ## Debug

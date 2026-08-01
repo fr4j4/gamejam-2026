@@ -29,33 +29,39 @@ const ENEMY_TYPES = {
 };
 
 const STAT_UPGRADES = [
-  { key: 'damage', label: '+5 Daño', apply: (s) => { s.damage += 5; } },
-  { key: 'fireRate', label: '+15% Cadencia de ataque', apply: (s) => { s.fireRate = Math.round(s.fireRate * 0.85); } },
-  { key: 'moveSpeed', label: '+10% Velocidad', apply: (s) => { s.moveSpeed = Math.round(s.moveSpeed * 1.1); } },
-  { key: 'maxHp', label: '+20 HP máximo', apply: (s) => { s.maxHp += 20; s.hp += 20; } },
-  { key: 'magnet', label: '+40% Radio de imán', apply: (s) => { s.magnetRadius = Math.round(s.magnetRadius * 1.4); } },
+  { key: 'damage', describe: (b, a) => `Daño: ${b.damage} → ${a.damage}`, apply: (s) => { s.damage += 5; } },
+  {
+    key: 'fireRate',
+    describe: (b, a) => `Cadencia: ${(1000 / b.fireRate).toFixed(1)}/s → ${(1000 / a.fireRate).toFixed(1)}/s`,
+    apply: (s) => { s.fireRate = Math.round(s.fireRate * 0.85); },
+  },
+  { key: 'moveSpeed', describe: (b, a) => `Velocidad: ${b.moveSpeed} → ${a.moveSpeed}`, apply: (s) => { s.moveSpeed = Math.round(s.moveSpeed * 1.1); } },
+  { key: 'maxHp', describe: (b, a) => `HP máximo: ${b.maxHp} → ${a.maxHp}`, apply: (s) => { s.maxHp += 20; s.hp += 20; } },
+  { key: 'magnet', describe: (b, a) => `Radio de imán: ${b.magnetRadius} → ${a.magnetRadius}`, apply: (s) => { s.magnetRadius = Math.round(s.magnetRadius * 1.4); } },
 ];
 
 const WEAPON_UPGRADES = {
   aura: {
     unlock: {
-      key: 'auraUnlock', label: 'Nueva arma: Aura de daño',
+      key: 'auraUnlock',
+      describe: (b, a) => `Nueva arma: Aura de daño (${a.auraDamage} dmg, radio ${a.auraRadius})`,
       apply: (s) => { s.hasAura = true; s.auraDamage = 8; s.auraRadius = 90; s.auraTickMs = 600; },
     },
     upgrades: [
-      { key: 'auraDamage', label: '+Aura: daño', apply: (s) => { s.auraDamage += 5; } },
-      { key: 'auraRadius', label: '+Aura: radio', apply: (s) => { s.auraRadius = Math.round(s.auraRadius * 1.25); } },
+      { key: 'auraDamage', describe: (b, a) => `Aura daño: ${b.auraDamage} → ${a.auraDamage}`, apply: (s) => { s.auraDamage += 5; } },
+      { key: 'auraRadius', describe: (b, a) => `Aura radio: ${b.auraRadius} → ${a.auraRadius}`, apply: (s) => { s.auraRadius = Math.round(s.auraRadius * 1.25); } },
     ],
   },
   orbit: {
     unlock: {
-      key: 'orbitUnlock', label: 'Nueva arma: Orbe giratorio',
+      key: 'orbitUnlock',
+      describe: (b, a) => `Nueva arma: Orbe giratorio (${a.orbitCount} orbes, ${a.orbitDamage} dmg)`,
       apply: (s) => { s.hasOrbit = true; s.orbitDamage = 8; s.orbitRadius = 70; s.orbitSpeed = 2.2; s.orbitCount = 2; },
     },
     upgrades: [
-      { key: 'orbitDamage', label: '+Orbe: daño', apply: (s) => { s.orbitDamage += 5; } },
-      { key: 'orbitCount', label: '+Orbe: cantidad', apply: (s) => { s.orbitCount += 1; } },
-      { key: 'orbitSpeed', label: '+Orbe: velocidad', apply: (s) => { s.orbitSpeed *= 1.25; } },
+      { key: 'orbitDamage', describe: (b, a) => `Orbe daño: ${b.orbitDamage} → ${a.orbitDamage}`, apply: (s) => { s.orbitDamage += 5; } },
+      { key: 'orbitCount', describe: (b, a) => `Orbe cantidad: ${b.orbitCount} → ${a.orbitCount}`, apply: (s) => { s.orbitCount += 1; } },
+      { key: 'orbitSpeed', describe: (b, a) => `Orbe velocidad: ${b.orbitSpeed.toFixed(2)} → ${a.orbitSpeed.toFixed(2)}`, apply: (s) => { s.orbitSpeed *= 1.25; } },
     ],
   },
 };
@@ -93,6 +99,7 @@ export default class GameScene extends Phaser.Scene {
     this.stage = 1;
     this.stageMultiplier = 1;
     this.portal = null;
+    this.isPaused = false;
 
     this.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
 
@@ -141,8 +148,11 @@ export default class GameScene extends Phaser.Scene {
     this.buildHud();
     this.buildBossBar();
     this.buildMinimap();
+    this.buildPauseMenu();
     this.buildStartScreen();
     this.updateHud();
+
+    this.input.keyboard.on('keydown-ESC', () => this.togglePause());
   }
 
   generateTextures() {
@@ -289,6 +299,69 @@ export default class GameScene extends Phaser.Scene {
     gfx.fillCircle(pp.x, pp.y, 3);
   }
 
+  buildPauseMenu() {
+    this.pauseTitle = this.add.text(400, 130, 'PAUSADO', {
+      fontFamily: 'monospace', fontSize: '32px', color: '#ffffff',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setVisible(false);
+
+    this.pauseStats = this.add.text(400, 320, '', {
+      fontFamily: 'monospace', fontSize: '16px', color: '#66ffcc', align: 'center', lineSpacing: 6,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setVisible(false);
+
+    this.pauseHint = this.add.text(400, 520, 'Presioná ESC para continuar', {
+      fontFamily: 'monospace', fontSize: '14px', color: '#aaaaaa',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setVisible(false);
+  }
+
+  togglePause() {
+    if (!this.hasStarted || this.isGameOver || this.isLevelingUp) return;
+    if (this.isPaused) {
+      this.resumeGame();
+    } else {
+      this.pauseGame();
+    }
+  }
+
+  pauseGame() {
+    this.isPaused = true;
+    this.player.setVelocity(0, 0);
+    this.physics.world.pause();
+    this.spawnTimer.paused = true;
+    this.attackTimer.paused = true;
+    this.difficultyTimer.paused = true;
+    this.bossTimer.paused = true;
+
+    const s = this.stats;
+    const lines = [
+      `Daño: ${s.damage}`,
+      `Cadencia: ${(1000 / s.fireRate).toFixed(1)}/s`,
+      `Velocidad: ${s.moveSpeed}`,
+      `HP máximo: ${s.maxHp}`,
+      `Radio de imán: ${s.magnetRadius}`,
+      `Etapa: ${this.stage} (x${this.stageMultiplier.toFixed(2)})`,
+    ];
+    if (s.hasAura) lines.push(`Aura — daño ${s.auraDamage}, radio ${s.auraRadius}`);
+    if (s.hasOrbit) lines.push(`Orbe — daño ${s.orbitDamage}, cantidad ${s.orbitCount}, velocidad ${s.orbitSpeed.toFixed(2)}`);
+
+    this.pauseStats.setText(lines.join('\n'));
+    this.pauseTitle.setVisible(true);
+    this.pauseStats.setVisible(true);
+    this.pauseHint.setVisible(true);
+  }
+
+  resumeGame() {
+    this.isPaused = false;
+    this.physics.world.resume();
+    this.spawnTimer.paused = false;
+    this.attackTimer.paused = false;
+    this.difficultyTimer.paused = false;
+    this.bossTimer.paused = false;
+
+    this.pauseTitle.setVisible(false);
+    this.pauseStats.setVisible(false);
+    this.pauseHint.setVisible(false);
+  }
+
   updateHud() {
     const hpRatio = Phaser.Math.Clamp(this.stats.hp / this.stats.maxHp, 0, 1);
     this.hpBarFill.width = 196 * hpRatio;
@@ -309,7 +382,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    if (!this.hasStarted || this.isGameOver || this.isLevelingUp) {
+    if (!this.hasStarted || this.isGameOver || this.isLevelingUp || this.isPaused) {
       this.player.setVelocity(0, 0);
       return;
     }
@@ -686,7 +759,9 @@ export default class GameScene extends Phaser.Scene {
 
     this.levelUpChoices = Phaser.Utils.Array.Shuffle(this.getAvailableUpgrades()).slice(0, 4);
     this.levelUpChoices.forEach((choice, i) => {
-      this.levelUpTexts[i].setText(`${i + 1}. ${choice.label}`).setVisible(true);
+      const after = { ...this.stats };
+      choice.apply(after);
+      this.levelUpTexts[i].setText(`${i + 1}. ${choice.describe(this.stats, after)}`).setVisible(true);
     });
     this.levelUpTitle.setVisible(true);
   }

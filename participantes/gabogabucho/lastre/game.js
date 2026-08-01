@@ -9,7 +9,12 @@ const {
   routeMessage,
   scrapValue,
   scoreDelivery,
-  belongsToCompound
+  belongsToCompound,
+  zoneAt,
+  zoneInfluence,
+  magneticFieldForce,
+  boostDurationAfterPickup,
+  attractionStrength
 } = LastreModel;
 
 const COLORS = {
@@ -42,6 +47,8 @@ class LastreScene extends Phaser.Scene {
     this.dead = false;
     this.shedCooldown = 0;
     this.jumpCooldown = 0;
+    this.boostMs = 0;
+    this.boostRadius = 120;
     this.collected = new Set();
     this.finished = false;
     this.trackLength = 14000;
@@ -50,6 +57,7 @@ class LastreScene extends Phaser.Scene {
     this.dangerLine = this.add.rectangle(20, this.H / 2, 4, this.H, COLORS.danger, 0.72)
       .setScrollFactor(0).setDepth(90);
     this.makeTrack();
+    this.makeWorldZones();
     this.makeBlob();
     this.makeSoftMatter();
     this.makeStoneGates();
@@ -67,11 +75,16 @@ class LastreScene extends Phaser.Scene {
     this.matter.world.on('collisionactive', event => this.onCollision(event, false));
 
     this.blobPaint = this.add.graphics().setDepth(20);
+    this.boostAura = this.add.graphics().setDepth(18);
+    this.fieldEffect = this.add.graphics().setDepth(17);
     this.hud = this.add.text(18, 16, '', {
       fontFamily: 'Courier New', fontSize: '14px', color: '#dbe8ed'
     }).setScrollFactor(0).setDepth(100);
     this.warning = this.add.text(18, 39, '', {
       fontFamily: 'Courier New', fontSize: '12px', color: '#ff5263'
+    }).setScrollFactor(0).setDepth(100);
+    this.zoneHud = this.add.text(18, 60, '', {
+      fontFamily: 'Courier New', fontSize: '12px', color: '#6fe7ff', fontStyle: 'bold'
     }).setScrollFactor(0).setDepth(100);
     this.routeHud = this.add.text(782, 18, '', {
       fontFamily: 'Courier New', fontSize: '12px', color: '#f1c75b', align: 'right'
@@ -97,6 +110,16 @@ class LastreScene extends Phaser.Scene {
     if (qs.has('shed')) {
       const side = qs.get('shed') === 'left' ? -1 : 1;
       this.shedAt(this.blob.position.x + side * 100);
+    }
+    const qa = qs.get('qa');
+    if (qa) {
+      const targets = { construction: [5650, 5400], boost: [7575, 7200], field: [8150, 7920] };
+      const target = targets[qa];
+      if (target) {
+        this.matter.body.setPosition(this.blob, { x: target[0], y: 330 });
+        this.cameras.main.scrollX = target[1];
+        this.startGame(false);
+      }
     }
     if (qs.has('autostart')) this.startGame(false);
   }
@@ -180,6 +203,121 @@ class LastreScene extends Phaser.Scene {
 
     for (let x = 700; x < this.destinationX; x += 1180) this.makeStreetSign(x);
     this.makeLandfill(this.destinationX);
+  }
+
+  makeWorldZones() {
+    this.makeConstructionZone();
+    this.makeElectromagneticZone();
+    this.makeBoostPickup(7600);
+  }
+
+  makeZoneSign(x, title, subtitle, color) {
+    const sign = this.add.graphics().setDepth(10);
+    sign.fillStyle(0x41494a, 1);
+    sign.fillRect(x - 4, 292, 8, 88);
+    sign.fillStyle(color, 1);
+    sign.fillRoundedRect(x - 88, 252, 176, 60, 5);
+    sign.lineStyle(4, 0x222829, 1);
+    sign.strokeRoundedRect(x - 88, 252, 176, 60, 5);
+    this.add.text(x, 268, `${title}\n${subtitle}`, {
+      fontFamily: 'Courier New', fontSize: '12px', color: '#202526', align: 'center',
+      fontStyle: 'bold', lineSpacing: 3
+    }).setOrigin(0.5).setDepth(11);
+  }
+
+  makeConstructionZone() {
+    this.makeZoneSign(5050, 'ZONA DE OBRA', 'PELIGRO: CARGA MÓVIL', 0xf1c75b);
+    const scenery = this.add.graphics().setDepth(4);
+    scenery.lineStyle(7, 0xb68146, 0.92);
+    for (const x of [5220, 5480, 6320, 6640]) {
+      scenery.lineBetween(x, 200, x, 380);
+      scenery.lineBetween(x + 105, 200, x + 105, 380);
+      for (let y = 220; y < 370; y += 42) {
+        scenery.lineBetween(x, y, x + 105, y);
+        scenery.lineBetween(x, y, x + 105, y + 34);
+      }
+    }
+    scenery.lineStyle(12, 0xe0a54f, 1);
+    scenery.lineBetween(5840, 84, 6170, 84);
+    scenery.lineBetween(5900, 84, 5900, 380);
+    scenery.lineStyle(4, 0x32393a, 1);
+    scenery.lineBetween(5915, 110, 6170, 110);
+    for (let x = 5120; x < 6900; x += 120) {
+      scenery.fillStyle(x % 240 === 0 ? 0x1e2425 : 0xe0a54f, 1);
+      scenery.fillRect(x, 372, 58, 8);
+    }
+
+    const anchor = this.matter.bodies.circle(6070, 105, 5, { isStatic: true, label: 'craneAnchor' });
+    const bob = this.matter.bodies.circle(6070, 265, 31, {
+      label: 'craneBob', density: 0.0045, friction: 0.55, restitution: 0.52
+    });
+    bob.plugin.isCraneBob = true;
+    this.matter.world.add([anchor, bob]);
+    this.craneConstraint = this.matter.add.constraint(anchor, bob, 160, 0.985, { damping: 0.008 });
+    this.matter.body.setVelocity(bob, { x: -5.2, y: 0 });
+    this.crane = { anchor, bob };
+    this.cranePaint = this.add.graphics().setDepth(15);
+
+    const threat = this.add.graphics().setDepth(6);
+    threat.lineStyle(2, COLORS.danger, 0.42);
+    threat.beginPath();
+    for (let i = 0; i <= 18; i++) {
+      const angle = -0.82 + i * (1.64 / 18);
+      const x = anchor.position.x + Math.sin(angle) * 160;
+      const y = anchor.position.y + Math.cos(angle) * 160;
+      if (i === 0) threat.moveTo(x, y); else threat.lineTo(x, y);
+    }
+    threat.strokePath();
+    this.add.text(6070, 304, 'TRAYECTORIA DE CARGA', {
+      fontFamily: 'Courier New', fontSize: '10px', color: '#ff8792'
+    }).setOrigin(0.5).setDepth(7);
+  }
+
+  makeElectromagneticZone() {
+    this.fieldZone = { start: 8000, end: 9500, ramp: 180 };
+    this.makeZoneSign(8020, 'CAMPO ELECTROMAGNÉTICO', 'ATRACCIÓN VERTICAL', 0x6fe7ff);
+    const field = this.add.graphics().setDepth(5);
+    for (let x = 8180; x < 9450; x += 260) {
+      field.fillStyle(0x273b43, 1);
+      field.fillRoundedRect(x - 92, 72, 184, 34, 6);
+      field.lineStyle(3, COLORS.glow, 0.8);
+      field.strokeRoundedRect(x - 92, 72, 184, 34, 6);
+      field.lineStyle(2, COLORS.glow, 0.2);
+      field.lineBetween(x - 72, 108, x - 28, 365);
+      field.lineBetween(x, 108, x, 365);
+      field.lineBetween(x + 72, 108, x + 28, 365);
+      for (let y = 145; y < 350; y += 54) {
+        field.fillStyle(COLORS.glow, 0.32);
+        field.fillTriangle(x - 5, y, x + 5, y, x, y - 12);
+      }
+    }
+    this.add.text(8750, 122, '↑  EL TECHO TE ATRAE  ↑', {
+      fontFamily: 'Courier New', fontSize: '13px', color: '#6fe7ff', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(7);
+  }
+
+  makeBoostPickup(x) {
+    const body = this.matter.bodies.circle(x, 342, 18, {
+      isStatic: true, isSensor: true, label: 'boost'
+    });
+    body.plugin.isBoost = true;
+    this.matter.world.add(body);
+    const view = this.add.graphics().setDepth(14);
+    view.fillStyle(0x173942, 1);
+    view.fillCircle(x, 342, 18);
+    view.lineStyle(4, COLORS.glow, 1);
+    view.strokeCircle(x, 342, 18);
+    view.lineStyle(3, COLORS.core, 1);
+    view.lineBetween(x - 8, 336, x - 8, 348);
+    view.lineBetween(x + 8, 336, x + 8, 348);
+    view.lineStyle(5, COLORS.danger, 1);
+    view.lineBetween(x - 8, 336, x + 8, 336);
+    view.lineStyle(5, 0x4dbbd4, 1);
+    view.lineBetween(x - 8, 348, x + 8, 348);
+    const label = this.add.text(x, 305, 'SUPERIMÁN\n6 SEGUNDOS', {
+      fontFamily: 'Courier New', fontSize: '11px', color: '#6fe7ff', align: 'center', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(14);
+    this.boostPickup = { body, view, label, active: true };
   }
 
   makeStreetSign(x) {
@@ -320,6 +458,7 @@ class LastreScene extends Phaser.Scene {
         : other.position;
 
       if (other.plugin && other.plugin.softId !== undefined) this.collectSoft(other.plugin.softId, contact);
+      if (other.plugin && other.plugin.isBoost) this.activateBoost();
       if (allowStone && other.plugin && other.plugin.isStone && this.shedCooldown <= 0) {
         this.shedAt(contact.x);
       }
@@ -350,6 +489,107 @@ class LastreScene extends Phaser.Scene {
       targets: points, y: points.y - 22, alpha: 0, duration: 700,
       ease: 'Cubic.easeOut', onComplete: () => points.destroy()
     });
+  }
+
+  activateBoost() {
+    if (!this.boostPickup || !this.boostPickup.active) return;
+    this.boostPickup.active = false;
+    this.matter.world.remove(this.boostPickup.body);
+    this.boostPickup.view.destroy();
+    this.boostPickup.label.destroy();
+    this.boostMs = boostDurationAfterPickup(this.boostMs, 6000);
+    const text = this.add.text(this.blob.position.x, this.blob.position.y - 52, '¡SUPERIMÁN!', {
+      fontFamily: 'Courier New', fontSize: '17px', color: '#6fe7ff', fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(27);
+    this.tweens.add({
+      targets: text, y: text.y - 28, alpha: 0, duration: 900,
+      ease: 'Cubic.easeOut', onComplete: () => text.destroy()
+    });
+  }
+
+  updateBoost(delta, time) {
+    this.boostAura.clear();
+    if (this.boostMs <= 0) return;
+    this.boostMs = Math.max(0, this.boostMs - delta);
+    const pulse = 0.35 + Math.abs(Math.sin(time / 120)) * 0.28;
+    this.boostAura.lineStyle(2, COLORS.glow, pulse);
+    this.boostAura.strokeCircle(this.blob.position.x, this.blob.position.y, this.boostRadius);
+    this.boostAura.lineStyle(1, COLORS.core, pulse * 0.8);
+    for (let ray = 0; ray < 8; ray++) {
+      const angle = ray * Math.PI / 4 + time / 850;
+      this.boostAura.lineBetween(
+        this.blob.position.x + Math.cos(angle) * 72,
+        this.blob.position.y + Math.sin(angle) * 72,
+        this.blob.position.x + Math.cos(angle) * 108,
+        this.blob.position.y + Math.sin(angle) * 108
+      );
+    }
+
+    for (const item of this.soft) {
+      if (this.collected.has(item.id)) continue;
+      let nearest = null;
+      let nearestDistance = Infinity;
+      for (const part of this.blob.parts.slice(1)) {
+        const dx = part.position.x - item.body.position.x;
+        const dy = part.position.y - item.body.position.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearest = part;
+        }
+      }
+      if (!nearest || nearestDistance >= this.boostRadius) continue;
+      const strength = attractionStrength(nearestDistance, this.boostRadius);
+      const dx = nearest.position.x - item.body.position.x;
+      const dy = nearest.position.y - item.body.position.y;
+      const step = Math.min(nearestDistance, (90 + strength * 250) * delta / 1000);
+      if (nearestDistance > 0) {
+        this.matter.body.setPosition(item.body, {
+          x: item.body.position.x + dx / nearestDistance * step,
+          y: item.body.position.y + dy / nearestDistance * step
+        });
+      }
+      item.view.clear();
+      this.paintScrap(item.view, item.body, 0.92);
+      item.valueView.setPosition(item.body.position.x, item.body.position.y - item.body.plugin.radius - 10);
+      const touchDistance = (nearest.plugin.radius || 12) + item.body.plugin.radius + 3;
+      if (nearestDistance <= touchDistance) this.collectSoft(item.id, item.body.position);
+    }
+  }
+
+  updateWorldZones(time) {
+    this.cranePaint.clear();
+    if (this.crane) {
+      const { anchor, bob } = this.crane;
+      bob.force.x += Math.sin(time / 760) * 0.00011 * bob.mass;
+      this.cranePaint.lineStyle(5, 0x252c2e, 1);
+      this.cranePaint.lineBetween(anchor.position.x, anchor.position.y, bob.position.x, bob.position.y);
+      this.cranePaint.fillStyle(0x4e5555, 1);
+      this.cranePaint.fillCircle(bob.position.x, bob.position.y, 31);
+      this.cranePaint.lineStyle(4, 0xaab1ad, 0.9);
+      this.cranePaint.strokeCircle(bob.position.x, bob.position.y, 31);
+      this.cranePaint.lineStyle(2, 0x313738, 0.8);
+      this.cranePaint.lineBetween(bob.position.x - 20, bob.position.y - 18, bob.position.x + 20, bob.position.y + 18);
+      this.cranePaint.lineBetween(bob.position.x + 20, bob.position.y - 18, bob.position.x - 20, bob.position.y + 18);
+    }
+
+    this.fieldEffect.clear();
+    const influence = zoneInfluence(
+      this.blob.position.x,
+      this.fieldZone.start,
+      this.fieldZone.end,
+      this.fieldZone.ramp
+    );
+    if (influence > 0) {
+      const force = magneticFieldForce(this.blob.mass, this.coreMass, 0.00148, influence);
+      this.matter.body.applyForce(this.blob, this.blob.position, { x: 0, y: -force });
+      this.fieldEffect.lineStyle(2, COLORS.glow, 0.35 + influence * 0.45);
+      for (let x = this.blob.bounds.min.x; x <= this.blob.bounds.max.x; x += 12) {
+        const wobble = Math.sin(time / 100 + x) * 4;
+        this.fieldEffect.lineBetween(x, this.blob.bounds.min.y - 4, x + wobble, this.blob.bounds.min.y - 35);
+      }
+    }
+    return influence;
   }
 
   rebuildBlob(parts) {
@@ -548,6 +788,8 @@ class LastreScene extends Phaser.Scene {
 
     this.blob.force.x += 0.00042;
     if (this.blob.velocity.x > 4.2) this.matter.body.setVelocity(this.blob, { x: 4.2, y: this.blob.velocity.y });
+    const fieldInfluence = this.updateWorldZones(time);
+    this.updateBoost(delta, time);
 
     const elapsed = (time - this.startedAt) / 1000;
     this.cameras.main.scrollX += cameraSpeed(elapsed) * delta / 1000;
@@ -566,6 +808,16 @@ class LastreScene extends Phaser.Scene {
     this.hud.setText(`LASTRE  ·  ${distance} m  ·  piezas ${pieces}  ·  chatarra $${value}  ·  pulso ${hopState}`);
     this.routeHud.setText(routeMessage(Math.floor(this.blob.position.x), this.destinationX));
     this.warning.setText(relative < 130 ? '◀ EL BORDE TE ESTÁ ALCANZANDO' : '');
+    const zone = zoneAt(this.blob.position.x);
+    const zoneMessage = zone === 'construction'
+      ? '⚠ ZONA DE OBRA · EVITÁ LA CARGA'
+      : zone === 'electromagnetic'
+        ? `↑ CAMPO ACTIVO ${Math.round(fieldInfluence * 100)}%`
+        : '';
+    const boostMessage = this.boostMs > 0
+      ? `SUPERIMÁN ${Math.ceil(this.boostMs / 1000)} s · RADIO ${this.boostRadius}`
+      : '';
+    this.zoneHud.setText([zoneMessage, boostMessage].filter(Boolean).join('  ·  '));
   }
 }
 

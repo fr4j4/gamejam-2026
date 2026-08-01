@@ -72,6 +72,31 @@
     return Boolean(body && compound && (body === compound || body.parent === compound));
   }
 
+  function zoneAt(worldX) {
+    if (worldX >= 5000 && worldX < 7000) return 'construction';
+    if (worldX >= 8000 && worldX < 9500) return 'electromagnetic';
+    return 'city';
+  }
+
+  function zoneInfluence(worldX, start, end, ramp) {
+    if (worldX <= start || worldX >= end || ramp <= 0) return 0;
+    return Math.max(0, Math.min(1, (worldX - start) / ramp, (end - worldX) / ramp));
+  }
+
+  function magneticFieldForce(mass, coreMass, baseForce, influence) {
+    const ratio = Math.max(1, mass / coreMass);
+    return baseForce * Math.sqrt(ratio) * Math.max(0, Math.min(1, influence));
+  }
+
+  function boostDurationAfterPickup(currentMs, durationMs) {
+    return Math.max(0, currentMs, durationMs);
+  }
+
+  function attractionStrength(distance, radius) {
+    if (radius <= 0) return 0;
+    return Math.max(0, Math.min(1, 1 - distance / radius));
+  }
+
   return {
     cameraSpeed,
     screenX,
@@ -84,6 +109,11 @@
     routeMessage,
     scrapValue,
     scoreDelivery,
-    belongsToCompound
+    belongsToCompound,
+    zoneAt,
+    zoneInfluence,
+    magneticFieldForce,
+    boostDurationAfterPickup,
+    attractionStrength
   };
 });

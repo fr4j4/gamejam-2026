@@ -13,7 +13,12 @@ const {
   routeMessage,
   scrapValue,
   scoreDelivery,
-  belongsToCompound
+  belongsToCompound,
+  zoneAt,
+  zoneInfluence,
+  magneticFieldForce,
+  boostDurationAfterPickup,
+  attractionStrength
 } = require('./mass-model.js');
 
 test('la cámara acelera suavemente y tiene un límite', () => {
@@ -108,4 +113,40 @@ test('el nucleo, el root y cualquier child pertenecen al mismo compuesto', () =>
   assert.equal(belongsToCompound(child, compound), true);
   assert.equal(belongsToCompound(stranger, compound), false);
   assert.equal(belongsToCompound(null, compound), false);
+});
+
+test('las zonas tienen entradas y salidas sin solaparse', () => {
+  assert.equal(zoneAt(4999), 'city');
+  assert.equal(zoneAt(5000), 'construction');
+  assert.equal(zoneAt(6999), 'construction');
+  assert.equal(zoneAt(7000), 'city');
+  assert.equal(zoneAt(8000), 'electromagnetic');
+  assert.equal(zoneAt(9500), 'city');
+});
+
+test('el campo entra y sale con rampas legibles', () => {
+  assert.equal(zoneInfluence(7999, 8000, 9500, 180), 0);
+  assert.equal(zoneInfluence(8000, 8000, 9500, 180), 0);
+  assert.equal(zoneInfluence(8090, 8000, 9500, 180), 0.5);
+  assert.equal(zoneInfluence(8180, 8000, 9500, 180), 1);
+  assert.equal(zoneInfluence(9410, 8000, 9500, 180), 0.5);
+  assert.equal(zoneInfluence(9500, 8000, 9500, 180), 0);
+});
+
+test('el campo escala sublinealmente y suspende menos a la masa pesada', () => {
+  const light = magneticFieldForce(2, 2, 0.002, 1);
+  const heavy = magneticFieldForce(8, 2, 0.002, 1);
+  assert.equal(light, 0.002);
+  assert.equal(heavy, 0.004);
+  assert.ok(heavy / 8 < light / 2);
+  assert.equal(magneticFieldForce(8, 2, 0.002, 0), 0);
+});
+
+test('el potenciador renueva duracion y su atraccion termina en el radio', () => {
+  assert.equal(boostDurationAfterPickup(1200, 6000), 6000);
+  assert.equal(boostDurationAfterPickup(7200, 6000), 7200);
+  assert.equal(attractionStrength(0, 120), 1);
+  assert.equal(attractionStrength(60, 120), 0.5);
+  assert.equal(attractionStrength(120, 120), 0);
+  assert.equal(attractionStrength(140, 120), 0);
 });

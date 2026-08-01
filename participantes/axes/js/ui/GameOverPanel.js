@@ -51,8 +51,6 @@ class GameOverPanel {
       this.title.container,
       this.result.container,
       this.score,
-      this.restartButton.container,
-      this.menuButton.container,
     ];
     this.hide();
   }
@@ -70,6 +68,9 @@ class GameOverPanel {
     this.result.setText(resultLabel);
     this.result.setColor(resultColor);
     this.score.setText(`JUGADOR CYAN: ${playerOneScore} PUNTOS\nJUGADOR MAGENTA: ${playerTwoScore} PUNTOS`);
+    // Usar la API del componente sincroniza visibilidad con su hit area.
+    this.restartButton.setVisible(true);
+    this.menuButton.setVisible(true);
     this.restartButton.setEnabled(true);
     this.menuButton.setEnabled(true);
     this.objects.forEach((object) => {
@@ -79,6 +80,8 @@ class GameOverPanel {
   }
 
   hide() {
+    this.restartButton.setVisible(false);
+    this.menuButton.setVisible(false);
     this.restartButton.setEnabled(false);
     this.menuButton.setEnabled(false);
     this.objects?.forEach((object) => {

@@ -47,6 +47,7 @@ const FOOTER_TEXT = 'KODINGVIBES GAMEJAM-2026 ···  VIBECODED BY AXES';
 const COLORS = Object.freeze({
   background: 0x0a0b10,
   panelBg: 0x2a2d38,
+  menuPanelBg: 0x111420,
   panelBorder: 0x000000,
   buttonBase: 0x1a1f2c,
   buttonHover: 0x252d40,
@@ -117,6 +118,36 @@ const GAME_TIMING = Object.freeze({
   gameOverDelay: 650,
 });
 
+const AI_DIFFICULTY = Object.freeze({
+  EASY: 'easy',
+  MEDIUM: 'medium',
+  HARD: 'hard',
+});
+
+const AI_CONFIG = Object.freeze({
+  turnDelay: 550,
+  defaultDifficulty: AI_DIFFICULTY.EASY,
+  thinkingText: 'IA PENSANDO...',
+});
+
+// Parámetros ajustables de HARD. La búsqueda permanece acotada para no congelar la UI.
+const HARD_AI_CONFIG = Object.freeze({
+  maxThinkTimeMs: 120,
+  depthsByBoardSize: Object.freeze({ 3: 7, 4: 5, 5: 3, 6: 2 }),
+  scoreTolerance: 4,
+  topMoveRandomness: 0.15,
+});
+
+const HARD_AI_WEIGHTS = Object.freeze({
+  scoreDifference: 100,
+  completedBox: 35,
+  safeMove: 8,
+  givesBox: -40,
+  chainRisk: -18,
+  futureMobility: 3,
+  turnControl: 6,
+});
+
 // Glitch experimental de cajas. enabled es la única bandera de activación.
 const BOX_CLAIM_GLITCH = Object.freeze({
   enabled: true,
@@ -146,6 +177,30 @@ const UI_STYLE = Object.freeze({
   activePlayerBorderWidth: 2,
   inactivePlayerAlpha: 0.58,
   turnTransitionDuration: 160,
+});
+
+// Layout del menú: dos bloques verticales, con medidas compartidas.
+const MENU_LAYOUT = Object.freeze({
+  panelX: GAME_WIDTH / 2,
+  panelY: 400,
+  panelWidth: 430,
+  panelHeight: 430,
+  modeTitleY: 220,
+  hotSeatY: 270,
+  hotSeatWidth: 300,
+  hotSeatHeight: 42,
+  aiRowY: 325,
+  aiButtonWidth: 120,
+  aiButtonHeight: 42,
+  aiButtonGap: 10,
+  boardTitleY: 380,
+  boardButtonWidth: 120,
+  boardButtonHeight: 48,
+  boardColumnGap: 20,
+  boardRowGap: 16,
+  boardFirstRowY: 435,
+  boardSecondRowY: 499,
+  helpY: 560,
 });
 
 // Sistema visual compartido por todos los botones Phaser.
@@ -203,14 +258,17 @@ const GAME_OVER_STYLE = Object.freeze({
 // Layout compartido del modal de confirmación de acciones.
 const CONFIRM_MODAL_STYLE = Object.freeze({
   panelWidth: 560,
-  panelHeight: 250,
+  panelHeight: 320,
   centerX: GAME_WIDTH / 2,
   centerY: GAME_HEIGHT / 2,
-  titleY: 330,
-  messageY: 385,
-  buttonsY: 465,
+  titleY: 300,
+  messageY: 350,
+  buttonsY: 425,
+  menuButtonY: 505,
   buttonWidth: 150,
   buttonHeight: 48,
+  menuButtonWidth: 324,
+  menuButtonHeight: 44,
   buttonGap: 24,
   overlayAlpha: 0.78,
   panelAlpha: 0.99,

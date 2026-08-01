@@ -32,6 +32,7 @@ class GlitchButton {
     this.lastActionAt = -Infinity;
     this.visualState = null;
     this.activeCornerTweens = [];
+    this.destroyed = false;
 
     this.baseColor = this.style.baseColor ?? options.baseColor ?? BUTTON_STYLE.background;
     this.hoverColor = this.style.hoverColor ?? options.hoverColor ?? BUTTON_STYLE.backgroundHover;
@@ -108,11 +109,12 @@ class GlitchButton {
     this.background.setInteractive({ useHandCursor: true });
     this.background.input.cursor = 'pointer';
     this.onPointerOver = () => {
-      if (!this.enabled || !this.visible) return;
+      if (this.destroyed || !this.enabled || !this.visible) return;
       this.hovered = true;
       this.refreshVisualState(true);
     };
     this.onPointerOut = () => {
+      if (this.destroyed) return;
       this.hovered = false;
       // Salir durante una pulsación cancela la acción y evita un callback
       // accidental cuando el puntero se suelta fuera del botón.
@@ -124,7 +126,7 @@ class GlitchButton {
       this.refreshVisualState(true);
     };
     this.onPointerDown = () => {
-      if (!this.enabled || this.actionLock) return;
+      if (this.destroyed || !this.enabled || this.actionLock) return;
       const now = performance.now();
       if (now - this.lastActionAt < BUTTON_STYLE.actionCooldown) return;
       this.lastActionAt = now;
@@ -134,14 +136,21 @@ class GlitchButton {
       this.refreshVisualState(true);
     };
     this.onPointerUp = () => {
+      if (this.destroyed) return;
       const shouldActivate = this.pressStarted && this.enabled && this.hovered && this.actionLock;
       this.pressed = false;
       this.pressStarted = false;
       this.actionLock = false;
+      const callback = shouldActivate ? this.callback : null;
+
+      // El callback puede cambiar de escena y destruir este botón. No toques
+      // Phaser después de ejecutarlo si el componente ya no sigue vivo.
+      callback?.();
+      if (this.destroyed) return;
       this.refreshVisualState(true);
-      if (shouldActivate) this.callback?.();
     };
     this.onPointerUpOutside = () => {
+      if (this.destroyed) return;
       this.pressed = false;
       this.pressStarted = false;
       this.actionLock = false;
@@ -164,6 +173,7 @@ class GlitchButton {
   }
 
   refreshVisualState(animate = true) {
+    if (this.destroyed || !this.background || !this.label || !this.container) return;
     const state = this.getVisualState();
     const stateChanged = state !== this.visualState;
     if (!stateChanged) return;
@@ -205,9 +215,11 @@ class GlitchButton {
   killCornerTweens() {
     this.activeCornerTweens.forEach((tween) => tween.stop?.());
     this.activeCornerTweens = [];
-    Object.values(this.corners).forEach((layer) => {
-      this.scene.tweens.killTweensOf(layer);
-      layer.setPosition(layer.baseX, layer.baseY);
+    const tweens = this.scene?.tweens;
+    Object.values(this.corners ?? {}).forEach((layer) => {
+      if (!layer) return;
+      tweens?.killTweensOf(layer);
+      layer.setPosition?.(layer.baseX, layer.baseY);
     });
   }
 
@@ -265,6 +277,7 @@ class GlitchButton {
   }
 
   setEnabled(value) {
+    if (this.destroyed) return;
     this.enabled = Boolean(value);
     if (!this.enabled) {
       this.hovered = false;
@@ -278,15 +291,18 @@ class GlitchButton {
   }
 
   setSelected(value) {
+    if (this.destroyed) return;
     this.selected = Boolean(value);
     this.refreshVisualState(true);
   }
 
   setLabel(value) {
+    if (this.destroyed || !this.label) return;
     this.label.setText(value);
   }
 
   setVisible(value) {
+    if (this.destroyed || !this.container) return;
     this.visible = Boolean(value);
     if (!this.visible) {
       this.hovered = false;
@@ -299,30 +315,47 @@ class GlitchButton {
   }
 
   setAlpha(value) {
+    if (this.destroyed || !this.container) return;
     this.container.setAlpha(value);
   }
 
   setPosition(x, y) {
+    if (this.destroyed || !this.container) return;
     this.container.setPosition(x, y);
   }
 
   /** Permite integrar el botón en una jerarquía visual común. */
   setDepth(depth) {
+    if (this.destroyed || !this.container) return;
     this.container.setDepth(depth);
   }
 
   setCallback(callback) {
+    if (this.destroyed) return;
     this.callback = callback;
   }
 
   destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
     this.killCornerTweens();
-    this.background.off('pointerover', this.onPointerOver);
-    this.background.off('pointerout', this.onPointerOut);
-    this.background.off('pointerdown', this.onPointerDown);
-    this.background.off('pointerup', this.onPointerUp);
-    this.background.off('pointerupoutside', this.onPointerUpOutside);
-    this.background.disableInteractive();
-    this.container.destroy(true);
+
+    const background = this.background;
+    if (background?.off) {
+      background.off('pointerover', this.onPointerOver);
+      background.off('pointerout', this.onPointerOut);
+      background.off('pointerdown', this.onPointerDown);
+      background.off('pointerup', this.onPointerUp);
+      background.off('pointerupoutside', this.onPointerUpOutside);
+    }
+    if (background?.scene && background.input) background.disableInteractive();
+    this.container?.destroy?.(true);
+
+    this.background = null;
+    this.label = null;
+    this.corners = null;
+    this.container = null;
+    this.scene = null;
+    this.callback = null;
   }
 }

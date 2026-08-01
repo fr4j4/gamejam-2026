@@ -97,7 +97,7 @@ class MenuScene extends Phaser.Scene {
     const gap = 42;
     btnData.forEach((btn, i) => {
       const y = startY + i * gap;
-      const group = this.createInteractiveButton(W / 2, y, 320, 38, btn.label, btn.color, () => {
+      const { group, bg } = this.createInteractiveButton(W / 2, y, 320, 38, btn.label, btn.color, () => {
         ensureStarterDecks();
         let targetScene = btn.scene;
         let payload = btn.mode ? { mode: btn.mode } : {};
@@ -109,7 +109,8 @@ class MenuScene extends Phaser.Scene {
       });
       group.setAlpha(0);
       this.tweens.add({
-        targets: group, alpha: 1, duration: 400, delay: 300 + i * 120, ease: 'Linear'
+        targets: group, alpha: 1, duration: 400, delay: 300 + i * 120, ease: 'Linear',
+        onComplete: () => bg.setInteractive({ useHandCursor: true })
       });
     });
   }
@@ -124,7 +125,7 @@ class MenuScene extends Phaser.Scene {
 
     const bg = this.add.rectangle(0, 0, w, h, 0x16213e)
       .setStrokeStyle(2, c)
-      .setInteractive({ useHandCursor: true });
+      .disableInteractive();
     const hi = this.add.rectangle(0, -h / 2 + 1, w - 2, 1, 0x3a3a5e).setOrigin(0.5, 0);
     const lo = this.add.rectangle(0, h / 2 - 1, w - 2, 1, 0x050510).setOrigin(0.5, 1);
     const led = this.add.circle(-w / 2 + 10, 0, 3, c);
@@ -159,7 +160,7 @@ class MenuScene extends Phaser.Scene {
     });
 
     this.add.existing(group);
-    return group;
+    return { group, bg };
   }
 }
 

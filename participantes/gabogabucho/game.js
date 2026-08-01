@@ -99,11 +99,12 @@ class ApocryphaScene extends Phaser.Scene {
     img('casa', 'estructura_02_130x111.png');
     img('templo', 'estructura_01_120x116.png');
     img('catedral', 'estructura_00_96x146.png');
-    // fondo: montañas, arboleda, árboles
+    // fondo: montañas, arboleda, árboles, terreno
     img('montanas', 'montanas_00_369x63.png');
     img('arbolada', 'arbolada_00_395x98.png');
     img('arbol0', 'arbol_00_65x68.png');
     img('arbol1', 'arbol_01_55x93.png');
+    img('terreno', 'terreno_02_208x24.png');
     // burbujas de estado
     for (const k of ['miedo', 'fe', 'hambre', 'duda', 'ciencia']) {
       img(BUBBLE_IMG[k], BUBBLE_IMG[k] + '.png');
@@ -118,34 +119,47 @@ class ApocryphaScene extends Phaser.Scene {
     this.groundY = 480;
     this.dayFactor = 0.35; // arranca de noche; oscila 0..1 (1 = mediodía)
 
-    // ---- cielo y capas de parallax ----
-    this.skyHigh = this.add.rectangle(W / 2, 120, W, 240, PAL.skyHighN);
-    this.skyMid  = this.add.rectangle(W / 2, 300, W, 220, PAL.skyMidN);
+    // ---- cielo en 3 bandas: cubre toda la pantalla sin huecos ----
+    this.skyHigh = this.add.rectangle(W / 2, 90, W, 180, PAL.skyHighN);   // 0-180
+    this.skyMid  = this.add.rectangle(W / 2, 260, W, 180, PAL.skyMidN);   // 170-350
+    this.skyLow  = this.add.rectangle(W / 2, 415, W, 170, PAL.horizonN);  // 330-500
 
     // sol/luna: arco a través del cielo
     this.orb = this.add.circle(-40, 0, 14, PAL.sun);
 
-    // montañas (capa 4): tira real del usuario, repetida
-    this.mountains = this.makeStrip('montanas', 3, this.groundY - 40, 1);
-    // arboleda (capa 3)
-    this.grove = this.makeStrip('arbolada', 2, this.groundY - 20, 1);
+    // capas de fondo escalonadas: lejos -> cerca, con aire entre ellas
+    // montañas: lejanas, altas en pantalla, muy tenues (niebla atmosférica)
+    this.mountains = this.makeStrip('montanas', 3, 398, 1.0);
+    this.mountains.setAlpha(0.6);
+    // arboleda: media distancia, más presente
+    this.grove = this.makeStrip('arbolada', 2, 438, 0.7);
+    this.grove.setAlpha(0.75);
 
-    // horizonte cálido + suelo (capa 2) + primer plano (capa 1)
-    this.horizon = this.add.rectangle(W / 2, this.groundY - 4, W, 8, PAL.horizonN);
-    this.ground = this.add.rectangle(W / 2, this.groundY + 40, W, 80, PAL.groundN);
-    this.front = this.add.rectangle(W / 2, H - 12, W, 24, PAL.frontN);
+    // suelo: banda oscura + tira de terreno real en el borde donde se pisa
+    this.ground = this.add.rectangle(W / 2, 545, W, 90, PAL.groundN);     // 500-590
+    this.terrain = this.makeStrip('terreno', 4, this.groundY + 4, 1);     // 460-484
+    // segunda tira de terreno, tenue y desplazada: textura del primer plano
+    this.terrain2 = this.makeStrip('terreno', 4, this.groundY + 34, 1);
+    this.terrain2.setAlpha(0.28);
+    this.terrain2.setX(-90);
+    this.front = this.add.rectangle(W / 2, 592, W, 16, PAL.frontN);       // 584-600
 
-    // ---- aldea: chozas, casa y templo reales (Estructuras 1) ----
-    // [x, key]: chozas en los extremos, casa y templo al centro
+    // árboles flanqueando la aldea (marco natural)
+    this.add.image(18, this.groundY, 'arbol1').setOrigin(0.5, 1).setScale(0.9).setAlpha(0.95);
+    this.add.image(782, this.groundY, 'arbol0').setOrigin(0.5, 1).setScale(0.9).setAlpha(0.95);
+
+    // ---- aldea: chozas, casa y templo reales (Estructuras 1, escala 0.75) ----
+    // [x, key]: chozas en los extremos, casa y templo al centro; con aire entre ellas
     const buildings = [
-      [110, 'choza'], [240, 'casa'], [400, 'templo'], [560, 'casa'], [690, 'choza']
+      [100, 'choza'], [240, 'casa'], [400, 'templo'], [560, 'casa'], [700, 'choza']
     ];
     this.huts = buildings.map(([x, key]) =>
-      this.add.image(x, this.groundY, key).setOrigin(0.5, 1)
+      this.add.image(x, this.groundY, key).setOrigin(0.5, 1).setScale(0.75).setAlpha(0.9)
     );
 
-    // ---- 9 aldeanos reales, cada uno con su burbuja de estado ----
-    const villagerXs = [95, 175, 300, 340, 455, 520, 625, 700, 740];
+    // ---- 9 aldeanos (escala 1.25) distribuidos: huecos entre edificios + delante de sus casas ----
+    // separación mínima ~75px para que las burbujas no se solapen
+    const villagerXs = [60, 165, 240, 320, 400, 480, 560, 635, 745];
     this.villagers = villagerXs.map((x, i) => this.makeVillager(x, i));
 
     // ---- intervención de luz ----
@@ -165,11 +179,15 @@ class ApocryphaScene extends Phaser.Scene {
     this.verdict = '';
 
     // ---- HUD ----
-    this.hud = this.add.text(16, 16, '', {
+    this.hud = this.add.text(16, 14, '', {
       fontFamily: 'Courier New',
-      fontSize: '14px',
+      fontSize: '13px',
       color: '#8f897c'
     });
+    // barra de Atención: fondo oscuro + fill ámbar
+    this.atBarBg = this.add.rectangle(16, 40, 204, 12, 0x0a0f13, 0.8).setOrigin(0, 0.5);
+    this.atBarBg.setStrokeStyle(1, 0x5e5346, 0.9);
+    this.atBar = this.add.rectangle(18, 40, 200, 8, PAL.divine, 0.95).setOrigin(0, 0.5);
     this.verdictText = this.add.text(W / 2, H - 34, '', {
       fontFamily: 'Courier New',
       fontSize: '13px',
@@ -184,6 +202,10 @@ class ApocryphaScene extends Phaser.Scene {
     if (qs.has('beam')) {
       this.atencion = 100; // para poder castear en verificación
       this.castLight(400, 440);
+    }
+    // forzar victoria para verificación (solo con ?win)
+    if (qs.has('win')) {
+      for (let i = 0; i < 6; i++) this.setVillagerState(this.villagers[i], 'fe');
     }
     if (qs.has('debug')) {
       const d = document.createElement('div');
@@ -207,7 +229,7 @@ class ApocryphaScene extends Phaser.Scene {
 
   // aldeano real: silueta + burbuja de estado sobre la cabeza
   makeVillager(x, i) {
-    const img = this.add.image(x, this.groundY, 'aldeano' + (i % 6)).setOrigin(0.5, 1);
+    const img = this.add.image(x, this.groundY, 'aldeano' + (i % 6)).setOrigin(0.5, 1).setScale(1.25);
 
     // estado inicial: el pueblo arranca con hambre y miedo
     const start = Math.random() < 0.5 ? 'hambre' : (Math.random() < 0.6 ? 'miedo' : 'duda');
@@ -219,15 +241,15 @@ class ApocryphaScene extends Phaser.Scene {
       reactT: 0
     };
 
-    // burbuja real del usuario + anillo del color del estado
-    const bubble = this.add.container(x, this.groundY - img.height - 12);
-    const icon = this.add.image(0, 0, BUBBLE_IMG[start]).setOrigin(0.5);
-    const ring = this.add.circle(0, 0, Math.max(icon.width, icon.height) * 0.72, 0x080c0f, 0.0);
-    ring.setStrokeStyle(1.4, STATES[start].color, 0.95);
-    bubble.add([ring, icon]);
+    // burbuja real del usuario: fondo oscuro semitransparente + anillo del color del estado
+    const bubble = this.add.container(x, this.groundY - img.displayHeight - 26);
+    const icon = this.add.image(0, 0, BUBBLE_IMG[start]).setOrigin(0.5).setScale(1.15);
+    const bg = this.add.circle(0, 0, Math.max(icon.displayWidth, icon.displayHeight) * 0.78, 0x0a0f13, 0.78);
+    bg.setStrokeStyle(1.4, STATES[start].color, 0.95);
+    bubble.add([bg, icon]);
 
     villager.bubble = bubble;
-    villager.ring = ring;
+    villager.ring = bg;
     villager.icon = icon;
 
     this.setVillagerState(villager, start);
@@ -339,12 +361,12 @@ class ApocryphaScene extends Phaser.Scene {
 
     this.skyHigh.setFillStyle(mixColor(PAL.skyHighN, PAL.skyHighD, this.dayFactor));
     this.skyMid.setFillStyle(mixColor(PAL.skyMidN, PAL.skyMidD, this.dayFactor));
-    this.horizon.setFillStyle(mixColor(PAL.horizonN, PAL.horizonD, this.dayFactor));
+    this.skyLow.setFillStyle(mixColor(PAL.horizonN, PAL.horizonD, this.dayFactor));
     this.ground.setFillStyle(mixColor(PAL.groundN, PAL.groundD, this.dayFactor));
     this.front.setFillStyle(mixColor(PAL.frontN, PAL.frontD, this.dayFactor));
 
     const orbX = lerp(-40, 840, phase);
-    const orbY = 420 - Math.sin(phase * Math.PI) * 300;
+    const orbY = 400 - Math.sin(phase * Math.PI) * 280;
     this.orb.setPosition(orbX, orbY);
     this.orb.setFillStyle(this.dayFactor > 0.5 ? PAL.sun : 0xcfd8e3);
     this.orb.setAlpha(0.35 + 0.65 * this.dayFactor);
@@ -368,7 +390,7 @@ class ApocryphaScene extends Phaser.Scene {
         v.bubble.setScale(1 + r * 0.25);
         if (v.reactT <= 0) { v.bubble.setAlpha(1); v.bubble.setScale(1); }
       }
-      v.bubble.setY(this.groundY - v.img.height - 12 + Math.sin(time / 700 + v.x) * 1.5);
+      v.bubble.setY(this.groundY - v.img.displayHeight - 26 + Math.sin(time / 700 + v.x) * 1.5);
     }
 
     // ---- parpadeo de la luz activa ----
@@ -397,11 +419,21 @@ class ApocryphaScene extends Phaser.Scene {
     const t = this.tally();
     if (!this.cathedralShown && t.fieles >= 6) {
       this.cathedralShown = true;
-      const cat = this.add.image(400, this.groundY, 'catedral').setOrigin(0.5, 1);
+      // el templo (huts[2]) se transforma en la Catedral, con un estallido de luz
+      const cat = this.add.image(400, this.groundY, 'catedral').setOrigin(0.5, 1).setScale(0.75);
       cat.setAlpha(0);
-      this.tweens.add({ targets: cat, alpha: 1, duration: 2000, ease: 'Cubic.easeOut' });
+      this.tweens.add({ targets: cat, alpha: 1, duration: 2200, ease: 'Cubic.easeOut' });
+      this.tweens.add({ targets: this.huts[2], alpha: 0, duration: 1800 });
+      // estallido ámbar: flash + halo que se expande
+      const flash = this.add.circle(400, this.groundY - 60, 10, PAL.core, 0.9);
+      flash.setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({ targets: flash, scale: 22, alpha: 0, duration: 1400, ease: 'Cubic.easeOut', onComplete: () => flash.destroy() });
+      const ring2 = this.add.circle(400, this.groundY - 60, 12, PAL.divine, 0);
+      ring2.setStrokeStyle(3, PAL.divine, 0.9);
+      ring2.setBlendMode(Phaser.BlendModes.ADD);
+      this.tweens.add({ targets: ring2, scale: 14, alpha: 0, duration: 1800, ease: 'Cubic.easeOut', onComplete: () => ring2.destroy() });
       this.over = 'win';
-      this.verdictText.setText('Los fieles construyeron la Catedral. Tu nombre viaja lejos.');
+      this.verdictText.setText('Los fieles construyeron la Catedral. Tu nombre viaja lejos. (R para reiniciar)');
     } else if (t.ciencia >= this.villagers.length) {
       this.over = 'lose';
       this.verdictText.setText('Te olvidaron. El pueblo siguió sin ti. (R para reiniciar)');
@@ -409,11 +441,17 @@ class ApocryphaScene extends Phaser.Scene {
 
     // ---- HUD ----
     this.hud.setText(
-      'APÓCRIFO — ATENCIÓN ' + Math.round(this.atencion) + '/' + this.atencionMax +
-      '  ·  fieles ' + t.fieles + '/9' +
-      '  ·  ciencia ' + t.ciencia +
-      '  ·  clic = milagro (' + this.costLight + ' at.)  R = reiniciar'
+      'APÓCRIFO  ·  fieles ' + t.fieles + '/9  ·  ciencia ' + t.ciencia +
+      '  ·  clic = milagro (' + this.costLight + ' at.)  ·  R = reiniciar'
     );
+    // barra de Atención: ancho proporcional; parpadea si no alcanza para un milagro
+    const frac = this.atencion / this.atencionMax;
+    this.atBar.width = Math.max(1, Math.round(200 * frac));
+    if (this.atencion < this.costLight) {
+      this.atBar.setFillStyle(0x9a7a4a, 0.5 + 0.3 * Math.abs(Math.sin(time / 300)));
+    } else {
+      this.atBar.setFillStyle(PAL.divine, 0.95);
+    }
 
     // ---- volcado de estados (solo ?debug) ----
     if (this.debugEl) {

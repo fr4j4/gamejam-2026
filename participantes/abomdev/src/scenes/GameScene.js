@@ -149,7 +149,8 @@ const WEAPON_KEYS = ['aura', 'orbit', 'pierce', 'burst', 'nova'];
 
 const RARITY_WEIGHT = { common: 3, rare: 2, epic: 1 };
 const RARITY_COLOR = { common: '#66ffcc', rare: '#66aaff', epic: '#ffcc44' };
-const RARITY_LABEL = { common: '', rare: '[RARA] ', epic: '[ÉPICA] ' };
+const RARITY_COLOR_NUM = { common: 0x66ffcc, rare: 0x66aaff, epic: 0xffcc44 };
+const RARITY_LABEL = { common: 'COMÚN', rare: 'RARA', epic: 'ÉPICA' };
 
 // Escalado pasivo: +1% (o -1% en cadencias) en cada level-up, ademas de la mejora elegida.
 const LEVEL_SCALE_UP = 1.01;
@@ -453,7 +454,21 @@ export default class GameScene extends Phaser.Scene {
     this.startText.setPosition(cx, cy);
 
     this.levelUpTitle.setPosition(cx, 100);
-    this.levelUpTexts.forEach((t, i) => t.setPosition(cx, 160 + i * 55));
+    const cardGapX = 24;
+    const cardGapY = 20;
+    const gridW = this.levelUpCardW * 2 + cardGapX;
+    const gridStartX = cx - gridW / 2;
+    const gridStartY = 160;
+    this.levelUpCards.forEach((card, i) => {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const x = gridStartX + col * (this.levelUpCardW + cardGapX);
+      const y = gridStartY + row * (this.levelUpCardH + cardGapY);
+      card.bg.setPosition(x, y);
+      card.keyText.setPosition(x + 10, y + 8);
+      card.rarityText.setPosition(x + this.levelUpCardW - 10, y + 8);
+      card.text.setPosition(x + this.levelUpCardW / 2, y + this.levelUpCardH / 2 + 6);
+    });
 
     this.pauseTitle.setPosition(cx, 60);
     this.pauseBoxX = w - this.pauseBoxW - 40;
@@ -1249,17 +1264,36 @@ export default class GameScene extends Phaser.Scene {
   }
 
   buildLevelUpUI() {
+    this.levelUpCardW = 320;
+    this.levelUpCardH = 130;
+
     this.levelUpTitle = this.add.text(0, 100, 'SUBISTE DE NIVEL', {
       fontFamily: 'monospace', fontSize: '26px', color: '#ffffff',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(100).setVisible(false);
 
-    this.levelUpTexts = [0, 1, 2, 3].map((i) => {
-      const t = this.add.text(0, 160 + i * 55, '', {
-        fontFamily: 'monospace', fontSize: '20px', color: '#66ffcc',
-        backgroundColor: '#222244', padding: { x: 12, y: 8 },
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(100).setVisible(false).setInteractive({ useHandCursor: true });
-      t.on('pointerdown', () => this.chooseUpgrade(i));
-      return t;
+    this.levelUpCards = [0, 1, 2, 3].map((i) => {
+      const bg = this.add.rectangle(0, 0, this.levelUpCardW, this.levelUpCardH, 0x181830, 0.97)
+        .setOrigin(0, 0).setStrokeStyle(3, 0x444466)
+        .setScrollFactor(0).setDepth(100).setVisible(false)
+        .setInteractive({ useHandCursor: true });
+      bg.on('pointerdown', () => this.chooseUpgrade(i));
+      bg.on('pointerover', () => bg.setStrokeStyle(4, bg.getData('rarityColor') || 0x444466));
+      bg.on('pointerout', () => bg.setStrokeStyle(3, bg.getData('rarityColor') || 0x444466));
+
+      const keyText = this.add.text(0, 0, `[${i + 1}]`, {
+        fontFamily: 'monospace', fontSize: '13px', color: '#888899',
+      }).setScrollFactor(0).setDepth(101).setVisible(false);
+
+      const rarityText = this.add.text(0, 0, '', {
+        fontFamily: 'monospace', fontSize: '12px', color: '#ffffff',
+      }).setOrigin(1, 0).setScrollFactor(0).setDepth(101).setVisible(false);
+
+      const text = this.add.text(0, 0, '', {
+        fontFamily: 'monospace', fontSize: '17px', color: '#66ffcc', align: 'center',
+        wordWrap: { width: this.levelUpCardW - 36 },
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(101).setVisible(false);
+
+      return { bg, keyText, rarityText, text };
     });
 
     this.input.keyboard.on('keydown-ONE', () => this.chooseUpgrade(0));
@@ -1338,10 +1372,13 @@ export default class GameScene extends Phaser.Scene {
       const after = { ...this.stats };
       choice.apply(after);
       const rarity = choice.rarity || 'common';
-      this.levelUpTexts[i]
-        .setText(`${i + 1}. ${RARITY_LABEL[rarity]}${choice.describe(this.stats, after)}`)
-        .setColor(RARITY_COLOR[rarity])
-        .setVisible(true);
+      const color = RARITY_COLOR_NUM[rarity];
+      const card = this.levelUpCards[i];
+
+      card.bg.setData('rarityColor', color).setStrokeStyle(3, color).setVisible(true);
+      card.keyText.setVisible(true);
+      card.rarityText.setText(RARITY_LABEL[rarity]).setColor(RARITY_COLOR[rarity]).setVisible(true);
+      card.text.setText(choice.describe(this.stats, after)).setColor(RARITY_COLOR[rarity]).setVisible(true);
     });
     this.levelUpTitle.setVisible(true);
   }
@@ -1356,7 +1393,12 @@ export default class GameScene extends Phaser.Scene {
     this.syncWeapons();
 
     this.levelUpTitle.setVisible(false);
-    this.levelUpTexts.forEach((t) => t.setVisible(false));
+    this.levelUpCards.forEach((card) => {
+      card.bg.setVisible(false);
+      card.keyText.setVisible(false);
+      card.rarityText.setVisible(false);
+      card.text.setVisible(false);
+    });
     this.isLevelingUp = false;
     this.physics.world.resume();
     this.lastHitAt = this.time.now;

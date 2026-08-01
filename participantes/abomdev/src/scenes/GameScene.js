@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 
-const WORLD_SIZE = 2000;
+const WORLD_SIZE = 6000;
 const PLAYER_MAX_HP = 100;
-const SPAWN_RADIUS = 500;
+const SPAWN_RADIUS_MARGIN = 150;
 const XP_PICKUP_SPEED = 320;
 const PROJECTILE_SPEED = 520;
 const PROJECTILE_LIFETIME = 2000;
@@ -17,7 +17,6 @@ const ENEMY_KNOCKBACK_SPEED = 220;
 const ENEMY_KNOCKBACK_MS = 150;
 const PLAYER_KNOCKBACK_SPEED = 260;
 const PLAYER_KNOCKBACK_MS = 150;
-const PORTAL_SPAWN_RADIUS = 350;
 const PORTAL_TRIGGER_RADIUS = 40;
 const STAGE_BOSS_MULTIPLIER = 1.15;
 const STAGE_PORTAL_MULTIPLIER = 1.5;
@@ -155,6 +154,7 @@ export default class GameScene extends Phaser.Scene {
     this.stageMultiplier = 1;
     this.portal = null;
     this.isPaused = false;
+    this.computeSpawnRadius();
 
     this.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
 
@@ -214,9 +214,30 @@ export default class GameScene extends Phaser.Scene {
     this.buildMinimap();
     this.buildPauseMenu();
     this.buildStartScreen();
+    this.layoutUI();
     this.updateHud();
 
     this.input.keyboard.on('keydown-ESC', () => this.togglePause());
+    this.input.keyboard.on('keydown-F', () => {
+      if (this.scale.isFullscreen) {
+        this.scale.stopFullscreen();
+      } else {
+        this.scale.startFullscreen();
+      }
+    });
+
+    this.onResize = () => {
+      this.cameras.main.setSize(this.scale.width, this.scale.height);
+      this.computeSpawnRadius();
+      this.layoutUI();
+    };
+    this.scale.on('resize', this.onResize);
+    this.events.once('shutdown', () => this.scale.off('resize', this.onResize));
+  }
+
+  computeSpawnRadius() {
+    this.spawnRadius = Math.hypot(this.scale.width, this.scale.height) / 2 + SPAWN_RADIUS_MARGIN;
+    this.portalSpawnRadius = this.spawnRadius * 0.7;
   }
 
   generateTextures() {
@@ -312,13 +333,44 @@ export default class GameScene extends Phaser.Scene {
   }
 
   buildStartScreen() {
-    this.startText = this.add.text(400, 300,
-      'SURVIVORS\n\nWASD / Flechas para moverte\nAtaque automático al enemigo más cercano\n\nPresiona una tecla para empezar',
+    this.startText = this.add.text(0, 0,
+      'SURVIVORS\n\nWASD / Flechas para moverte\nAtaque automático al enemigo más cercano\nF: pantalla completa · ESC: pausa\n\nPresiona una tecla para empezar',
       { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff', align: 'center' }
     ).setOrigin(0.5).setScrollFactor(0).setDepth(300);
 
     this.input.keyboard.once('keydown', () => this.startGame());
     this.input.once('pointerdown', () => this.startGame());
+  }
+
+  layoutUI() {
+    const w = this.scale.width;
+    const h = this.scale.height;
+    const cx = w / 2;
+    const cy = h / 2;
+
+    this.timerText.setPosition(w - 20, 20);
+
+    const barY = h - 48;
+    this.bossBarX = cx - this.bossBarW / 2;
+    this.bossBarBg.setPosition(this.bossBarX, barY);
+    this.bossBarFill.setPosition(this.bossBarX + 2, barY + 2);
+    this.bossLabel.setPosition(cx, barY - 18);
+
+    this.minimapX = w - 20 - this.minimapSize;
+    this.minimapY = h - 20 - this.minimapSize;
+
+    this.startText.setPosition(cx, cy);
+
+    this.levelUpTitle.setPosition(cx, 100);
+    this.levelUpTexts.forEach((t, i) => t.setPosition(cx, 160 + i * 55));
+
+    this.pauseTitle.setPosition(cx, 60);
+    this.pauseBoxX = w - this.pauseBoxW - 40;
+    this.pauseBoxY = 130;
+    this.pauseBoxBg.setPosition(this.pauseBoxX, this.pauseBoxY);
+    this.pauseBoxTitle.setPosition(this.pauseBoxX + 16, this.pauseBoxY + 14);
+    this.pauseStats.setPosition(this.pauseBoxX + 16, this.pauseBoxY + 46);
+    this.pauseHint.setPosition(cx, h - 40);
   }
 
   setTimersPaused(paused) {
@@ -341,27 +393,25 @@ export default class GameScene extends Phaser.Scene {
     this.xpBarFill = this.add.rectangle(21, 45, 198, 8, 0xaa88ff).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
 
     this.levelText = this.add.text(20, 58, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setScrollFactor(0).setDepth(151);
-    this.timerText = this.add.text(780, 20, '', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff' }).setOrigin(1, 0).setScrollFactor(0).setDepth(151);
+    this.timerText = this.add.text(0, 20, '', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff' }).setOrigin(1, 0).setScrollFactor(0).setDepth(151);
   }
 
   buildBossBar() {
-    const barX = 250;
-    const barY = 552;
-    const barW = 300;
+    this.bossBarW = 300;
     const barH = 16;
-    this.bossBarMaxWidth = barW - 4;
+    this.bossBarMaxWidth = this.bossBarW - 4;
 
-    this.bossLabel = this.add.text(400, barY - 18, 'JEFE', {
+    this.bossLabel = this.add.text(0, 0, 'JEFE', {
       fontFamily: 'monospace', fontSize: '14px', color: '#ff88cc',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(151).setVisible(false);
-    this.bossBarBg = this.add.rectangle(barX, barY, barW, barH, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150).setVisible(false);
-    this.bossBarFill = this.add.rectangle(barX + 2, barY + 2, this.bossBarMaxWidth, barH - 4, 0xff33aa).setOrigin(0, 0).setScrollFactor(0).setDepth(151).setVisible(false);
+    this.bossBarBg = this.add.rectangle(0, 0, this.bossBarW, barH, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150).setVisible(false);
+    this.bossBarFill = this.add.rectangle(0, 0, this.bossBarMaxWidth, barH - 4, 0xff33aa).setOrigin(0, 0).setScrollFactor(0).setDepth(151).setVisible(false);
   }
 
   buildMinimap() {
-    this.minimapX = 630;
-    this.minimapY = 430;
     this.minimapSize = 150;
+    this.minimapX = 0;
+    this.minimapY = 0;
     this.minimapGfx = this.add.graphics().setScrollFactor(0).setDepth(150);
   }
 
@@ -393,15 +443,25 @@ export default class GameScene extends Phaser.Scene {
   }
 
   buildPauseMenu() {
-    this.pauseTitle = this.add.text(400, 130, 'PAUSADO', {
+    this.pauseBoxW = 320;
+    this.pauseBoxH = 360;
+
+    this.pauseTitle = this.add.text(0, 60, 'PAUSADO', {
       fontFamily: 'monospace', fontSize: '32px', color: '#ffffff',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setVisible(false);
 
-    this.pauseStats = this.add.text(400, 320, '', {
-      fontFamily: 'monospace', fontSize: '16px', color: '#66ffcc', align: 'center', lineSpacing: 6,
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setVisible(false);
+    this.pauseBoxBg = this.add.rectangle(0, 0, this.pauseBoxW, this.pauseBoxH, 0x1a1a2e, 0.95)
+      .setOrigin(0, 0).setStrokeStyle(2, 0x444466).setScrollFactor(0).setDepth(300).setVisible(false);
 
-    this.pauseHint = this.add.text(400, 520, 'Presiona ESC para continuar', {
+    this.pauseBoxTitle = this.add.text(0, 0, 'ESTADÍSTICAS', {
+      fontFamily: 'monospace', fontSize: '16px', color: '#aa88ff',
+    }).setOrigin(0, 0).setScrollFactor(0).setDepth(301).setVisible(false);
+
+    this.pauseStats = this.add.text(0, 0, '', {
+      fontFamily: 'monospace', fontSize: '15px', color: '#66ffcc', lineSpacing: 10,
+    }).setOrigin(0, 0).setScrollFactor(0).setDepth(301).setVisible(false);
+
+    this.pauseHint = this.add.text(0, 0, 'Presiona ESC para continuar', {
       fontFamily: 'monospace', fontSize: '14px', color: '#aaaaaa',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(300).setVisible(false);
   }
@@ -438,6 +498,8 @@ export default class GameScene extends Phaser.Scene {
 
     this.pauseStats.setText(lines.join('\n'));
     this.pauseTitle.setVisible(true);
+    this.pauseBoxBg.setVisible(true);
+    this.pauseBoxTitle.setVisible(true);
     this.pauseStats.setVisible(true);
     this.pauseHint.setVisible(true);
   }
@@ -448,6 +510,8 @@ export default class GameScene extends Phaser.Scene {
     this.setTimersPaused(false);
 
     this.pauseTitle.setVisible(false);
+    this.pauseBoxBg.setVisible(false);
+    this.pauseBoxTitle.setVisible(false);
     this.pauseStats.setVisible(false);
     this.pauseHint.setVisible(false);
   }
@@ -592,8 +656,8 @@ export default class GameScene extends Phaser.Scene {
     if (this.isGameOver || this.isLevelingUp) return;
 
     const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    const x = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * SPAWN_RADIUS, 20, WORLD_SIZE - 20);
-    const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * SPAWN_RADIUS, 20, WORLD_SIZE - 20);
+    const x = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * this.spawnRadius, 20, WORLD_SIZE - 20);
+    const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * this.spawnRadius, 20, WORLD_SIZE - 20);
 
     const minutes = this.elapsed / 60000;
     const fastChance = Math.min(0.4, minutes * 0.12);
@@ -612,7 +676,7 @@ export default class GameScene extends Phaser.Scene {
   warnBoss() {
     if (this.isGameOver || this.isLevelingUp || this.isBossAlive) return;
 
-    const warning = this.add.text(400, 300, '¡EL JEFE SE ACERCA!', {
+    const warning = this.add.text(this.scale.width / 2, this.scale.height / 2, '¡EL JEFE SE ACERCA!', {
       fontFamily: 'monospace', fontSize: '28px', color: '#ff33aa',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(250);
 
@@ -632,8 +696,8 @@ export default class GameScene extends Phaser.Scene {
     if (this.isGameOver || this.isLevelingUp || this.isBossAlive) return;
 
     const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    const x = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * SPAWN_RADIUS, 20, WORLD_SIZE - 20);
-    const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * SPAWN_RADIUS, 20, WORLD_SIZE - 20);
+    const x = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * this.spawnRadius, 20, WORLD_SIZE - 20);
+    const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * this.spawnRadius, 20, WORLD_SIZE - 20);
 
     const minutes = this.elapsed / 60000;
     const bossTypeKey = Math.random() < 0.5 ? 'boss' : 'bossRanged';
@@ -840,8 +904,8 @@ export default class GameScene extends Phaser.Scene {
     if (this.portal) this.portal.destroy();
 
     const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
-    const x = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * PORTAL_SPAWN_RADIUS, 20, WORLD_SIZE - 20);
-    const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * PORTAL_SPAWN_RADIUS, 20, WORLD_SIZE - 20);
+    const x = Phaser.Math.Clamp(this.player.x + Math.cos(angle) * this.portalSpawnRadius, 20, WORLD_SIZE - 20);
+    const y = Phaser.Math.Clamp(this.player.y + Math.sin(angle) * this.portalSpawnRadius, 20, WORLD_SIZE - 20);
 
     this.portal = this.add.image(x, y, 'portal').setDepth(6);
     this.tweens.add({ targets: this.portal, angle: 360, duration: 3000, repeat: -1 });
@@ -853,14 +917,15 @@ export default class GameScene extends Phaser.Scene {
     this.portal.destroy();
     this.portal = null;
 
-    const text = this.add.text(400, 300, `ETAPA ${this.stage}`, {
+    const cy = this.scale.height / 2;
+    const text = this.add.text(this.scale.width / 2, cy, `ETAPA ${this.stage}`, {
       fontFamily: 'monospace', fontSize: '32px', color: '#aa88ff',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(250);
 
     this.tweens.add({
       targets: text,
       alpha: 0,
-      y: 260,
+      y: cy - 40,
       duration: 1200,
       delay: 400,
       onComplete: () => text.destroy(),
@@ -919,12 +984,14 @@ export default class GameScene extends Phaser.Scene {
     this.isGameOver = true;
     this.setTimersPaused(true);
 
-    this.add.text(400, 280, 'GAME OVER', { fontFamily: 'monospace', fontSize: '40px', color: '#ff5566' })
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+    this.add.text(cx, cy - 20, 'GAME OVER', { fontFamily: 'monospace', fontSize: '40px', color: '#ff5566' })
       .setOrigin(0.5).setScrollFactor(0).setDepth(200);
-    this.add.text(400, 330, `Sobreviviste ${this.formatTime(this.elapsed)} - Nivel ${this.level}`, {
+    this.add.text(cx, cy + 30, `Sobreviviste ${this.formatTime(this.elapsed)} - Nivel ${this.level}`, {
       fontFamily: 'monospace', fontSize: '18px', color: '#ffffff',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
-    this.add.text(400, 365, 'Presiona R para reiniciar', {
+    this.add.text(cx, cy + 65, 'Presiona R para reiniciar', {
       fontFamily: 'monospace', fontSize: '16px', color: '#aaaaaa',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
 
@@ -932,12 +999,12 @@ export default class GameScene extends Phaser.Scene {
   }
 
   buildLevelUpUI() {
-    this.levelUpTitle = this.add.text(400, 190, 'SUBISTE DE NIVEL', {
+    this.levelUpTitle = this.add.text(0, 100, 'SUBISTE DE NIVEL', {
       fontFamily: 'monospace', fontSize: '26px', color: '#ffffff',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(100).setVisible(false);
 
     this.levelUpTexts = [0, 1, 2, 3].map((i) => {
-      const t = this.add.text(400, 240 + i * 50, '', {
+      const t = this.add.text(0, 160 + i * 55, '', {
         fontFamily: 'monospace', fontSize: '20px', color: '#66ffcc',
         backgroundColor: '#222244', padding: { x: 12, y: 8 },
       }).setOrigin(0.5).setScrollFactor(0).setDepth(100).setVisible(false).setInteractive({ useHandCursor: true });

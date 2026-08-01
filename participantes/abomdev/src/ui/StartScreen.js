@@ -21,7 +21,7 @@ export default class StartScreen {
 
     const bestLine = bestTime > 0 ? `\n\nMejor tiempo: ${formatTime(bestTime)}` : '';
     this.body = text(scene,
-      `WASD / Flechas para moverte\nAtaque automático al enemigo más cercano\nF: pantalla completa · ESC: pausa${bestLine}`,
+      `WASD / Flechas para moverte\nAtaque automático al enemigo más cercano\nF: pantalla completa · ESC: pausa · M: silenciar${bestLine}`,
       { size: FONT_SIZE.label, color: TEXT.secondary, depth: DEPTH + 1, origin: 0.5, align: 'center', lineSpacing: 6 });
 
     this.prompt = text(scene, 'Presiona una tecla para empezar', {

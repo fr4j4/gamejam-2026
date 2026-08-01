@@ -24,6 +24,8 @@ import StartScreen from '../ui/StartScreen.js';
 import PauseMenu, { buildStatRows } from '../ui/PauseMenu.js';
 import LevelUpMenu from '../ui/LevelUpMenu.js';
 import { getBestTime, showEndScreen } from '../ui/EndScreen.js';
+import { playSfx } from '../audio/sfx.js';
+import { toggleMute, unlockAudio } from '../audio/synth.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -174,6 +176,7 @@ export default class GameScene extends Phaser.Scene {
     this.input.once('pointerdown', () => this.startGame());
 
     this.input.keyboard.on('keydown-ESC', () => this.togglePause());
+    this.input.keyboard.on('keydown-M', () => toggleMute());
     this.input.keyboard.on('keydown-F', () => {
       if (this.scale.isFullscreen) {
         this.scale.stopFullscreen();
@@ -206,6 +209,9 @@ export default class GameScene extends Phaser.Scene {
   startGame() {
     if (this.hasStarted) return;
     this.hasStarted = true;
+    // Primera interacción del jugador: es el momento en que el navegador permite
+    // arrancar el audio.
+    unlockAudio();
     this.startScreen.destroy();
     this.startScreen = null;
     this.setTimersPaused(false);
@@ -446,6 +452,7 @@ export default class GameScene extends Phaser.Scene {
 
   warnBoss() {
     if (this.isGameOver || this.isLevelingUp || this.isBossAlive) return;
+    playSfx('bossWarn');
 
     const warning = this.add.text(this.scale.width / 2, this.scale.height / 2, '¡EL JEFE SE ACERCA!', {
       fontFamily: 'monospace', fontSize: '28px', color: '#ff33aa',
@@ -559,6 +566,7 @@ export default class GameScene extends Phaser.Scene {
     proj.setData('damage', this.stats.damage);
     proj.setData('bornAt', this.time.now);
     this.physics.moveToObject(proj, target, PROJECTILE_SPEED);
+    playSfx('shoot');
   }
 
   onProjectileHitEnemy(proj, enemy) {
@@ -592,12 +600,15 @@ export default class GameScene extends Phaser.Scene {
 
   fireBurst() {
     if (this.isGameOver || this.isLevelingUp || !this.stats.hasBurst) return;
-    this.getNearestEnemies(this.stats.burstCount).forEach((target) => {
+    const targets = this.getNearestEnemies(this.stats.burstCount);
+    targets.forEach((target) => {
       const proj = this.projectiles.create(this.player.x, this.player.y, 'projectile');
       proj.setData('damage', this.stats.burstDamage);
       proj.setData('bornAt', this.time.now);
       this.physics.moveToObject(proj, target, PROJECTILE_SPEED);
     });
+    // Un solo sonido por ráfaga, no uno por proyectil.
+    if (targets.length > 0) playSfx('burst');
   }
 
   fireNova() {
@@ -606,6 +617,7 @@ export default class GameScene extends Phaser.Scene {
     const ring = this.add.circle(this.player.x, this.player.y, this.stats.novaRadius, 0xffaa00, 0.3)
       .setDepth(4).setScale(0.1);
     this.tweens.add({ targets: ring, scale: 1, alpha: 0, duration: 300, onComplete: () => ring.destroy() });
+    playSfx('nova');
 
     this.enemies.getChildren().forEach((e) => {
       if (!e.active) return;
@@ -631,6 +643,7 @@ export default class GameScene extends Phaser.Scene {
       enemy.setData('hp', hp);
       this.flashEnemy(enemy);
       this.knockbackEnemy(enemy);
+      playSfx('hit');
       return;
     }
 
@@ -639,8 +652,10 @@ export default class GameScene extends Phaser.Scene {
     this.deathEmitter.emitParticleAt(enemy.x, enemy.y, isBoss ? 30 : 10);
 
     if (isBoss) {
+      playSfx('bossDie');
       this.onBossDefeated();
     } else {
+      playSfx('enemyDie');
       this.spawnXpOrb(enemy.x, enemy.y, ENEMY_TYPES[enemy.getData('type')].xpValue);
     }
     enemy.destroy();
@@ -724,6 +739,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.deathEmitter.setParticleTint(0xffcc44);
     this.deathEmitter.emitParticleAt(x, y, 15);
+    playSfx('chest');
 
     this.levelUp();
   }
@@ -761,6 +777,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   showStageBanner() {
+    playSfx('stage');
     const cy = this.scale.height / 2;
     const label = this.add.text(this.scale.width / 2, cy, `ETAPA ${this.stage}`, {
       fontFamily: 'monospace', fontSize: '32px', color: TEXT.stage,
@@ -779,6 +796,7 @@ export default class GameScene extends Phaser.Scene {
   onPlayerPickupXp(player, orb) {
     const value = orb.getData('value') || 1;
     orb.destroy();
+    playSfx('xp');
     this.xp += value;
     if (this.xp >= this.xpToNext) {
       this.xp -= this.xpToNext;
@@ -810,6 +828,7 @@ export default class GameScene extends Phaser.Scene {
 
     if (Math.random() < this.stats.dodge) {
       this.showFloatingText(this.player.x, this.player.y, '¡ESQUIVÉ!', '#88ddff');
+      playSfx('dodge');
       return;
     }
 
@@ -824,6 +843,7 @@ export default class GameScene extends Phaser.Scene {
     }
     this.stats.hp -= remaining;
 
+    playSfx('playerHurt');
     this.cameras.main.shake(150, 0.008);
     this.player.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.time.delayedCall(80, () => this.player.active && this.player.clearTint());
@@ -844,12 +864,14 @@ export default class GameScene extends Phaser.Scene {
   onGameOver() {
     this.isGameOver = true;
     this.setTimersPaused(true);
+    playSfx('gameOver');
     showEndScreen(this, { title: 'GAME OVER', color: TEXT.danger, elapsed: this.elapsed, level: this.level });
   }
 
   onVictory() {
     this.hasWon = true;
     this.setTimersPaused(true);
+    playSfx('victory');
     showEndScreen(this, { title: '¡VICTORIA!', color: TEXT.gold, elapsed: this.elapsed, level: this.level });
   }
 
@@ -922,6 +944,7 @@ export default class GameScene extends Phaser.Scene {
   levelUp() {
     this.level += 1;
     this.applyLevelScaling();
+    playSfx('levelUp');
     this.startLevelUp();
   }
 
@@ -940,6 +963,7 @@ export default class GameScene extends Phaser.Scene {
     if (!choice) return;
 
     choice.apply(this.stats);
+    playSfx('upgradePick');
     this.syncTimerDelays();
     this.syncWeapons();
 

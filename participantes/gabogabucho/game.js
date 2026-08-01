@@ -77,11 +77,13 @@ class ApocryphaScene extends Phaser.Scene {
     this.villagers = villagerXs.map(x => this.makeVillager(x));
 
     // ---- intervención de luz ----
-    this.beam = null;      // Graphics del cono de luz
+    this.beam = null;      // Polygon del cono de luz
+    this.beamInner = null; // núcleo del haz (capa interna)
     this.beamCore = null;  // núcleo en el punto de impacto
     this.beamHalo = null;  // halo alrededor
+    this.beamGlow = null;  // resplandor del suelo
     this.beamT = 0;        // 1 = activa
-    this.input.on('pointerdown', (pointer) => this.castLight(pointer.x, pointer.y));
+    this.input.on('pointerdown', (pointer) => this.castLight(pointer.worldX, pointer.worldY));
 
     // ---- HUD mínimo ----
     this.hud = this.add.text(16, 16, 'APÓCRIFO — haz clic: una intervención de luz', {
@@ -148,14 +150,18 @@ class ApocryphaScene extends Phaser.Scene {
     const yBase = Math.max(y, this.groundY - 60);
     const bm = Phaser.BlendModes.ADD; // la luz se suma al fondo: se siente divina
 
-    // cono de luz: dos capas (ancho + núcleo del haz)
-    const beam = this.add.graphics();
+    // cono de luz: dos capas (ancho + núcleo del haz) — Shape polygon, no Graphics
+    const beam = this.add.polygon(0, 0, [
+      [x - 60, 0], [x + 60, 0], [x + 130, yBase + 26], [x - 130, yBase + 26]
+    ], PAL.divine, 0.40);
     beam.setBlendMode(bm);
-    beam.fillStyle(PAL.divine, 0.38);
-    beam.fillPoints([[x - 60, 0], [x + 60, 0], [x + 130, yBase + 26], [x - 130, yBase + 26]], true);
-    beam.fillStyle(PAL.core, 0.30);
-    beam.fillPoints([[x - 26, 0], [x + 26, 0], [x + 62, yBase + 6], [x - 62, yBase + 6]], true);
     this.beam = beam;
+
+    const beamInner = this.add.polygon(0, 0, [
+      [x - 26, 0], [x + 26, 0], [x + 62, yBase + 6], [x - 62, yBase + 6]
+    ], PAL.core, 0.34);
+    beamInner.setBlendMode(bm);
+    this.beamInner = beamInner;
 
     // núcleo brillante
     const core = this.add.circle(x, yBase + 8, 14, PAL.core, 1);
@@ -207,6 +213,7 @@ class ApocryphaScene extends Phaser.Scene {
 
       const flicker = 0.85 + 0.15 * Math.sin(time / 55);
       this.beam.setAlpha(a * flicker);
+      this.beamInner.setAlpha(a * flicker * 1.1);
       this.beamCore.setAlpha(0.9 * a * flicker);
       this.beamHalo.setAlpha(0.9 * a);
       this.beamGlow.setAlpha(0.55 * a);
@@ -216,10 +223,11 @@ class ApocryphaScene extends Phaser.Scene {
 
       if (life > 3900) {
         this.beam.destroy();
+        this.beamInner.destroy();
         this.beamCore.destroy();
         this.beamHalo.destroy();
         this.beamGlow.destroy();
-        this.beam = this.beamCore = this.beamHalo = this.beamGlow = null;
+        this.beam = this.beamInner = this.beamCore = this.beamHalo = this.beamGlow = null;
         this.beamT = 0;
       }
     }

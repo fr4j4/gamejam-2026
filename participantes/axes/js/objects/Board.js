@@ -15,6 +15,8 @@ class Board {
     this.dots = [];
     this.boxes = [];
     this.lineById = new Map();
+    this.inputEnabled = true;
+    this.activePlayer = this.state.currentPlayer;
     this.svg = this.createSvg();
     this.render();
   }
@@ -22,22 +24,42 @@ class Board {
   createSvg() {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.id = 'board-svg';
-    svg.setAttribute('viewBox', '0 0 800 800');
+    svg.setAttribute('viewBox', `0 0 ${GAME_WIDTH} ${GAME_HEIGHT}`);
     svg.setAttribute('aria-label', `Tablero de ${this.size} por ${this.size} puntos`);
+    // El SVG ocupa todo el layout visual, pero no debe bloquear el canvas.
+    // Solo las hitboxes de Line habilitan pointer-events explícitamente.
+    svg.style.pointerEvents = 'none';
     this.parent.appendChild(svg);
     return svg;
   }
 
   render() {
     const spacing = BOARD_STYLE.width / (this.size - 1);
-    const left = (800 - BOARD_STYLE.width) / 2;
+    const left = (GAME_WIDTH - BOARD_STYLE.width) / 2;
     const top = BOARD_STYLE.top;
-    const bottom = top + BOARD_STYLE.width;
+
+    const frame = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    frame.setAttribute('x', left - BOARD_STYLE.framePadding);
+    frame.setAttribute('y', top - BOARD_STYLE.framePadding);
+    frame.setAttribute('width', BOARD_STYLE.width + BOARD_STYLE.framePadding * 2);
+    frame.setAttribute('height', BOARD_STYLE.width + BOARD_STYLE.framePadding * 2);
+    frame.setAttribute('rx', BOARD_STYLE.cellRadius);
+    frame.setAttribute('fill', SVG_COLORS.boardCellA);
+    frame.setAttribute('stroke', SVG_COLORS.boardGridBorder);
+    frame.setAttribute('stroke-width', 1);
+    frame.style.pointerEvents = 'none';
+    this.svg.appendChild(frame);
+
+    // Los rellenos y sus glitches temporales quedan debajo de líneas y puntos.
+    this.boxesLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    this.boxesLayer.setAttribute('id', 'boxes-layer');
+    this.svg.appendChild(this.boxesLayer);
 
     // Primero los cuadros, después líneas y puntos para respetar las capas SVG.
     for (let row = 0; row < this.size - 1; row += 1) {
       for (let column = 0; column < this.size - 1; column += 1) {
-        this.boxes.push(new Box(this.svg, `box-${row}-${column}`, left + column * spacing, top + row * spacing, spacing));
+        const cellColor = (row + column) % 2 === 0 ? SVG_COLORS.boardCellA : SVG_COLORS.boardCellB;
+        this.boxes.push(new Box(this.boxesLayer, `box-${row}-${column}`, left + column * spacing, top + row * spacing, spacing, cellColor));
       }
     }
 
@@ -49,7 +71,7 @@ class Board {
         const line = new Line(this.svg, {
           id: `h-${row}-${column}`,
           type: 'h', x1, y1: y, x2, y2: y,
-        }, (lineId) => this.handleLineClick(lineId));
+        }, (lineId) => this.handleLineClick(lineId), () => this.getActivePlayerColor());
         this.lines.push(line);
         this.lineById.set(line.id, line);
       }
@@ -63,7 +85,7 @@ class Board {
         const line = new Line(this.svg, {
           id: `v-${row}-${column}`,
           type: 'v', x1: x, y1, x2: x, y2,
-        }, (lineId) => this.handleLineClick(lineId));
+        }, (lineId) => this.handleLineClick(lineId), () => this.getActivePlayerColor());
         this.lines.push(line);
         this.lineById.set(line.id, line);
       }
@@ -77,9 +99,11 @@ class Board {
   }
 
   handleLineClick(lineId) {
+    if (!this.inputEnabled) return;
     const result = drawLine(this.state, lineId, this.state.currentPlayer);
     if (!result.accepted) return;
     this.state = result.state;
+    this.activePlayer = result.state.currentPlayer;
     this.renderState();
     this.onMove?.(result);
   }
@@ -89,13 +113,34 @@ class Board {
     this.state.boxes.forEach((box) => this.boxes.find((view) => view.id === box.id)?.setOwner(box.owner));
   }
 
+  getActivePlayerColor() {
+    return this.activePlayer === 0 ? SVG_COLORS.playerOne : SVG_COLORS.playerTwo;
+  }
+
   /** @param {boolean} visible */
   setVisible(visible) {
     this.svg.style.display = visible ? 'block' : 'none';
   }
 
+  /** @param {boolean} enabled */
+  setInteractive(enabled) {
+    this.inputEnabled = enabled;
+    this.lines.forEach((line) => line.setInteractive(enabled));
+  }
+
+  /** Baja el SVG bajo el canvas para que los modales Phaser queden encima. */
+  setModalLayer(isModalOpen) {
+    this.svg.classList.toggle('is-behind-modal', isModalOpen);
+    this.svg.style.pointerEvents = 'none';
+  }
+
   destroy() {
+    this.setInteractive(false);
+    this.onMove = null;
+    this.setInteractive(false);
+    this.onMove = null;
     this.lines.forEach((line) => line.destroy());
+    this.boxes.forEach((box) => box.destroy());
     this.dots.forEach((dot) => dot.element.remove());
     this.svg.remove();
   }

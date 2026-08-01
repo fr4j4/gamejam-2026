@@ -77,11 +77,25 @@ function drawLine(state, lineId, player) {
 
 /** @param {{lines: Array}} state @returns {boolean} */
 function isGameOver(state) {
-  return state.lines.every((line) => line.owner !== null);
+  const allLinesUsed = state.lines.every((line) => line.owner !== null);
+  const allBoxesOwned = state.boxes.every((box) => box.owner !== null);
+  // Ambas condiciones son equivalentes en un tablero válido; la segunda
+  // mantiene la detección robusta si la presentación se actualiza por cuadros.
+  return allLinesUsed || allBoxesOwned;
 }
 
 /** @param {{scores: number[]}} state @returns {number|null} */
 function getWinner(state) {
   if (state.scores[0] === state.scores[1]) return null;
   return state.scores[0] > state.scores[1] ? 0 : 1;
+}
+
+/**
+ * Resume el resultado final para que la UI solo lo represente.
+ * @param {ReturnType<typeof initBoard>} state
+ * @returns {{winner: number|null, isDraw: boolean, scores: number[]}}
+ */
+function getGameResult(state) {
+  const winner = getWinner(state);
+  return { winner, isDraw: winner === null, scores: [...state.scores] };
 }

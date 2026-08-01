@@ -8,59 +8,76 @@ class HUD {
     this.scene = scene;
     this.onRestart = onRestart;
 
-    this.playerOneCard = this.createCard(42, 28, 215, COLORS.accent, 'JUGADOR 1');
-    this.playerTwoCard = this.createCard(543, 28, 215, COLORS.playerTwo, 'JUGADOR 2');
-    this.turnText = scene.add.text(400, 42, '', {
-      color: COLORS.text,
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '18px',
+    this.playerOneCard = this.createCard(150, 36, 220, COLORS.playerOne, 'JUGADOR 1', SVG_COLORS.playerOne);
+    this.playerTwoCard = this.createCard(650, 36, 220, COLORS.playerTwo, 'JUGADOR 2', SVG_COLORS.playerTwo);
+    this.turnPill = scene.add.rectangle(400, 36, 150, 42, COLORS.panelBg, 0.92)
+      .setStrokeStyle(1, COLORS.panelBorder, 1);
+    this.turnText = scene.add.text(400, 36, '', {
+      color: SVG_COLORS.textPrimary,
+      fontFamily: FONTS.GAME,
+      fontSize: '17px',
       fontStyle: 'bold',
+      letterSpacing: 1,
     }).setOrigin(0.5);
 
-    this.restartButton = scene.add.rectangle(690, 750, 150, 42, COLORS.button)
-      .setStrokeStyle(2, COLORS.accent)
-      .setInteractive({ useHandCursor: true });
-    this.restartLabel = scene.add.text(690, 750, 'REINICIAR', {
-      color: COLORS.text,
-      fontFamily: 'Arial, sans-serif',
+    this.restartButton = new GlitchButton(this.scene, 680, 750, 150, 42, 'REINICIAR', () => this.onRestart(), {
       fontSize: '15px',
-      fontStyle: 'bold',
-    }).setOrigin(0.5);
-
-    this.restartButton.on('pointerover', () => this.restartButton.setFillStyle(COLORS.buttonHover));
-    this.restartButton.on('pointerout', () => this.restartButton.setFillStyle(COLORS.button));
-    this.restartButton.on('pointerdown', () => this.onRestart());
-    this.restartLabel.setInteractive({ useHandCursor: true });
-    this.restartLabel.on('pointerdown', () => this.onRestart());
+    });
+    [this.playerOneCard.card, this.playerOneCard.label, this.playerOneCard.score,
+      this.playerTwoCard.card, this.playerTwoCard.label, this.playerTwoCard.score,
+      this.turnPill, this.turnText].forEach((object) => object.setDepth(DEPTH.hud));
+    this.restartButton.setDepth(DEPTH.controls);
   }
 
-  /** @param {number} x @param {number} y @param {number} width @param {number} color @param {string} label */
-  createCard(x, y, width, color, label) {
-    const card = this.scene.add.rectangle(x, y, width, 58, COLORS.button)
-      .setStrokeStyle(1, color);
-    this.scene.add.text(x - width / 2 + 14, y - 14, label, {
-      color: '#c8c8d8',
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '13px',
+  /** @param {number} x @param {number} y @param {number} width @param {number} color @param {string} label @param {string} cssColor */
+  createCard(x, y, width, color, label, cssColor) {
+    const card = this.scene.add.rectangle(x, y, width, 58, COLORS.panelBg, UI_STYLE.panelAlpha)
+      .setStrokeStyle(1, COLORS.panelBorder, 1);
+    const labelText = this.scene.add.text(x - width / 2 + 14, y - 15, label, {
+      color: SVG_COLORS.textMuted,
+      fontFamily: FONTS.GAME,
+      fontSize: UI_STYLE.hudLabelSize,
       fontStyle: 'bold',
+      letterSpacing: 1,
     });
-    const score = this.scene.add.text(x + width / 2 - 16, y + 2, '0', {
-      color: color === COLORS.accent ? SVG_COLORS.playerOne : SVG_COLORS.playerTwo,
-      fontFamily: 'Arial, sans-serif',
-      fontSize: '28px',
+    const score = this.scene.add.text(x + width / 2 - 16, y + 3, '0', {
+      color: cssColor,
+      fontFamily: FONTS.GAME,
+      fontSize: UI_STYLE.scoreSize,
       fontStyle: 'bold',
     }).setOrigin(1, 0.5);
-    return { card, score, color };
+    return { card, label: labelText, score, color };
   }
 
   /** @param {{currentPlayer: number, scores: number[]}} state */
   update(state) {
     this.playerOneCard.score.setText(String(state.scores[0]));
     this.playerTwoCard.score.setText(String(state.scores[1]));
-    this.turnText.setText(`TURNO: JUGADOR ${state.currentPlayer + 1}`);
+    this.turnText.setText(`TURNO  //  J${state.currentPlayer + 1}`);
+    this.turnText.setColor(state.currentPlayer === 0 ? SVG_COLORS.playerOne : SVG_COLORS.playerTwo);
+    this.turnPill.setStrokeStyle(UI_STYLE.borderWidth, state.currentPlayer === 0 ? COLORS.playerOne : COLORS.playerTwo, 1);
 
-    this.playerOneCard.card.setStrokeStyle(state.currentPlayer === 0 ? 3 : 1, this.playerOneCard.color);
-    this.playerTwoCard.card.setStrokeStyle(state.currentPlayer === 1 ? 3 : 1, this.playerTwoCard.color);
+    this.playerOneCard.card.setStrokeStyle(state.currentPlayer === 0 ? 2 : 1, state.currentPlayer === 0 ? COLORS.playerOne : COLORS.panelBorder, 1);
+    this.playerTwoCard.card.setStrokeStyle(state.currentPlayer === 1 ? 2 : 1, state.currentPlayer === 1 ? COLORS.playerTwo : COLORS.panelBorder, 1);
+    this.playerOneCard.card.setAlpha(state.currentPlayer === 0 ? 1 : UI_STYLE.inactivePlayerAlpha);
+    this.playerTwoCard.card.setAlpha(state.currentPlayer === 1 ? 1 : UI_STYLE.inactivePlayerAlpha);
+    this.playerOneCard.score.setAlpha(state.currentPlayer === 0 ? 1 : UI_STYLE.inactivePlayerAlpha);
+    this.playerTwoCard.score.setAlpha(state.currentPlayer === 1 ? 1 : UI_STYLE.inactivePlayerAlpha);
+    this.scene.game.canvas.style.borderColor = state.currentPlayer === 0
+      ? SVG_COLORS.playerOne
+      : SVG_COLORS.playerTwo;
+    this.scene.game.canvas.style.borderWidth = `${UI_STYLE.activePlayerBorderWidth}px`;
+  }
+
+  /** Oculta o muestra la acción persistente durante la partida. */
+  setRestartVisible(visible) {
+    this.restartButton.setVisible(visible);
+    this.restartButton.setEnabled(visible);
+  }
+
+  /** Habilita o bloquea REINICIAR sin cambiar su visibilidad. */
+  setRestartEnabled(enabled) {
+    this.restartButton.setEnabled(enabled);
   }
 
   destroy() {

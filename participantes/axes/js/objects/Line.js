@@ -9,25 +9,31 @@ class Line {
    * @param {SVGElement} svg
    * @param {{ id: string, type: string, x1: number, y1: number, x2: number, y2: number }} data
    */
-  constructor(svg, data, onClick) {
+  constructor(svg, data, onClick, getHoverColor) {
     this.id = data.id;
     this.owner = null;
+    this.getHoverColor = getHoverColor ?? (() => SVG_COLORS.hoverLine);
     this.group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     this.group.dataset.lineId = this.id;
     this.group.setAttribute('role', 'button');
     this.group.setAttribute('aria-label', `Línea ${this.id}`);
 
-    this.visible = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    this.visible.setAttribute('x1', data.x1);
-    this.visible.setAttribute('y1', data.y1);
-    this.visible.setAttribute('x2', data.x2);
-    this.visible.setAttribute('y2', data.y2);
-    this.visible.setAttribute('stroke', SVG_COLORS.emptyLine);
-    this.visible.setAttribute('stroke-width', BOARD_STYLE.lineWidth);
-    this.visible.setAttribute('stroke-linecap', 'round');
+    // Dos mitades permiten revelar la línea desde el centro hacia ambos extremos.
+    this.visible = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    this.visible.classList.add('line-visible');
+    this.visible.style.setProperty('--line-reveal-duration', `${BOARD_STYLE.lineRevealDuration}ms`);
+    const midpointX = (data.x1 + data.x2) / 2;
+    const midpointY = (data.y1 + data.y2) / 2;
+    const segmentLength = Math.hypot(data.x2 - data.x1, data.y2 - data.y1) / 2;
+    this.visibleSegments = [
+      this.createVisibleSegment(midpointX, midpointY, data.x1, data.y1, segmentLength),
+      this.createVisibleSegment(midpointX, midpointY, data.x2, data.y2, segmentLength),
+    ];
+    this.visible.append(...this.visibleSegments);
     this.visible.style.pointerEvents = 'none';
 
     this.hitbox = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    this.hitbox.classList.add('board-line-hitbox');
     this.hitbox.setAttribute('x1', data.x1);
     this.hitbox.setAttribute('y1', data.y1);
     this.hitbox.setAttribute('x2', data.x2);
@@ -36,6 +42,7 @@ class Line {
     this.hitbox.setAttribute('stroke-width', BOARD_STYLE.hitboxWidth);
     this.hitbox.setAttribute('stroke-linecap', 'round');
     this.hitbox.style.cursor = 'pointer';
+    this.hitbox.style.pointerEvents = 'stroke';
 
     this.group.append(this.visible, this.hitbox);
     svg.appendChild(this.group);
@@ -49,21 +56,71 @@ class Line {
     this.hitbox.addEventListener('pointerdown', () => onClick?.(this.id));
   }
 
+  /** @param {number} x1 @param {number} y1 @param {number} x2 @param {number} y2 @param {number} length */
+  createVisibleSegment(x1, y1, x2, y2, length) {
+    const segment = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    segment.classList.add('line-segment');
+    segment.setAttribute('x1', x1);
+    segment.setAttribute('y1', y1);
+    segment.setAttribute('x2', x2);
+    segment.setAttribute('y2', y2);
+    segment.setAttribute('stroke', SVG_COLORS.emptyLine);
+    segment.setAttribute('stroke-width', BOARD_STYLE.lineWidth);
+    segment.setAttribute('stroke-linecap', 'round');
+    segment.style.setProperty('--line-segment-length', `${length}`);
+    return segment;
+  }
+
   /** @param {boolean} hovered */
   setHovered(hovered) {
     if (this.owner !== null) return;
-    this.visible.setAttribute('stroke', hovered ? SVG_COLORS.hoverLine : SVG_COLORS.emptyLine);
-    this.visible.setAttribute('stroke-width', hovered ? BOARD_STYLE.lineWidth + 2 : BOARD_STYLE.lineWidth);
+    const hoverColor = this.getHoverColor();
+    this.visibleSegments.forEach((segment) => {
+      segment.setAttribute('stroke', hovered ? hoverColor : SVG_COLORS.emptyLine);
+      segment.setAttribute('stroke-width', hovered ? BOARD_STYLE.lineHoverWidth : BOARD_STYLE.lineWidth);
+    });
   }
 
   /** @param {number|null} owner */
   setOwner(owner) {
+    const wasEmpty = this.owner === null;
     this.owner = owner;
     const color = owner === 0 ? SVG_COLORS.playerOne : SVG_COLORS.playerTwo;
-    this.visible.setAttribute('stroke', owner === null ? SVG_COLORS.emptyLine : color);
-    this.visible.setAttribute('stroke-width', BOARD_STYLE.lineWidth);
+    this.visibleSegments.forEach((segment) => {
+      segment.setAttribute('stroke', owner === null ? SVG_COLORS.emptyLine : color);
+      segment.setAttribute('stroke-width', BOARD_STYLE.lineWidth);
+      segment.style.color = owner === null ? SVG_COLORS.emptyLine : color;
+    });
     this.hitbox.style.cursor = owner === null ? 'pointer' : 'default';
     this.visible.classList.toggle('line-drawn', owner !== null);
+    if (owner === null) this.resetReveal();
+    else if (wasEmpty) this.revealFromCenter();
+  }
+
+  revealFromCenter() {
+    this.visibleSegments.forEach((segment) => {
+      const length = segment.style.getPropertyValue('--line-segment-length');
+      segment.setAttribute('stroke-dasharray', length);
+      segment.setAttribute('stroke-dashoffset', length);
+      segment.classList.remove('line-reveal-segment');
+      // Reflow forces a fresh animation when the line changes owner visually.
+      void segment.getBoundingClientRect();
+      segment.classList.add('line-reveal-segment');
+    });
+  }
+
+  resetReveal() {
+    this.visibleSegments.forEach((segment) => {
+      segment.classList.remove('line-reveal-segment');
+      segment.removeAttribute('stroke-dasharray');
+      segment.removeAttribute('stroke-dashoffset');
+    });
+  }
+
+  /** @param {boolean} enabled */
+  setInteractive(enabled) {
+    this.hitbox.style.pointerEvents = enabled ? 'stroke' : 'none';
+    this.hitbox.style.cursor = enabled && this.owner === null ? 'pointer' : 'default';
   }
 
   destroy() {

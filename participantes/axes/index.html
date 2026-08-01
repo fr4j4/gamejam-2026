@@ -4,21 +4,32 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Timbiriche</title>
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./css/styles.css" />
   </head>
   <body>
     <main id="game" aria-label="Timbiriche">
-      <p class="loading">Cargando Timbiriche…</p>
+      <p id="game-loading" class="loading">Cargando Timbiriche…</p>
     </main>
+    <footer class="site-footer">
+      <a id="site-footer-link" target="_blank" rel="noopener noreferrer"></a>
+    </footer>
 
     <!-- Phaser 4.2.1: versión estable disponible desde CDN. -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.js"></script>
     <script src="./js/utils/Constants.js"></script>
     <script src="./js/utils/GameLogic.js"></script>
     <script src="./js/utils/AudioManager.js"></script>
+    <script src="./js/effects/BoxClaimGlitch.js"></script>
     <script src="./js/objects/Dot.js"></script>
     <script src="./js/objects/Line.js"></script>
     <script src="./js/objects/Box.js"></script>
+    <script src="./js/ui/GlitchText.js"></script>
+    <script src="./js/ui/GlitchButton.js"></script>
+    <script src="./js/ui/ConfirmModal.js"></script>
     <script src="./js/ui/HUD.js"></script>
     <script src="./js/ui/GameOverPanel.js"></script>
     <script src="./js/objects/Board.js"></script>

@@ -21,7 +21,12 @@ const {
   attractionStrength,
   oscillatorPhase,
   pistonYAt,
-  rotorAngleAt
+  rotorAngleAt,
+  LEVELS,
+  levelConfig,
+  nextLevelId,
+  freshLevelState,
+  campaignTotal
 } = require('./mass-model.js');
 
 test('la cámara acelera suavemente y tiene un límite', () => {
@@ -187,4 +192,40 @@ test('el barredor rota en forma periodica con fase configurable', () => {
   assert.equal(rotorAngleAt(600, 2400, 0), Math.PI / 2);
   assert.equal(rotorAngleAt(2400, 2400, 0), 0);
   assert.equal(rotorAngleAt(0, 2400, 0.5), Math.PI);
+});
+
+test('la configuracion define dos niveles con track y meta propios', () => {
+  assert.equal(levelConfig('level1').title, 'CIUDAD');
+  assert.equal(levelConfig('level1').trackLength, 10900);
+  assert.equal(levelConfig('level1').destinationX, 10250);
+  assert.equal(levelConfig('level2').title, 'DISTRITO MECANICO');
+  assert.equal(levelConfig('level2').trackLength, 5400);
+  assert.equal(levelConfig('level2').destinationX, 4750);
+  assert.equal(levelConfig('nope'), null);
+  assert.equal(LEVELS.level2.theme, 'factory');
+});
+
+test('la transicion avanza del nivel 1 al 2 y termina la campana', () => {
+  assert.equal(nextLevelId('level1'), 'level2');
+  assert.equal(nextLevelId('level2'), null);
+});
+
+test('cada nivel arranca con estado limpio: sin recoleccion, sin cronometro', () => {
+  const state = freshLevelState();
+  assert.deepEqual(state.collected, []);
+  assert.equal(state.startedAt, null);
+  assert.equal(state.finished, false);
+  assert.equal(state.boostMs, 0);
+});
+
+test('la puntuacion de campana suma los totales de cada nivel', () => {
+  assert.equal(campaignTotal([{ total: 425 }, { total: 380 }]), 805);
+  assert.equal(campaignTotal([]), 0);
+  assert.equal(campaignTotal([{ total: 100 }, null]), 100);
+});
+
+test('la ruta usa el rotulo de destino propio del nivel', () => {
+  assert.equal(routeMessage(0, 4750, 'CENTRO DE RECICLAJE'), 'CENTRO DE RECICLAJE 475 m');
+  assert.equal(routeMessage(1000, 4750, 'CENTRO DE RECICLAJE'), 'CENTRO DE RECICLAJE 375 m');
+  assert.equal(routeMessage(4750, 4750, 'CENTRO DE RECICLAJE'), 'DESTINO ALCANZADO');
 });

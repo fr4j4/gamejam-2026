@@ -46,11 +46,12 @@
     return { kind: 'nut', radius: 9 + sizeStep * 2, sides: 6 };
   }
 
-  function routeMessage(distance, destination) {
+  function routeMessage(distance, destination, destinationLabel) {
     const remaining = Math.max(0, destination - distance);
+    const label = destinationLabel || 'BASURERO MUNICIPAL';
     if (remaining === 0) return 'DESTINO ALCANZADO';
     if (remaining <= 150) return 'YA SE VE EL BASURERO';
-    return `BASURERO MUNICIPAL ${Math.ceil(remaining / 10)} m`;
+    return `${label} ${Math.ceil(remaining / 10)} m`;
   }
 
   function scrapValue(spec) {
@@ -116,6 +117,81 @@
     return oscillatorPhase(elapsedMs, periodMs, phaseOffset) * Math.PI * 2;
   }
 
+  const LEVELS = {
+    level1: {
+      id: 'level1',
+      title: 'CIUDAD',
+      theme: 'city',
+      trackLength: 10900,
+      destinationX: 10250,
+      destinationLabel: 'BASURERO MUNICIPAL',
+      stoneGates: [1250, 2250, 3350, 4550, 5900, 7400, 9050],
+      scrapers: [4050, 6900, 8550],
+      softEnd: 9400,
+      boostPickupX: 7600,
+      field: { start: 8000, end: 9500, ramp: 180 },
+      hasCrane: true,
+      hasField: true,
+      hasBoost: true,
+      qa: {
+        construction: [5650, 5400],
+        boost: [7575, 7200],
+        field: [8150, 7920],
+        scraper: [3850, 3650]
+      }
+    },
+    level2: {
+      id: 'level2',
+      title: 'DISTRITO MECANICO',
+      theme: 'factory',
+      trackLength: 5400,
+      destinationX: 4750,
+      destinationLabel: 'CENTRO DE RECICLAJE',
+      stoneGates: [],
+      scrapers: [],
+      softEnd: 4450,
+      hasCrane: false,
+      hasField: false,
+      hasBoost: false,
+      qa: {
+        mechanical: [300, 200],
+        piston: [820, 720],
+        rotor: [1950, 1800]
+      }
+    }
+  };
+
+  function levelConfig(levelId) {
+    return LEVELS[levelId] || null;
+  }
+
+  function nextLevelId(levelId) {
+    if (levelId === 'level1') return 'level2';
+    return null;
+  }
+
+  function freshLevelState() {
+    return {
+      collected: [],
+      startedAt: null,
+      started: false,
+      dead: false,
+      finished: false,
+      shedCooldown: 0,
+      scraperCooldown: 0,
+      mechanicalHitCooldown: 0,
+      jumpCooldown: 0,
+      boostMs: 0,
+      scrapeNoticeMs: 0,
+      scrapeLostValue: 0,
+      mechanicalNoticeMs: 0
+    };
+  }
+
+  function campaignTotal(results) {
+    return (results || []).reduce((sum, entry) => sum + ((entry && entry.total) || 0), 0);
+  }
+
   return {
     cameraSpeed,
     screenX,
@@ -136,6 +212,11 @@
     attractionStrength,
     oscillatorPhase,
     pistonYAt,
-    rotorAngleAt
+    rotorAngleAt,
+    LEVELS,
+    levelConfig,
+    nextLevelId,
+    freshLevelState,
+    campaignTotal
   };
 });

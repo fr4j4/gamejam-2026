@@ -41,6 +41,20 @@ class LastreScene extends Phaser.Scene {
     super('LastreScene');
   }
 
+  init(data) {
+    const campaign = data || {};
+    let levelId = campaign.levelId;
+    if (!levelId) {
+      const qs = new URLSearchParams(location.search);
+      const levelParam = qs.get('level');
+      levelId = levelParam === '2' ? 'level2' : 'level1';
+    }
+    this.levelId = levelId;
+    this.campaignScore = campaign.campaignScore || 0;
+    this.levelResults = campaign.levelResults || [];
+    this.level = LastreModel.levelConfig(this.levelId);
+  }
+
   create() {
     this.W = 800;
     this.H = 450;
@@ -59,8 +73,9 @@ class LastreScene extends Phaser.Scene {
     this.boostRadius = 120;
     this.collected = new Set();
     this.finished = false;
-    this.trackLength = 14000;
-    this.scraperPositions = [4050, 6900, 8550, 10300, 12200];
+    this.trackLength = this.level.trackLength;
+    this.destinationX = this.level.destinationX;
+    this.scraperPositions = this.level.scrapers;
 
     this.makeBackdrop();
     this.dangerLine = this.add.rectangle(20, this.H / 2, 4, this.H, COLORS.danger, 0.72)
@@ -71,7 +86,10 @@ class LastreScene extends Phaser.Scene {
     this.makeSoftMatter();
     this.makeStoneGates();
     this.makeScrapers();
-    this.makeMechanicalDistrict();
+    this.mechanicalPistons = [];
+    this.mechanicalRotors = [];
+    this.mechanicalPaint = this.add.graphics().setDepth(16);
+    if (this.levelId === 'level2') this.makeMechanicalDistrict();
 
     this.keys = this.input.keyboard.addKeys({
       leftA: Phaser.Input.Keyboard.KeyCodes.A,
@@ -102,9 +120,13 @@ class LastreScene extends Phaser.Scene {
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(100);
     this.showIntro();
     this.matter.world.pause();
-    this.input.keyboard.on('keydown-ENTER', () => this.startGame(false));
-    this.input.keyboard.on('keydown-SPACE', () => this.startGame(true));
-    this.input.on('pointerdown', () => this.startGame(false));
+    this.input.keyboard.on('keydown-ENTER', () => this.confirmMenu(false));
+    this.input.keyboard.on('keydown-SPACE', () => this.confirmMenu(true));
+    this.input.keyboard.on('keydown-UP', () => this.moveMenu(-1));
+    this.input.keyboard.on('keydown-W', () => this.moveMenu(-1));
+    this.input.keyboard.on('keydown-DOWN', () => this.moveMenu(1));
+    this.input.keyboard.on('keydown-S', () => this.moveMenu(1));
+    this.input.on('pointerdown', () => this.confirmMenu(false));
 
     const qs = new URLSearchParams(location.search);
     this.debugMode = qs.has('debug');
@@ -124,10 +146,7 @@ class LastreScene extends Phaser.Scene {
     }
     const qa = qs.get('qa');
     if (qa) {
-      const targets = {
-        construction: [5650, 5400], boost: [7575, 7200], field: [8150, 7920], scraper: [3850, 3650],
-        mechanical: [9560, 9300], piston: [9660, 9000], rotor: [10940, 10680]
-      };
+      const targets = this.level.qa;
       const target = targets[qa];
       if (target) {
         this.matter.body.setPosition(this.blob, { x: target[0], y: 330 });
@@ -139,27 +158,88 @@ class LastreScene extends Phaser.Scene {
   }
 
   showIntro() {
+    this.menuIndex = 0;
     const panel = this.add.rectangle(400, 225, 800, 450, 0x05090d, 0.9)
       .setScrollFactor(0).setDepth(200);
-    const title = this.add.text(400, 88, 'MR. LASTRE', {
-      fontFamily: 'Courier New', fontSize: '34px', color: '#f7fbff', fontStyle: 'bold',
+    const isLevel2 = this.levelId === 'level2';
+    const title = this.add.text(400, 70, isLevel2 ? 'DISTRITO MECANICO' : 'MR. LASTRE', {
+      fontFamily: 'Courier New', fontSize: isLevel2 ? '30px' : '34px', color: '#f7fbff', fontStyle: 'bold',
       stroke: '#17323b', strokeThickness: 6
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
-    const story = this.add.text(400, 147,
-      'SOS UN IMÁN PERDIDO EN LA CIUDAD\nLLEVA LA CHATARRA AL BASURERO', {
+    const story = this.add.text(400, 130,
+      isLevel2
+        ? 'CRUZA LA FABRICA\nLEE EL RITMO DE LAS MAQUINAS'
+        : 'SOS UN IMÁN PERDIDO EN LA CIUDAD\nLLEVA LA CHATARRA AL BASURERO', {
         fontFamily: 'Courier New', fontSize: '17px', color: '#f1c75b', align: 'center',
         lineSpacing: 7
       }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
-    const rules = this.add.text(400, 250,
+    const rules = this.add.text(400, 218,
       'A / D   INCLINARTE\nESPACIO   PULSO\n\nEL METAL SE PEGA  ·  LA PIEDRA TE ALIGERA\nNO DEJES QUE EL BORDE ROJO TE ALCANCE', {
         fontFamily: 'Courier New', fontSize: '14px', color: '#dbe8ed', align: 'center',
         lineSpacing: 8
       }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
-    const start = this.add.text(400, 377, 'ESPACIO / ENTER / CLICK PARA EMPEZAR', {
-      fontFamily: 'Courier New', fontSize: '14px', color: '#6fe7ff'
+
+    if (isLevel2) {
+      const start = this.add.text(400, 377, 'ESPACIO / ENTER / CLICK PARA EMPEZAR', {
+        fontFamily: 'Courier New', fontSize: '14px', color: '#6fe7ff'
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+      this.tweens.add({ targets: start, alpha: 0.35, yoyo: true, repeat: -1, duration: 620 });
+      this.introLayer = [panel, title, story, rules, start];
+      return;
+    }
+
+    this.menuOptions = [
+      { label: 'CAMPAÑA COMPLETA', sub: 'CIUDAD  →  DISTRITO MECANICO', color: '#6fe7ff' },
+      { label: 'NIVEL 2 DIRECTO', sub: 'ENTRENAMIENTO EN LA FABRICA', color: '#f1c75b' }
+    ];
+    this.menuCursor = this.add.text(0, 0, '▶', {
+      fontFamily: 'Courier New', fontSize: '18px', color: '#6fe7ff', fontStyle: 'bold'
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(203);
+    this.menuTexts = [];
+    this.menuOptions.forEach((option, index) => {
+      const y = 300 + index * 46;
+      const text = this.add.text(400, y, `${option.label}\n${option.sub}`, {
+        fontFamily: 'Courier New', fontSize: '14px', color: '#69808b', align: 'center',
+        lineSpacing: 5, fontStyle: 'bold'
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(202);
+      this.menuTexts.push(text);
+    });
+    this.menuHint = this.add.text(400, 412, '↑↓ ELEGIR   ·   ENTER / ESPACIO / CLICK PARA EMPEZAR', {
+      fontFamily: 'Courier New', fontSize: '13px', color: '#6fe7ff'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
-    this.tweens.add({ targets: start, alpha: 0.35, yoyo: true, repeat: -1, duration: 620 });
-    this.introLayer = [panel, title, story, rules, start];
+    this.tweens.add({ targets: this.menuHint, alpha: 0.35, yoyo: true, repeat: -1, duration: 620 });
+    this.introLayer = [panel, title, story, rules, this.menuCursor, ...this.menuTexts, this.menuHint];
+    this.renderMenu();
+  }
+
+  renderMenu() {
+    if (this.levelId === 'level2' || !this.menuTexts) return;
+    this.menuOptions.forEach((option, index) => {
+      const active = index === this.menuIndex;
+      const text = this.menuTexts[index];
+      text.setColor(active ? option.color : '#69808b');
+      text.setScale(active ? 1.04 : 1);
+    });
+    const y = 300 + this.menuIndex * 46 + 6;
+    this.menuCursor.setPosition(268, y);
+    this.menuCursor.setColor(this.menuOptions[this.menuIndex].color);
+  }
+
+  moveMenu(delta) {
+    if (this.started || this.levelId === 'level2') return;
+    const next = (this.menuIndex + delta + this.menuOptions.length) % this.menuOptions.length;
+    if (next === this.menuIndex) return;
+    this.menuIndex = next;
+    this.renderMenu();
+  }
+
+  confirmMenu(startedWithSpace) {
+    if (this.started) return;
+    if (this.levelId === 'level1' && this.menuIndex === 1) {
+      this.scene.start('LastreScene', { levelId: 'level2', campaignScore: 0, levelResults: [] });
+      return;
+    }
+    this.startGame(startedWithSpace);
   }
 
   startGame(startedWithSpace) {
@@ -173,6 +253,10 @@ class LastreScene extends Phaser.Scene {
   }
 
   makeBackdrop() {
+    if (this.levelId === 'level2') {
+      this.makeFactoryBackdrop();
+      return;
+    }
     this.add.rectangle(400, 225, 800, 450, COLORS.sky).setScrollFactor(0);
     this.add.circle(650, 92, 54, 0xe8c787, 0.16).setScrollFactor(0);
 
@@ -199,8 +283,36 @@ class LastreScene extends Phaser.Scene {
     }
   }
 
+  makeFactoryBackdrop() {
+    this.add.rectangle(400, 225, 800, 450, 0x16161a).setScrollFactor(0);
+
+    const far = this.add.graphics().setScrollFactor(0.12).setDepth(0);
+    far.fillStyle(0x1c1a20, 1);
+    for (let x = -400; x < this.trackLength + 800; x += 160) {
+      far.fillRect(x, 130, 130, 185);
+      far.fillRect(x + 26, 96, 24, 34);
+      far.fillStyle(0x2b2329, 1);
+      far.fillCircle(x + 52, 92, 18);
+      far.fillStyle(0x1c1a20, 1);
+    }
+
+    const beams = this.add.graphics().setScrollFactor(0.5).setDepth(1);
+    beams.fillStyle(0x2a252b, 1);
+    for (let x = -200; x < this.trackLength + 500; x += 260) {
+      beams.fillRect(x, 118, 200, 16);
+      beams.fillRect(x + 84, 134, 10, 180);
+    }
+
+    const pipes = this.add.graphics().setScrollFactor(0.7).setDepth(1);
+    pipes.lineStyle(7, 0x4a3f47, 1);
+    pipes.lineBetween(0, 86, this.trackLength, 86);
+    pipes.lineStyle(5, 0x8f5a48, 0.9);
+    pipes.lineBetween(0, 74, this.trackLength, 74);
+
+    this.add.rectangle(400, 200, 800, 240, 0x1d181c, 0.35).setScrollFactor(0).setDepth(0);
+  }
+
   makeTrack() {
-    this.destinationX = this.trackLength - 650;
     this.add.rectangle(this.trackLength / 2, 420, this.trackLength, 80, COLORS.ground).setDepth(2);
     this.add.rectangle(this.trackLength / 2, 395, this.trackLength, 30, COLORS.asphalt).setDepth(2);
     const groundBody = this.matter.bodies.rectangle(this.trackLength / 2, 420, this.trackLength, 80, {
@@ -215,14 +327,18 @@ class LastreScene extends Phaser.Scene {
     edge.lineStyle(3, 0xd9b957, 0.28);
     for (let x = 80; x < this.trackLength; x += 140) edge.lineBetween(x, 402, x + 62, 402);
 
-    for (let x = 700; x < this.destinationX; x += 1180) this.makeStreetSign(x);
-    this.makeLandfill(this.destinationX);
+    if (this.levelId === 'level1') {
+      for (let x = 700; x < this.destinationX; x += 1180) this.makeStreetSign(x);
+    }
+    this.makeLandfill(this.destinationX, this.level.destinationLabel);
   }
 
   makeWorldZones() {
-    this.makeConstructionZone();
-    this.makeElectromagneticZone();
-    this.makeBoostPickup(7600);
+    if (this.levelId === 'level1') {
+      this.makeConstructionZone();
+      this.makeElectromagneticZone();
+      this.makeBoostPickup(this.level.boostPickupX);
+    }
   }
 
   makeZoneSign(x, title, subtitle, color) {
@@ -288,24 +404,25 @@ class LastreScene extends Phaser.Scene {
   }
 
   makeElectromagneticZone() {
-    this.fieldZone = { start: 8000, end: 9500, ramp: 180 };
-    this.makeZoneSign(8020, 'CAMPO ELECTROMAGNÉTICO', 'ATRACCIÓN VERTICAL', 0x6fe7ff);
-    const field = this.add.graphics().setDepth(5);
-    for (let x = 8180; x < 9450; x += 260) {
-      field.fillStyle(0x273b43, 1);
-      field.fillRoundedRect(x - 92, 72, 184, 34, 6);
-      field.lineStyle(3, COLORS.glow, 0.8);
-      field.strokeRoundedRect(x - 92, 72, 184, 34, 6);
-      field.lineStyle(2, COLORS.glow, 0.2);
-      field.lineBetween(x - 72, 108, x - 28, 365);
-      field.lineBetween(x, 108, x, 365);
-      field.lineBetween(x + 72, 108, x + 28, 365);
+    const field = this.level.field;
+    this.fieldZone = { start: field.start, end: field.end, ramp: field.ramp };
+    this.makeZoneSign(field.start + 20, 'CAMPO ELECTROMAGNÉTICO', 'ATRACCIÓN VERTICAL', 0x6fe7ff);
+    const fieldGfx = this.add.graphics().setDepth(5);
+    for (let x = field.start + 180; x < field.end - 50; x += 260) {
+      fieldGfx.fillStyle(0x273b43, 1);
+      fieldGfx.fillRoundedRect(x - 92, 72, 184, 34, 6);
+      fieldGfx.lineStyle(3, COLORS.glow, 0.8);
+      fieldGfx.strokeRoundedRect(x - 92, 72, 184, 34, 6);
+      fieldGfx.lineStyle(2, COLORS.glow, 0.2);
+      fieldGfx.lineBetween(x - 72, 108, x - 28, 365);
+      fieldGfx.lineBetween(x, 108, x, 365);
+      fieldGfx.lineBetween(x + 72, 108, x + 28, 365);
       for (let y = 145; y < 350; y += 54) {
-        field.fillStyle(COLORS.glow, 0.32);
-        field.fillTriangle(x - 5, y, x + 5, y, x, y - 12);
+        fieldGfx.fillStyle(COLORS.glow, 0.32);
+        fieldGfx.fillTriangle(x - 5, y, x + 5, y, x, y - 12);
       }
     }
-    this.add.text(8750, 122, '↑  EL TECHO TE ATRAE  ↑', {
+    this.add.text(field.start + 750, 122, '↑  EL TECHO TE ATRAE  ↑', {
       fontFamily: 'Courier New', fontSize: '13px', color: '#6fe7ff', fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(7);
   }
@@ -349,7 +466,7 @@ class LastreScene extends Phaser.Scene {
     }).setDepth(6);
   }
 
-  makeLandfill(x) {
+  makeLandfill(x, label) {
     const plant = this.add.graphics().setDepth(4);
     plant.fillStyle(0x35413e, 1);
     plant.fillRect(x - 120, 220, 430, 160);
@@ -359,8 +476,8 @@ class LastreScene extends Phaser.Scene {
     plant.fillRect(x + 25, 286, 140, 94);
     plant.lineStyle(8, COLORS.sign, 0.9);
     for (let sx = x + 35; sx < x + 165; sx += 34) plant.lineBetween(sx, 291, sx + 55, 365);
-    this.add.text(x + 95, 190, 'BASURERO\nMUNICIPAL', {
-      fontFamily: 'Courier New', fontSize: '20px', color: '#f1c75b', align: 'center', fontStyle: 'bold'
+    this.add.text(x + 95, 190, label.split(' ').join('\n'), {
+      fontFamily: 'Courier New', fontSize: '17px', color: '#f1c75b', align: 'center', fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(6);
     this.add.circle(x - 55, 345, 30, COLORS.rust).setDepth(6);
     this.add.circle(x - 18, 353, 23, COLORS.steel).setDepth(6);
@@ -391,7 +508,7 @@ class LastreScene extends Phaser.Scene {
   makeSoftMatter() {
     this.soft = [];
     let id = 0;
-    for (let x = 480; x < this.trackLength - 500; x += 145) {
+    for (let x = 480; x < this.level.softEnd; x += 145) {
       if (x % 870 < 120) continue;
       if (this.scraperPositions.some(stationX => x >= stationX - 80 && x <= stationX + 350)) continue;
       const y = 352 - ((id * 29) % 48);
@@ -433,7 +550,7 @@ class LastreScene extends Phaser.Scene {
 
   makeStoneGates() {
     this.stones = [];
-    const gates = [1250, 2250, 3350, 4550, 5900, 7400, 9050, 10800, 12700];
+    const gates = this.level.stoneGates;
     gates.forEach((x, i) => {
       const gap = Math.max(52, 105 - i * 5);
       const height = 380 - gap;
@@ -510,35 +627,35 @@ class LastreScene extends Phaser.Scene {
     this.mechanicalPistons = [];
     this.mechanicalRotors = [];
     this.mechanicalPaint = this.add.graphics().setDepth(16);
-    this.makeZoneSign(9550, 'DISTRITO MECANICO', 'NIVEL 2 · MIRA EL RITMO', 0xff775f);
+    this.makeZoneSign(520, 'DISTRITO MECANICO', 'NIVEL 2 · MIRA EL RITMO', 0xff775f);
 
     const decor = this.add.graphics().setDepth(5);
     decor.fillStyle(0x2e292c, 0.95);
-    decor.fillRect(9500, 365, 3000, 15);
+    decor.fillRect(300, 365, 3900, 15);
     decor.lineStyle(3, 0xff775f, 0.28);
-    for (let x = 9600; x < 12500; x += 160) {
+    for (let x = 420; x < 4100; x += 160) {
       decor.lineBetween(x, 368, x + 44, 368);
       decor.lineBetween(x + 56, 368, x + 100, 368);
     }
 
-    this.add.text(9780, 196, '1 · PRENSA\nESPERA LA APERTURA', {
+    this.add.text(1230, 196, '1 · PRENSA\nESPERA LA APERTURA', {
       fontFamily: 'Courier New', fontSize: '11px', color: '#ff9b88', align: 'center', fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(9);
-    this.addPiston(9780, 205, 120, 2400, 0);
+    this.addPiston(1230, 205, 120, 2400, 0);
 
-    this.add.text(10980, 182, '2 · BARREDOR\nLEE UNA VUELTA', {
+    this.add.text(2280, 182, '2 · BARREDOR\nLEE UNA VUELTA', {
       fontFamily: 'Courier New', fontSize: '11px', color: '#ffd26f', align: 'center', fontStyle: 'bold'
     }).setOrigin(0.5).setDepth(9);
-    this.addRotor(10980, 286, 2600, 0.12);
+    this.addRotor(2280, 286, 2600, 0.12);
 
-    this.add.text(11580, 124, '3 · CADENA DE MAQUINAS', {
+    this.add.text(3320, 124, '3 · CADENA DE MAQUINAS', {
       fontFamily: 'Courier New', fontSize: '12px', color: '#f7fbff', fontStyle: 'bold',
       backgroundColor: '#39292d', padding: { x: 8, y: 5 }
     }).setOrigin(0.5).setDepth(9);
-    this.addPiston(11440, 202, 112, 2200, 0.5);
-    this.addRotor(11760, 286, 2300, 0.58);
+    this.addPiston(3260, 202, 112, 2200, 0.5);
+    this.addRotor(3460, 286, 2300, 0.58);
 
-    for (const x of [10180, 11210, 12010]) {
+    for (const x of [1700, 2820, 4080]) {
       this.add.text(x, 350, 'RECUPERA  →', {
         fontFamily: 'Courier New', fontSize: '10px', color: '#93a4a5', fontStyle: 'bold'
       }).setOrigin(0.5).setDepth(8);
@@ -739,8 +856,9 @@ class LastreScene extends Phaser.Scene {
   }
 
   updateWorldZones(time) {
-    this.cranePaint.clear();
+    let influence = 0;
     if (this.crane) {
+      this.cranePaint.clear();
       const { anchor, bob } = this.crane;
       bob.force.x += Math.sin(time / 760) * 0.00011 * bob.mass;
       this.cranePaint.lineStyle(5, 0x252c2e, 1);
@@ -754,20 +872,22 @@ class LastreScene extends Phaser.Scene {
       this.cranePaint.lineBetween(bob.position.x + 20, bob.position.y - 18, bob.position.x - 20, bob.position.y + 18);
     }
 
-    this.fieldEffect.clear();
-    const influence = zoneInfluence(
-      this.blob.position.x,
-      this.fieldZone.start,
-      this.fieldZone.end,
-      this.fieldZone.ramp
-    );
-    if (influence > 0) {
-      const force = magneticFieldForce(this.blob.mass, this.coreMass, 0.00148, influence);
-      this.matter.body.applyForce(this.blob, this.blob.position, { x: 0, y: -force });
-      this.fieldEffect.lineStyle(2, COLORS.glow, 0.35 + influence * 0.45);
-      for (let x = this.blob.bounds.min.x; x <= this.blob.bounds.max.x; x += 12) {
-        const wobble = Math.sin(time / 100 + x) * 4;
-        this.fieldEffect.lineBetween(x, this.blob.bounds.min.y - 4, x + wobble, this.blob.bounds.min.y - 35);
+    if (this.fieldZone) {
+      this.fieldEffect.clear();
+      influence = zoneInfluence(
+        this.blob.position.x,
+        this.fieldZone.start,
+        this.fieldZone.end,
+        this.fieldZone.ramp
+      );
+      if (influence > 0) {
+        const force = magneticFieldForce(this.blob.mass, this.coreMass, 0.00148, influence);
+        this.matter.body.applyForce(this.blob, this.blob.position, { x: 0, y: -force });
+        this.fieldEffect.lineStyle(2, COLORS.glow, 0.35 + influence * 0.45);
+        for (let x = this.blob.bounds.min.x; x <= this.blob.bounds.max.x; x += 12) {
+          const wobble = Math.sin(time / 100 + x) * 4;
+          this.fieldEffect.lineBetween(x, this.blob.bounds.min.y - 4, x + wobble, this.blob.bounds.min.y - 35);
+        }
       }
     }
     return influence;
@@ -967,20 +1087,39 @@ class LastreScene extends Phaser.Scene {
     if (this.finished) return;
     this.finished = true;
     this.matter.body.setStatic(this.blob, true);
+    const result = scoreDelivery(this.deliveredValue(), (this.time.now - this.startedAt) / 1000);
+    this.levelResults.push({ levelId: this.levelId, ...result });
+    const isLevel2 = this.levelId === 'level2';
+    const campaignScore = isLevel2 ? this.campaignScore + result.total : result.total;
     this.add.rectangle(400, 225, 800, 450, 0x071012, 0.7).setScrollFactor(0).setDepth(200);
-    this.add.text(400, 190, 'LLEGASTE AL BASURERO', {
+    this.add.text(400, 175, isLevel2 ? 'NIVEL 2 COMPLETADO' : 'NIVEL 1 COMPLETADO', {
       fontFamily: 'Courier New', fontSize: '28px', color: '#f1c75b', fontStyle: 'bold'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
-    const result = scoreDelivery(this.deliveredValue(), (this.time.now - this.startedAt) / 1000);
-    this.add.text(400, 260,
+    const lines =
       `TIEMPO              ${result.elapsedSeconds} s\n` +
       `BONUS DE TIEMPO    $${result.timeBonus}\n` +
       `CHATARRA ENTREGADA $${result.deliveredValue}\n` +
       `-------------------------\n` +
-      `PUNTUACIÓN TOTAL   $${result.total}\n\n` +
-      'R para volver a la ciudad', {
+      `PUNTUACIÓN DEL NIVEL   $${result.total}\n` +
+      (isLevel2 ? `TOTAL DE LA CAMPAÑA   $${campaignScore}\n\n` : `\n`) +
+      (isLevel2 ? 'R para volver a empezar' : 'ENTER para el DISTRITO MECANICO · R repite');
+    this.add.text(400, 265, lines, {
       fontFamily: 'Courier New', fontSize: '14px', color: '#dbe8ed', align: 'center'
     }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+    if (!isLevel2) {
+      this.input.keyboard.once('keydown-ENTER', () => this.startNextLevel());
+      this.input.once('pointerdown', () => this.startNextLevel());
+    }
+  }
+
+  startNextLevel() {
+    const next = nextLevelId(this.levelId);
+    if (!next) return;
+    this.scene.start('LastreScene', {
+      levelId: next,
+      campaignScore: campaignTotal(this.levelResults),
+      levelResults: this.levelResults
+    });
   }
 
   update(time, delta) {
@@ -1023,16 +1162,16 @@ class LastreScene extends Phaser.Scene {
     const value = this.deliveredValue();
     const distance = Math.floor(this.cameras.main.scrollX / 10);
     const hopState = this.jumpCooldown > 0 ? 'RECARGA' : 'LISTO';
-    this.hud.setText(`LASTRE  ·  ${distance} m  ·  piezas ${pieces}  ·  chatarra $${value}  ·  pulso ${hopState}`);
-    this.routeHud.setText(routeMessage(Math.floor(this.blob.position.x), this.destinationX));
+    this.hud.setText(`LASTRE ${this.levelId === 'level2' ? '· NIVEL 2' : ''}  ·  ${distance} m  ·  piezas ${pieces}  ·  chatarra $${value}  ·  pulso ${hopState}`);
+    this.routeHud.setText(routeMessage(Math.floor(this.blob.position.x), this.destinationX, this.level.destinationLabel));
     this.warning.setText(relative < 130 ? '◀ EL BORDE TE ESTÁ ALCANZANDO' : '');
     const zone = zoneAt(this.blob.position.x);
-    const zoneMessage = zone === 'construction'
-      ? '⚠ ZONA DE OBRA · EVITÁ LA CARGA'
-      : zone === 'electromagnetic'
-        ? `↑ CAMPO ACTIVO ${Math.round(fieldInfluence * 100)}%`
-        : zone === 'mechanical'
-          ? '⚙ DISTRITO MECANICO · NIVEL 2 · LEE EL RITMO'
+    const zoneMessage = this.levelId === 'level2'
+      ? '⚙ DISTRITO MECANICO · NIVEL 2 · LEE EL RITMO'
+      : zone === 'construction'
+        ? '⚠ ZONA DE OBRA · EVITÁ LA CARGA'
+        : zone === 'electromagnetic'
+          ? `↑ CAMPO ACTIVO ${Math.round(fieldInfluence * 100)}%`
           : '';
     const boostMessage = this.boostMs > 0
       ? `SUPERIMÁN ${Math.ceil(this.boostMs / 1000)} s · RADIO ${this.boostRadius}`

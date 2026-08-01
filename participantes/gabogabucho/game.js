@@ -54,6 +54,7 @@ const BUBBLE_IMG = {
 };
 
 const { advanceWalker, villagerAppearance } = ApocryphaMovement;
+const { beamGeometry, miracleOutcome } = ApocryphaGameplay;
 
 // ---- utilidades ----
 function lerp(a, b, t) { return a + (b - a) * t; }
@@ -119,10 +120,17 @@ class ApocryphaScene extends Phaser.Scene {
     this.groundY = 480;
     this.dayFactor = 0.35; // arranca de noche; oscila 0..1 (1 = mediodía)
 
-    // ---- cielo en 3 bandas: cubre toda la pantalla sin huecos ----
-    this.skyHigh = this.add.rectangle(W / 2, 90, W, 180, PAL.skyHighN);   // 0-180
-    this.skyMid  = this.add.rectangle(W / 2, 260, W, 180, PAL.skyMidN);   // 170-350
-    this.skyLow  = this.add.rectangle(W / 2, 415, W, 170, PAL.horizonN);  // 330-500
+    // ---- cielo atmosférico: gradiente continuo + estrellas + nubes ----
+    this.sky = this.add.graphics();
+    this.paintSky();
+    this.stars = Array.from({ length: 42 }, (_, i) =>
+      this.add.circle(8 + (i * 73) % 784, 22 + (i * 47) % 280, i % 5 === 0 ? 1.5 : 1, 0xe8edf2, 0.6)
+    );
+    this.clouds = [
+      this.makeCloud(120, 128, 0.85),
+      this.makeCloud(410, 210, 1.15),
+      this.makeCloud(690, 105, 0.7)
+    ];
 
     // sol/luna: arco a través del cielo
     this.orb = this.add.circle(-40, 0, 14, PAL.sun);
@@ -135,13 +143,9 @@ class ApocryphaScene extends Phaser.Scene {
     this.grove = this.makeStrip('arbolada', 2, 438, 0.7);
     this.grove.setAlpha(0.75);
 
-    // suelo: banda oscura + tira de terreno real en el borde donde se pisa
-    this.ground = this.add.rectangle(W / 2, 545, W, 90, PAL.groundN);     // 500-590
-    this.terrain = this.makeStrip('terreno', 4, this.groundY + 4, 1);     // 460-484
-    // segunda tira de terreno, tenue y desplazada: textura del primer plano
-    this.terrain2 = this.makeStrip('terreno', 4, this.groundY + 34, 1);
-    this.terrain2.setAlpha(0.28);
-    this.terrain2.setX(-90);
+    // suelo: la superficie empieza EXACTAMENTE en groundY, donde apoyan los pies
+    this.ground = this.add.rectangle(W / 2, 540, W, 120, PAL.groundN);    // 480-600
+    this.terrain = this.makeSurfaceStrip('terreno', 4, this.groundY, 1);
     this.front = this.add.rectangle(W / 2, 592, W, 16, PAL.frontN);       // 584-600
 
     // árboles flanqueando la aldea (marco natural)
@@ -166,7 +170,7 @@ class ApocryphaScene extends Phaser.Scene {
     this.beam = null; this.beamInner = null; this.beamCore = null;
     this.beamHalo = null; this.beamGlow = null;
     this.beamT = 0;
-    this.input.on('pointerdown', (pointer) => this.castLight(pointer.worldX, pointer.worldY));
+    this.input.on('pointerdown', (pointer) => this.castLight(pointer.worldX));
 
     // ---- recurso: ATENCIÓN (§5: escala con los fieles) ----
     this.atencion = 40;           // arranca con un milagro casi listo
@@ -179,20 +183,24 @@ class ApocryphaScene extends Phaser.Scene {
     this.verdict = '';
 
     // ---- HUD ----
+    this.hudPanel = this.add.rectangle(W / 2, 36, W - 24, 54, 0x0a0f13, 0.62)
+      .setStrokeStyle(1, 0x5e5346, 0.75).setDepth(10);
     this.hud = this.add.text(16, 14, '', {
       fontFamily: 'Courier New',
       fontSize: '13px',
-      color: '#8f897c'
-    });
+      color: '#d7c7a5'
+    }).setDepth(11);
     // barra de Atención: fondo oscuro + fill ámbar
-    this.atBarBg = this.add.rectangle(16, 40, 204, 12, 0x0a0f13, 0.8).setOrigin(0, 0.5);
+    this.atBarBg = this.add.rectangle(16, 44, 204, 12, 0x0a0f13, 0.8).setOrigin(0, 0.5).setDepth(11);
     this.atBarBg.setStrokeStyle(1, 0x5e5346, 0.9);
-    this.atBar = this.add.rectangle(18, 40, 200, 8, PAL.divine, 0.95).setOrigin(0, 0.5);
+    this.atBar = this.add.rectangle(18, 44, 200, 8, PAL.divine, 0.95).setOrigin(0, 0.5).setDepth(12);
     this.verdictText = this.add.text(W / 2, H - 34, '', {
       fontFamily: 'Courier New',
       fontSize: '13px',
-      color: PAL.divine
-    }).setOrigin(0.5);
+      color: '#f5b85c',
+      backgroundColor: '#0a0f13dd',
+      padding: { x: 8, y: 4 }
+    }).setOrigin(0.5).setDepth(20);
 
     // ---- controles ----
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
@@ -201,7 +209,7 @@ class ApocryphaScene extends Phaser.Scene {
     const qs = new URLSearchParams(location.search);
     if (qs.has('beam')) {
       this.atencion = 100; // para poder castear en verificación
-      this.castLight(400, 440);
+      this.castLight(400);
     }
     // forzar victoria para verificación (solo con ?win)
     if (qs.has('win')) {
@@ -225,6 +233,38 @@ class ApocryphaScene extends Phaser.Scene {
       g.add(im);
     }
     return g;
+  }
+
+  makeSurfaceStrip(key, n, y, scale) {
+    const g = this.add.container();
+    const w = this.textures.get(key).getSourceImage().width * scale;
+    for (let i = 0; i < n; i++) {
+      g.add(this.add.image(i * w + w / 2, y, key).setOrigin(0.5, 0).setScale(scale));
+    }
+    return g;
+  }
+
+  makeCloud(x, y, scale) {
+    const cloud = this.add.container(x, y).setScale(scale);
+    const color = 0xd9dde0;
+    cloud.add([
+      this.add.ellipse(-24, 4, 54, 18, color, 1),
+      this.add.ellipse(5, 0, 68, 24, color, 1),
+      this.add.ellipse(32, 5, 48, 16, color, 1)
+    ]);
+    cloud.setAlpha(0.08);
+    return cloud;
+  }
+
+  paintSky() {
+    const top = mixColor(PAL.skyHighN, PAL.skyHighD, this.dayFactor);
+    const mid = mixColor(PAL.skyMidN, PAL.skyMidD, this.dayFactor);
+    const low = mixColor(PAL.horizonN, PAL.horizonD, this.dayFactor);
+    this.sky.clear();
+    this.sky.fillGradientStyle(top, top, mid, mid, 1);
+    this.sky.fillRect(0, 0, this.W, 300);
+    this.sky.fillGradientStyle(mid, mid, low, low, 1);
+    this.sky.fillRect(0, 300, this.W, 200);
   }
 
   // aldeano real: silueta + burbuja de estado sobre la cabeza
@@ -271,32 +311,27 @@ class ApocryphaScene extends Phaser.Scene {
 
   // un aldeano vio el milagro: ¿qué entendió?
   readMiracle(v) {
-    const s = v.state;
-    let next, verdict;
-    if (s === 'ciencia') {
-      next = 'ciencia';
-      verdict = 'Alguien midió el rayo. Ya no es milagro: es clima.';
-    } else if (s === 'fe') {
-      next = 'fe';
-      verdict = 'La fe se enciende con lo que ya se creía.';
-    } else if (s === 'hambre') {
-      next = 'fe';
-      verdict = 'El hambriento vio el rayo y supo que había pan.';
-    } else if (s === 'miedo') {
-      next = 'fe';
-      verdict = 'El miedo se arrodilló y lo llamó poder.';
-    } else { // duda
-      next = Math.random() < 0.6 ? 'fe' : 'ciencia';
-      verdict = next === 'fe'
-        ? 'La duda se rindió: el rayo era demasiado. Que sea un dios.'
-        : 'La duda ganó: prefirió medirlo antes que creerlo.';
-    }
-    this.setVillagerState(v, next);
+    const outcome = miracleOutcome(v.state);
+    this.setVillagerState(v, outcome.next);
     v.reactT = 1;
-    return verdict;
+    this.showConversionFeedback(v, outcome);
+    return outcome;
   }
 
-  castLight(x, y) {
+  showConversionFeedback(v, outcome) {
+    const color = outcome.next === 'ciencia' ? '#7fb8d8' : '#ffe9b0';
+    const label = this.add.text(v.x, this.groundY - v.img.displayHeight - 55, outcome.feedback, {
+      fontFamily: 'Courier New', fontSize: '11px', color,
+      backgroundColor: '#0a0f13e6', padding: { x: 4, y: 2 }
+    }).setOrigin(0.5).setDepth(30);
+    const ring = this.add.circle(v.x, this.groundY - 25, 16, 0x000000, 0)
+      .setStrokeStyle(2, outcome.next === 'ciencia' ? 0x7fb8d8 : PAL.divine, 0.95)
+      .setDepth(19);
+    this.tweens.add({ targets: label, y: label.y - 22, alpha: 0, duration: 1500, onComplete: () => label.destroy() });
+    this.tweens.add({ targets: ring, scale: 2.2, alpha: 0, duration: 900, onComplete: () => ring.destroy() });
+  }
+
+  castLight(x) {
     if (this.over) return;
     if (this.beamT > 0) return;           // ya hay una activa
     if (this.atencion < this.costLight) { // sin atención: el pueblo no te escucha
@@ -308,42 +343,43 @@ class ApocryphaScene extends Phaser.Scene {
     this.beamLife = 0;
     this.beamFading = false;
 
-    const yBase = Math.max(y, this.groundY - 60);
+    const geometry = beamGeometry(x, this.groundY);
     const bm = Phaser.BlendModes.ADD;
 
-    const beam = this.add.polygon(0, 0, [
-      [x - 60, 0], [x + 60, 0], [x + 130, yBase + 26], [x - 130, yBase + 26]
-    ], PAL.divine, 0.40);
+    const beam = this.add.polygon(x, 0, geometry.outer.map(([px, py]) => [px - x, py]), PAL.divine, 0.40)
+      .setOrigin(0.5, 0);
     beam.setBlendMode(bm);
     this.beam = beam;
 
-    const beamInner = this.add.polygon(0, 0, [
-      [x - 26, 0], [x + 26, 0], [x + 62, yBase + 6], [x - 62, yBase + 6]
-    ], PAL.core, 0.34);
+    const beamInner = this.add.polygon(x, 0, geometry.inner.map(([px, py]) => [px - x, py]), PAL.core, 0.34)
+      .setOrigin(0.5, 0);
     beamInner.setBlendMode(bm);
     this.beamInner = beamInner;
 
-    const core = this.add.circle(x, yBase + 8, 14, PAL.core, 1);
+    const core = this.add.circle(x, geometry.impact.y, 14, PAL.core, 1);
     core.setBlendMode(bm);
     this.beamCore = core;
 
-    const halo = this.add.circle(x, yBase + 8, 30, PAL.divine, 0.28);
+    const halo = this.add.circle(x, geometry.impact.y, 30, PAL.divine, 0.28);
     halo.setStrokeStyle(2, PAL.divine, 0.95);
     halo.setBlendMode(bm);
     this.beamHalo = halo;
 
-    const glow = this.add.ellipse(x, yBase + 14, 170, 42, PAL.divine, 0.30);
+    const glow = this.add.ellipse(x, geometry.impact.y, 170, 42, PAL.divine, 0.30);
     glow.setBlendMode(bm);
     this.beamGlow = glow;
 
     // los aldeanos leen el milagro (radio ~130: dentro del cono)
-    this.verdict = '';
+    let reached = 0, converted = 0, resisted = 0;
     for (const v of this.villagers) {
-      if (Math.abs(v.x - x) < 130) {
-        this.verdict = this.readMiracle(v);
+      if (Math.abs(v.x - x) < geometry.impact.radius) {
+        reached++;
+        const outcome = this.readMiracle(v);
+        if (outcome.converted) converted++;
+        if (outcome.next === 'ciencia') resisted++;
       }
     }
-    this.verdictText.setText(this.verdict);
+    this.verdictText.setText(`${reached} alcanzados · ${converted} convertidos · ${resisted} resistieron`);
   }
 
   // cuenta fieles / ciencia y decide el final
@@ -364,11 +400,17 @@ class ApocryphaScene extends Phaser.Scene {
     const phase = (time % period) / period;
     this.dayFactor = Math.max(0, Math.sin(phase * Math.PI * 2));
 
-    this.skyHigh.setFillStyle(mixColor(PAL.skyHighN, PAL.skyHighD, this.dayFactor));
-    this.skyMid.setFillStyle(mixColor(PAL.skyMidN, PAL.skyMidD, this.dayFactor));
-    this.skyLow.setFillStyle(mixColor(PAL.horizonN, PAL.horizonD, this.dayFactor));
+    this.paintSky();
     this.ground.setFillStyle(mixColor(PAL.groundN, PAL.groundD, this.dayFactor));
     this.front.setFillStyle(mixColor(PAL.frontN, PAL.frontD, this.dayFactor));
+
+    const night = 1 - this.dayFactor;
+    this.stars.forEach((star, i) => star.setAlpha(night * (0.35 + 0.4 * Math.abs(Math.sin(time / 900 + i)))));
+    this.clouds.forEach((cloud, i) => {
+      cloud.setAlpha(0.04 + this.dayFactor * 0.16);
+      cloud.x += delta * (0.002 + i * 0.0006);
+      if (cloud.x > 850) cloud.x = -50;
+    });
 
     const orbX = lerp(-40, 840, phase);
     const orbY = 400 - Math.sin(phase * Math.PI) * 280;

@@ -25,6 +25,7 @@ python -m http.server 8080
 - **Atención** es tu recurso: sube con los fieles que te creen (y baja al gastar milagros). Sin Atención, nadie mira — no puedes intervenir.
 - Cada aldeano tiene un estado emocional que **migra solo**: hambre → miedo → duda → ciencia (y a veces fe). El mundo es feo: si no haces nada, el pueblo se te olvida.
 - Un rayo convierte a la fe a quien lo presencia — **menos a la ciencia**, que prefiere medirlo antes que creerlo.
+- La conversión no depende de suerte: hambre, miedo y duda → fe; la ciencia resiste. Cada impacto lo muestra sobre el aldeano.
 - **Ganas**: 6+ fieles construyen la Catedral.
 - **Pierdes**: todos caen en ciencia. Te olvidaron.
 
@@ -36,6 +37,7 @@ python -m http.server 8080
 - [x] Corte 3: bucle jugable — Atención como recurso, victoria (Catedral) / derrota (olvidado) + reinicio
 - [x] Pulido: aldeanos caminando en carriles cortos sin solapar sus burbujas
 - [x] Pulido: variedad visual con trabajadores, soldados, sacerdotes y un erudito
+- [x] Pulido: rayo alineado al suelo, conversión legible, cielo atmosférico y terreno alineado
 - [ ] Pulido: balance de Atención, feedback visual de la Catedral, sonido
 
 ## Debug

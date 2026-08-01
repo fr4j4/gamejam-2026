@@ -1,0 +1,909 @@
+// GameScene — Motor de juego core + modo test
+// Resolucion interna fija: 640x360. Phaser escala con FIT.
+
+class GameScene extends Phaser.Scene {
+  constructor() { super('GameScene'); }
+
+  init(data) {
+    this.mode = data.mode || 'test';
+    this.endTurnBtn = null;
+    this.menuBtn = null;
+    this.handCards = [];
+    this.handZones = [];
+    this.handFocused = -1;
+    this.menuOverlay = null;
+    this.menuOpen = false;
+    this.creatureCardPreview = null;
+  }
+
+  create() {
+    const W = 640;
+    const H = 360;
+    this.cameras.main.setBackgroundColor('#0d0d1a');
+
+    ensureStarterDecks();
+    const saved = JSON.parse(localStorage.getItem('deckstiny_deck') || '{}');
+    if (!saved.classId) {
+      if (this.mode === 'test') {
+        const mago = ALL_CARDS.mago || [];
+        const firstMago = mago[0];
+        if (firstMago) {
+          const decks = JSON.parse(localStorage.getItem('deckstiny_decks') || '{}');
+          const slot = (decks.mago && decks.mago[0]) ? decks.mago[0] : { name: 'INICIAL', cards: getStarterDeck('mago').cards };
+          if (!decks.mago || !decks.mago[0]) {
+            decks.mago = [slot];
+            localStorage.setItem('deckstiny_decks', JSON.stringify(decks));
+          }
+          localStorage.setItem('deckstiny_deck', JSON.stringify({
+            classId: 'mago',
+            activeSlot: 0,
+            cards: decks
+          }));
+        }
+      }
+    }
+
+    const savedFinal = JSON.parse(localStorage.getItem('deckstiny_deck') || '{}');
+    if (!savedFinal.classId) {
+      this.add.text(W / 2, H / 2, 'NO TIENES BARAJA — VUELVE AL MENÚ', {
+        fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#ff6b6b'
+      }).setOrigin(0.5);
+      this.time.delayedCall(2000, () => this.scene.start('MenuScene'));
+      return;
+    }
+
+    this.cls = CLASSES.find(c => c.id === savedFinal.classId);
+    this.selectedClass = savedFinal.classId;
+    this.selectedAttacker = null;
+    this.buildDeck(savedFinal);
+    this.initState();
+    this.renderLayout();
+    CRT.addScanlines(this);
+    this.startPlayerTurn();
+    this.input.keyboard.on('keydown-E', () => this.tryEndTurn());
+    this.input.keyboard.on('keydown-ENTER', () => this.tryEndTurn());
+    this.input.keyboard.on('keydown-ESC', () => this.toggleMenu());
+  }
+
+  shutdown() {
+    // per-card input listeners are destroyed with their zones
+  }
+
+  buildDeck(saved) {
+    const cardList = [];
+    const classCards = ALL_CARDS[saved.classId] || [];
+    // Cargar baraja desde el slot activo
+    const allDecks = saved.cards || {};
+    const classDecks = allDecks[saved.classId] || [];
+    const activeSlot = saved.activeSlot || 0;
+    const slotData = classDecks[activeSlot] || { cards: {} };
+    const deckData = slotData.cards || {};
+    for (const [id, count] of Object.entries(deckData)) {
+      const card = classCards.find(c => c.id === id);
+      if (card) for (let i = 0; i < count; i++)
+        cardList.push({ ...card, uid: Math.random().toString(36).slice(2, 8) });
+    }
+    this.shuffle(cardList);
+    this.playerDeck = cardList;
+  }
+
+  initState() {
+    const isTest = this.mode === 'test';
+    this.state = { turn: 1, phase: 'player', gameOver: false, log: [], timer: 60, timerEvent: null };
+
+    this.player = {
+      classId: this.cls.id, hp: this.cls.hp, maxHp: this.cls.hp, armor: this.cls.armor,
+      mana: 1, maxMana: 1, deck: [...this.playerDeck], hand: [], board: [],
+      venom: 0, inspiration: 0, discardPile: [], heroUsed: false, cardsPlayed: 0, costReduction: 0
+    };
+
+    this.opponent = isTest ? {
+      classId: 'dummy', hp: 100, maxHp: 100, armor: 100, mana: 0, maxMana: 0,
+      deck: [], hand: [], board: [], venom: 0, inspiration: 0, discardPile: [],
+      heroUsed: false, cardsPlayed: 0, isDummy: true
+    } : {
+      classId: this.cls.id, hp: this.cls.hp, maxHp: this.cls.hp, armor: this.cls.armor,
+      mana: 1, maxMana: 1, deck: [...this.playerDeck].sort(() => Math.random() - 0.5),
+      hand: [], board: [], venom: 0, inspiration: 0, discardPile: [],
+      heroUsed: false, cardsPlayed: 0, costReduction: 0, isDummy: false
+    };
+
+    this.player.hand = this.player.deck.splice(0, 4);
+    if (!isTest) this.opponent.hand = this.opponent.deck.splice(0, 4);
+  }
+
+  // ===== LAYOUT =====
+  renderLayout() {
+    const W = 640, H = 360;
+    const clsColor = this.cls ? this.cls.colorHex : '#9fcafd';
+
+    VFX.stars(this, this, 20);
+    VFX.header(this, this, 'COMBATE', clsColor, { width: W, height: 26 });
+
+    // --- STATUS BAR ---
+    const barY = 15;
+    this.menuBtn = this.add.rectangle(15, barY, 22, 22, 0x16213e)
+      .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#faba72').color)
+      .setInteractive({ useHandCursor: true });
+    this.add.text(15, barY, '☰', {
+      fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#faba72'
+    }).setOrigin(0.5);
+    this.menuBtn.on('pointerdown', () => this.toggleMenu());
+    this.turnText = this.add.text(30, barY, 'Turno 1', {
+      fontFamily: '"VT323"', fontSize: '16px', color: '#faba72'
+    }).setOrigin(0, 0.5);
+    this.phaseText = this.add.text(118, barY, 'Tu turno', {
+      fontFamily: '"VT323"', fontSize: '16px', color: '#8892a0'
+    }).setOrigin(0, 0.5);
+    this.timerText = this.add.text(W - 180, barY, '60s', {
+      fontFamily: '"VT323"', fontSize: '16px', color: '#ff6b6b'
+    }).setOrigin(0, 0.5);
+    this.heroPowerBtn = VFX.switchButton(this, this, W - 96, barY, 80, 22, `HEROE (${this.cls.heroPower.cost}M)`, '#faba72', () => this.useHeroPower());
+
+    // --- HERO ZONES ---
+    this.pInfoContainer = this.add.container(0, 0);
+    this.eInfoContainer = this.add.container(0, 0);
+
+    // --- BATTLE LINE ---
+    this.pBoardContainer = this.add.container(0, 0);
+    this.eBoardContainer = this.add.container(0, 0);
+
+    // --- HAND ---
+    this.handContainer = this.add.container(0, 0).setDepth(10);
+
+    // --- END TURN ---
+    this.endTurnBtn = this.add.rectangle(W - 76, H - 22, 120, 32, 0x16213e)
+      .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#faba72').color)
+      .setInteractive({ useHandCursor: true });
+    this.endTurnText = this.add.text(W - 76, H - 22, 'FIN DE TURNO', {
+      fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#faba72'
+    }).setOrigin(0.5);
+    this.endTurnBtn.on('pointerdown', () => this.endTurn());
+
+    // --- FX LAYER ---
+    this.fxContainer = this.add.container(0, 0).setDepth(1001);
+
+    this.renderAll();
+  }
+
+  // ===== RENDER =====
+  renderAll() { this.renderInfo(); this.renderBoards(); this.renderHand(); }
+
+  renderInfo() {
+    const W = 640;
+    const p = this.player, e = this.opponent;
+    this.pInfoContainer.removeAll(true);
+    const pCls = CLASSES.find(c => c.id === p.classId) || { name: 'Tu', icon: '🧙', colorHex: '#9fcafd' };
+    VFX.classSeal(this, this.pInfoContainer, 72, 104, 40, pCls.icon, pCls.colorHex, true);
+    this.pInfoContainer.add(this.add.text(72, 150, pCls.name.toUpperCase(), {
+      fontFamily: '"VT323"', fontSize: '12px', color: pCls.colorHex
+    }).setOrigin(0.5));
+    this.renderHeroBar(this.pInfoContainer, 72, 162, 80, p.hp, p.maxHp, pCls.colorHex);
+    this.pInfoContainer.add(this.add.text(72, 174, `HP ${Math.max(0, p.hp)}/${p.maxHp}  ARM ${p.armor}  MAN ${p.mana}/${p.maxMana}`, {
+      fontFamily: '"VT323"', fontSize: '11px', color: '#e0e0e0'
+    }).setOrigin(0.5));
+    let pEx = '';
+    if (p.venom > 0) pEx += ` VENENO ${p.venom}`;
+    if (p.inspiration > 0) pEx += ` INSPIR ${p.inspiration}`;
+    if (pEx) this.pInfoContainer.add(this.add.text(72, 186, pEx.trim(), {
+      fontFamily: '"VT323"', fontSize: '10px', color: '#bdcd9c'
+    }).setOrigin(0.5));
+
+    this.eInfoContainer.removeAll(true);
+    const eCls = CLASSES.find(c => c.id === e.classId) || { name: 'Dummy', icon: '🤖', colorHex: '#8892a0' };
+    VFX.classSeal(this, this.eInfoContainer, W - 72, 104, 40, eCls.icon, eCls.colorHex, true);
+    this.eInfoContainer.add(this.add.text(W - 72, 150, eCls.name.toUpperCase(), {
+      fontFamily: '"VT323"', fontSize: '12px', color: eCls.colorHex
+    }).setOrigin(0.5));
+    this.renderHeroBar(this.eInfoContainer, W - 72, 162, 80, e.hp, e.maxHp, eCls.colorHex);
+    this.eInfoContainer.add(this.add.text(W - 72, 174, `HP ${Math.max(0, e.hp)}/${e.maxHp}  ARM ${e.armor}  MAN ${e.mana}/${e.maxMana}`, {
+      fontFamily: '"VT323"', fontSize: '11px', color: '#e0e0e0'
+    }).setOrigin(0.5));
+    let eEx = '';
+    if (e.venom > 0) eEx += ` VENENO ${e.venom}`;
+    if (eEx) this.eInfoContainer.add(this.add.text(W - 72, 186, eEx.trim(), {
+      fontFamily: '"VT323"', fontSize: '10px', color: '#bdcd9c'
+    }).setOrigin(0.5));
+  }
+
+  renderHeroBar(container, x, y, w, current, max, colorHex) {
+    const pct = max > 0 ? Math.max(0, current) / max : 0;
+    const color = Phaser.Display.Color.HexStringToColor(colorHex).color;
+    const bg = this.add.rectangle(x, y, w, 4, 0x2a2a4a).setOrigin(0.5);
+    const fill = this.add.rectangle(x - w / 2 + (w * pct) / 2, y, w * pct, 4, color).setOrigin(0.5);
+    container.add([bg, fill]);
+  }
+
+  renderBoards() {
+    const slotW = 32;
+    const slotH = 32;
+    const gap = 4;
+    const cy = 172;
+    const pStartX = 188;
+    const eStartX = 452;
+
+    const renderBoard = (container, board, isEnemy) => {
+      container.removeAll(true);
+      for (let i = 0; i < 4; i++) {
+        const dir = isEnemy ? -1 : 1;
+        const cx = (isEnemy ? eStartX : pStartX) + i * (slotW + gap) * dir;
+        const c = board[i];
+        const bg = this.add.rectangle(cx, cy, slotW, slotH, c ? 0x16213e : 0x0d0d1a)
+          .setStrokeStyle(1, c ? 0x3a3a5e : 0x2a2a4a);
+        container.add(bg);
+
+        if (!c) continue;
+
+        const icon = this.add.text(cx, cy - 3, '🐾', { fontSize: '16px' }).setOrigin(0.5);
+        const atk = this.add.text(cx - 12, cy + 11, `${c.atk}`, {
+          fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#faba72'
+        }).setOrigin(0.5);
+        const hp = this.add.text(cx + 12, cy + 11, `${c.hp}`, {
+          fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
+        }).setOrigin(0.5);
+
+        let ind = '';
+        if (c.guard) ind += '🛡️';
+        if (c.evasive) ind += '💨';
+        if (c.celerity) ind += '⚡';
+        if (ind) container.add(this.add.text(cx, cy - 14, ind, { fontSize: '7px' }).setOrigin(0.5));
+
+        bg.setInteractive({ useHandCursor: true });
+        bg.on('pointerover', () => this.showCreatureCard(c, cx, cy));
+        bg.on('pointerout', () => this.hideCreatureCard());
+
+        if (!isEnemy && c.canAttack && this.state.phase === 'player') {
+          bg.setFillStyle(0x1a2a4e);
+          bg.on('pointerdown', () => this.selectAttacker(c));
+          container.add(this.add.text(cx, cy + 18, '⚔️', { fontSize: '7px' }).setOrigin(0.5));
+        }
+        if (isEnemy && this.selectedAttacker) {
+          bg.setFillStyle(0x4a1a4a);
+          bg.on('pointerdown', () => this.attackCreature(this.selectedAttacker, c));
+        }
+        container.add([icon, atk, hp]);
+      }
+    };
+    renderBoard(this.pBoardContainer, this.player.board, false);
+    renderBoard(this.eBoardContainer, this.opponent.board, true);
+  }
+
+  getCreatureCard(creature) {
+    const classCards = ALL_CARDS[this.selectedClass] || [];
+    if (creature.cardId) {
+      const found = classCards.find(c => c.id === creature.cardId);
+      if (found) return found;
+    }
+    return {
+      id: creature.uid,
+      name: creature.name,
+      cost: 0,
+      maxCopies: 1,
+      effects: [],
+      desc: `Criatura ${creature.atk}/${creature.hp}`
+    };
+  }
+
+  showCreatureCard(creature, x, y) {
+    this.hideCreatureCard();
+    const card = this.getCreatureCard(creature);
+    const clsColor = this.cls.colorHex;
+    const root = CardFactory.Card(this, {
+      card, count: 1, inDeck: false, classColor: clsColor, mode: 'modal'
+    });
+    root.setPosition(x, y - 80).setScale(0).setDepth(1002);
+    this.creatureCardPreview = root;
+    this.fxContainer.add(root);
+    this.tweens.add({
+      targets: root, scale: 0.45, alpha: 1,
+      duration: 150, ease: 'Back.easeOut'
+    });
+  }
+
+  hideCreatureCard() {
+    if (!this.creatureCardPreview) return;
+    const root = this.creatureCardPreview;
+    this.creatureCardPreview = null;
+    this.tweens.add({
+      targets: root, scale: 0, alpha: 0,
+      duration: 120, ease: 'Cubic.easeIn',
+      onComplete: () => root.destroy()
+    });
+  }
+
+  renderHand() {
+    this.handContainer.removeAll(true);
+    this.handCards = [];
+    this.handZones = [];
+    this.handFocused = -1;
+    const W = 640;
+    const p = this.player;
+    const cardW = 88;
+    const cardH = 120;
+    const compactY = 380;
+    const focusY = 220;
+    const fanGap = -60;
+    const count = Math.min(p.hand.length, 8);
+    const totalW = cardW + (count - 1) * (cardW + fanGap);
+    const startX = (W - totalW) / 2 + cardW / 2;
+    const clsColor = this.cls.colorHex;
+
+    p.hand.forEach((card, i) => {
+      if (i >= 8) return;
+      const x = startX + i * (cardW + fanGap);
+      const cost = Math.max(0, card.cost - (p.costReduction || 0));
+      const canPlay = this.state.phase === 'player' && cost <= p.mana;
+
+      const cardRoot = CardFactory.Card(this, {
+        card, count: 1, inDeck: true, classColor: clsColor, mode: 'grid'
+      });
+      cardRoot.setPosition(x, compactY);
+      if (!canPlay) cardRoot.setAlpha(0.55);
+
+      this.handContainer.add(cardRoot);
+      this.handCards.push({ root: cardRoot, baseX: x, canPlay, hoverZone: null });
+
+      // Hitbox hija de la carta: alta y desplazada hacia abajo para mantener
+      // el cursor dentro mientras la carta se levanta. Hereda el z-order del fan.
+      const hoverZone = this.add.zone(0, 80, cardW, 320).setInteractive({ useHandCursor: canPlay });
+      cardRoot.add(hoverZone);
+      this.handZones.push(hoverZone);
+      this.handCards[i].hoverZone = hoverZone;
+
+      hoverZone.on('pointerover', () => this.onCardPointerOver(i, cardRoot));
+      hoverZone.on('pointerout', () => this.onCardPointerOut(i));
+      if (canPlay) hoverZone.on('pointerdown', () => this.playCard(i));
+    });
+  }
+
+  onCardPointerOver(index, cardRoot) {
+    if (this.menuOpen || this.state.gameOver) return;
+    this.expandHand(index);
+  }
+
+  onCardPointerOut(index) {
+    if (this.menuOpen || this.state.gameOver) return;
+    this.time.delayedCall(30, () => {
+      if (this.handFocused === index) this.collapseHand();
+    });
+  }
+
+  expandHand(focusedIndex) {
+    if (this.handFocused === focusedIndex) return;
+    this.handFocused = focusedIndex;
+    this.tweens.killTweensOf(this.handContainer.list);
+    this.handCards.forEach((entry, i) => {
+      const isFocused = i === focusedIndex;
+      const offset = isFocused ? 0 : (i < focusedIndex ? -14 : 14);
+      const liftY = entry.canPlay ? 220 : 300;
+      const liftScale = entry.canPlay && isFocused ? 1.12 : 1;
+      this.tweens.add({
+        targets: entry.root,
+        x: entry.baseX + offset,
+        y: isFocused ? liftY : 360,
+        scale: liftScale,
+        duration: 180,
+        ease: 'Sine.easeOut'
+      });
+    });
+  }
+
+  collapseHand() {
+    if (this.handFocused === -1) return;
+    this.handFocused = -1;
+    this.tweens.killTweensOf(this.handContainer.list);
+    this.handCards.forEach((entry, i) => {
+      this.tweens.add({
+        targets: entry.root,
+        x: entry.baseX,
+        y: 380,
+        scale: 1,
+        duration: 180,
+        ease: 'Sine.easeOut'
+      });
+    });
+    this.time.delayedCall(180, () => this.restoreHandOrder());
+  }
+
+  restoreHandOrder() {
+    this.handCards.forEach((entry, i) => {
+      if (this.handContainer.moveTo) this.handContainer.moveTo(entry.root, i);
+    });
+  }
+
+  // ===== TURNO =====
+  updateEndTurnBtn() {
+    if (!this.endTurnBtn || !this.endTurnText) return;
+    const enabled = this.state.phase === 'player' && !this.state.gameOver;
+    this.endTurnBtn.setAlpha(enabled ? 1 : 0.45);
+    this.endTurnText.setAlpha(enabled ? 1 : 0.45);
+    if (enabled) this.endTurnBtn.setInteractive({ useHandCursor: true });
+    else this.endTurnBtn.disableInteractive();
+  }
+
+  startPlayerTurn() {
+    const p = this.player;
+    if (p.venom > 0) {
+      const dmg = p.venom;
+      this.applyDamage('player', dmg);
+      p.venom = Math.max(0, p.venom - 1);
+      this.addLog(`Veneno: ${dmg} daño`, 'dmg');
+    }
+    if (this.checkGameOver()) return;
+    for (let i = 0; i < 2; i++) this.drawCard('player');
+    if (p.hand.length > 8) p.hand = p.hand.slice(0, 8);
+    p.maxMana = Math.min(p.maxMana + 1, 7);
+    p.mana = p.maxMana;
+    p.heroUsed = false; p.cardsPlayed = 0; p.costReduction = 0;
+    p.board.forEach(c => { if (!c.justSummoned) c.canAttack = true; c.justSummoned = false; });
+    this.state.phase = 'player';
+    this.turnText.setText(`Turno ${this.state.turn}`);
+    this.phaseText.setText('Tu turno');
+    this.addLog(`--- Turno ${this.state.turn} ---`, 'sys');
+    this.updateEndTurnBtn();
+    this.renderAll();
+    if (this.mode !== 'test') this.startTimer();
+    else this.timerText.setText('∞');
+  }
+
+  startTimer() {
+    if (this.state.timerEvent) this.state.timerEvent.remove();
+    this.state.timer = 60;
+    this.timerText.setText('60s');
+    this.state.timerEvent = this.time.addEvent({
+      delay: 1000, repeat: 59,
+      callback: () => {
+        this.state.timer--;
+        this.timerText.setText(`${this.state.timer}s`);
+        if (this.state.timer <= 0) this.endTurn();
+      }
+    });
+  }
+
+  tryEndTurn() {
+    if (this.state.phase !== 'player' || this.state.gameOver) return;
+    if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+    this.endTurn();
+  }
+
+  endTurn() {
+    if (this.state.phase !== 'player' || this.state.gameOver) return;
+    if (this.state.timerEvent) this.state.timerEvent.remove();
+    this.state.phase = 'opponent';
+    this.phaseText.setText('Turno oponente');
+    this.updateEndTurnBtn();
+    this.renderAll();
+    if (this.opponent.isDummy) {
+      this.state.turn++;
+      this.time.delayedCall(500, () => this.startPlayerTurn());
+    } else {
+      this.time.delayedCall(800, () => this.opponentTurn());
+    }
+  }
+
+  opponentTurn() {
+    if (this.state.gameOver) return;
+    const e = this.opponent;
+    this.drawCard('opponent');
+    if (e.hand.length > 8) e.hand = e.hand.slice(0, 8);
+    e.maxMana = Math.min(e.maxMana + 1, 7);
+    e.mana = e.maxMana; e.heroUsed = false; e.cardsPlayed = 0;
+    e.board.forEach(c => { if (!c.justSummoned) c.canAttack = true; c.justSummoned = false; });
+    if (e.venom > 0) { this.applyDamage('opponent', e.venom); e.venom = Math.max(0, e.venom - 1); }
+    if (this.checkGameOver()) return;
+
+    let safety = 0;
+    while (safety < 10) {
+      safety++;
+      const playable = e.hand.filter(c => c.cost <= e.mana);
+      if (playable.length === 0) break;
+      const card = playable[0];
+      e.mana -= card.cost;
+      e.hand = e.hand.filter(c => c.uid !== card.uid);
+      e.cardsPlayed++; e.discardPile.push(card);
+      this.resolveEffects(card, 'opponent');
+      this.addLog(`Oponente: ${card.name}`, 'info');
+      if (this.checkGameOver()) return;
+    }
+    if (!e.heroUsed && e.mana >= 1) {
+      e.mana -= 1; e.heroUsed = true;
+      this.useHeroPowerFor('opponent');
+      this.addLog('Oponente: poder de heroe', 'info');
+    }
+    e.board.forEach(c => {
+      if (c.canAttack) {
+        if (this.player.board.length > 0) this.combat(c, this.player.board[0], 'opponent');
+        else { this.applyDamage('player', c.atk); this.addLog(`${c.name} ataca: ${c.atk}`, 'dmg'); }
+        c.canAttack = false;
+      }
+    });
+    if (this.checkGameOver()) return;
+    this.state.turn++;
+    this.startPlayerTurn();
+  }
+
+  // ===== MECANICAS =====
+  drawCard(side) {
+    const who = side === 'player' ? this.player : this.opponent;
+    if (who.deck.length === 0) {
+      if (who.discardPile.length === 0) return;
+      who.deck = this.shuffle([...who.discardPile]); who.discardPile = [];
+    }
+    if (who.deck.length > 0) who.hand.push(who.deck.shift());
+  }
+
+  playCard(index) {
+    if (this.state.phase !== 'player' || this.state.gameOver) return;
+    const p = this.player;
+    const card = p.hand[index];
+    if (!card) return;
+    const cost = Math.max(0, card.cost - (p.costReduction || 0));
+    if (cost > p.mana) return;
+    this.playCardAnimation(index);
+    p.mana -= cost; p.hand.splice(index, 1); p.cardsPlayed++;
+    if (!card.consumable) p.discardPile.push(card);
+    this.resolveEffects(card, 'player');
+    this.addLog(`Juegas: ${card.name}`, 'info');
+    p.costReduction = 0;
+    if (this.checkGameOver()) return;
+    this.renderAll();
+  }
+
+  resolveEffects(card, side) {
+    const who = side === 'player' ? this.player : this.opponent;
+    const enemy = side === 'player' ? this.opponent : this.player;
+    if (!card.effects) return;
+    card.effects.forEach(eff => {
+      switch (eff.type) {
+        case 'damage':
+          if (eff.target === 'enemy_hero') this.applyDamage(side === 'player' ? 'opponent' : 'player', eff.amount);
+          else if (eff.target === 'enemy_creature' && enemy.board.length > 0) {
+            enemy.board[0].hp -= eff.amount;
+            if (enemy.board[0].hp <= 0) this.killCreature(enemy, 0);
+          }
+          break;
+        case 'heal':
+          who.hp = Math.min(who.maxHp, who.hp + eff.amount);
+          if (side === 'player') {
+            this.showFloatingNumber(120, 72, `+${eff.amount} HP`, '#bdcd9c');
+            this.screenFlash('#bdcd9c');
+          }
+          break;
+        case 'armor':
+          who.armor += eff.amount;
+          if (side === 'player') {
+            this.showFloatingNumber(120, 72, `+${eff.amount} ARM`, '#9fcafd');
+            this.screenFlash('#9fcafd');
+          }
+          break;
+        case 'draw': for (let i = 0; i < eff.amount; i++) this.drawCard(side); break;
+        case 'venom': enemy.venom += eff.amount; break;
+        case 'inspiration': who.inspiration += eff.amount; break;
+        case 'summon':
+          if (who.board.length < 4) {
+            who.board.push({
+              uid: Math.random().toString(36).slice(2, 8), cardId: card.id,
+              name: card.name.replace('Invocar ', ''),
+              atk: eff.atk, hp: eff.hp, maxHp: eff.hp, canAttack: false, justSummoned: true,
+              guard: !!eff.guard, evasive: !!eff.evasive, celerity: !!eff.celerity,
+              deathrattle: eff.deathrattle || null
+            });
+            if (eff.celerity) who.board[who.board.length - 1].canAttack = true;
+          }
+          break;
+        case 'damage_all_enemies':
+          enemy.board.forEach(c => { c.hp -= eff.amount; });
+          for (let i = enemy.board.length - 1; i >= 0; i--) if (enemy.board[i].hp <= 0) this.killCreature(enemy, i);
+          break;
+        case 'freeze': if (enemy.board.length > 0) enemy.board[0].canAttack = false; break;
+        case 'weaken': if (enemy.board.length > 0) enemy.board[0].atk = Math.max(0, enemy.board[0].atk - eff.amount); break;
+        case 'fortify': if (who.board.length > 0) who.board[0].atk += eff.amount; break;
+        case 'silence':
+          if (eff.target === 'self_hero') who.heroUsed = true;
+          else if (eff.target === 'enemy_hero') enemy.heroUsed = true;
+          break;
+        case 'cost_reduction': who.costReduction = (who.costReduction || 0) + eff.amount; break;
+        case 'board_buff': who.board.forEach(c => { c.atk += eff.atk; }); break;
+        case 'damage_conditional':
+          let dmg = eff.base;
+          if (eff.condition === 'enemy_venom' && enemy.venom > 0) dmg += eff.bonus;
+          this.applyDamage(side === 'player' ? 'opponent' : 'player', dmg);
+          break;
+        case 'conditional':
+          const cond = this.checkCondition(eff.condition, who, enemy);
+          const effects = cond ? eff.trueEffects : (eff.falseEffects || []);
+          effects.forEach(sub => this.resolveEffects({ effects: [sub] }, side));
+          break;
+        case 'sacrifice': if (who.board.length > 0) this.killCreature(who, 0); break;
+        case 'discard_random':
+          if (enemy.hand.length > 0) enemy.hand.splice(Math.floor(Math.random() * enemy.hand.length), 1);
+          break;
+        case 'swap_hands': const tmp = who.hand; who.hand = enemy.hand; enemy.hand = tmp; break;
+        case 'copy_card': this.drawCard(side); break;
+      }
+    });
+  }
+
+  checkCondition(cond, who, enemy) {
+    switch (cond.type) {
+      case 'self_armor_gte': return who.armor >= cond.value;
+      case 'enemy_venom': return enemy.venom > 0;
+      case 'enemy_venom_gte': return enemy.venom >= cond.value;
+      case 'self_inspiration_gte': return who.inspiration >= cond.value;
+      case 'cards_played_gte': return who.cardsPlayed >= cond.value;
+      default: return false;
+    }
+  }
+
+  killCreature(owner, index) {
+    const c = owner.board[index];
+    if (!c) return;
+    if (c.deathrattle === 'draw') this.drawCard(owner === this.player ? 'player' : 'opponent');
+    owner.board.splice(index, 1);
+  }
+
+  applyDamage(side, amount) {
+    const who = side === 'player' ? this.player : this.opponent;
+    if (who.armor > 0) {
+      if (amount <= who.armor) { who.armor -= amount; amount = 0; }
+      else { amount -= who.armor; who.armor = 0; }
+    }
+    who.hp -= amount;
+    if (amount > 0) {
+      const isPlayer = side === 'player';
+      this.showFloatingNumber(isPlayer ? 120 : 520, 72, `-${amount}`, '#ff6b6b');
+      this.screenFlash('#ff6b6b');
+      this.shakeContainer(isPlayer ? this.pInfoContainer : this.eInfoContainer);
+      this.addLog(`${isPlayer ? 'Tú' : 'Oponente'}: -${amount} HP`, 'dmg');
+    }
+  }
+
+  combat(attacker, defender, side) {
+    defender.hp -= attacker.atk;
+    attacker.hp -= defender.atk;
+    this.addLog(`${attacker.name} vs ${defender.name}`, 'dmg');
+    if (defender.hp <= 0) {
+      const owner = side === 'player' ? this.opponent : this.player;
+      const idx = owner.board.indexOf(defender);
+      if (idx >= 0) this.killCreature(owner, idx);
+    }
+    if (attacker.hp <= 0) {
+      const owner = side === 'player' ? this.player : this.opponent;
+      const idx = owner.board.indexOf(attacker);
+      if (idx >= 0) this.killCreature(owner, idx);
+    }
+  }
+
+  selectAttacker(creature) {
+    this.selectedAttacker = creature;
+    this.addLog(`Atacas con: ${creature.name}`, 'info');
+    this.renderBoards();
+  }
+
+  attackCreature(attacker, target) {
+    const hasGuard = this.opponent.board.some(c => c.guard);
+    if (hasGuard && !target.guard) {
+      this.addLog('Debe atacar a Guardia', 'sys');
+      this.selectedAttacker = null;
+      this.renderBoards();
+      return;
+    }
+    this.combat(attacker, target, 'player');
+    attacker.canAttack = false;
+    this.selectedAttacker = null;
+    if (this.checkGameOver()) return;
+    this.renderAll();
+  }
+
+  useHeroPower() {
+    if (this.state.phase !== 'player' || this.state.gameOver) return;
+    const p = this.player;
+    if (p.heroUsed) { this.addLog('Poder ya usado', 'sys'); return; }
+    if (p.mana < this.cls.heroPower.cost) { this.addLog('Maná insuficiente', 'sys'); return; }
+    p.mana -= this.cls.heroPower.cost; p.heroUsed = true;
+    this.useHeroPowerFor('player');
+    this.addLog(`Poder de heroe: ${this.cls.heroPower.name}`, 'info');
+    this.renderAll();
+  }
+
+  useHeroPowerFor(side) {
+    const who = side === 'player' ? this.player : this.opponent;
+    const enemy = side === 'player' ? this.opponent : this.player;
+    const cls = CLASSES.find(c => c.id === who.classId);
+    if (!cls) return;
+    const isPlayer = side === 'player';
+    this.showFloatingNumber(isPlayer ? 120 : 520, 100, cls.heroPower.name, '#faba72');
+    switch (cls.id) {
+      case 'mago': this.applyDamage(isPlayer ? 'opponent' : 'player', 2); break;
+      case 'necromancer':
+        if (who.board.length < 4)
+          who.board.push({ uid: Math.random().toString(36).slice(2,8), cardId: 'n_esqueleto', name: 'Esqueleto', atk: 1, hp: 1, maxHp: 1, canAttack: false, justSummoned: true });
+        break;
+      case 'guerrero':
+        if (enemy.board.length > 0) { enemy.board[0].hp -= 1; if (enemy.board[0].hp <= 0) this.killCreature(enemy, 0); }
+        who.armor += 1;
+        this.showFloatingNumber(isPlayer ? 120 : 520, 72, `+1 ARM`, '#9fcafd');
+        this.screenFlash('#9fcafd');
+        break;
+      case 'asesino': this.applyDamage(isPlayer ? 'opponent' : 'player', 1 + (enemy.venom > 0 ? 1 : 0)); break;
+      case 'bardo': this.applyDamage(isPlayer ? 'opponent' : 'player', 1); break;
+    }
+  }
+
+  checkGameOver() {
+    if (!this.state) return false;
+    if (this.player.hp <= 0 || this.opponent.hp <= 0) {
+      this.state.gameOver = true;
+      if (this.state.timerEvent) this.state.timerEvent.remove();
+      this.time.delayedCall(500, () => {
+        this.scene.start('GameOverScene', {
+          win: this.opponent.hp <= 0, turn: this.state.turn,
+          damageTaken: this.player.maxHp - this.player.hp,
+          cardsPlayed: this.player.cardsPlayed, hpLeft: Math.max(0, this.player.hp), mode: this.mode,
+          classId: this.selectedClass
+        });
+      });
+      return true;
+    }
+    return false;
+  }
+
+  addLog(msg, type) {
+    this.state.log.push({ msg, type, turn: this.state.turn });
+    const color = type === 'dmg' ? '#ff6b6b' : type === 'sys' ? '#faba72' : type === 'info' ? '#9fcafd' : '#bdcd9c';
+    const t = this.add.text(320, 250, msg, {
+      fontFamily: '"VT323"', fontSize: '13px', color: color,
+      stroke: '#000000', strokeThickness: 2
+    }).setOrigin(0.5).setDepth(1002);
+    this.fxContainer.add(t);
+    this.tweens.add({
+      targets: t, y: 220, alpha: 0,
+      duration: 2200, ease: 'Cubic.easeIn',
+      onComplete: () => t.destroy()
+    });
+  }
+
+  // ===== ANIMATIONS =====
+  playCardAnimation(handIndex) {
+    const children = this.handContainer.list;
+    const source = children[handIndex];
+    if (!source) return;
+    const card = this.player.hand[handIndex];
+    if (!card) return;
+    const clone = CardFactory.Card(this, {
+      card, count: 1, inDeck: true, classColor: this.cls.colorHex, mode: 'grid'
+    });
+    clone.setPosition(source.x, source.y);
+    clone.setDepth(1001);
+    this.fxContainer.add(clone);
+    this.tweens.add({
+      targets: clone,
+      x: 320, y: 160, scale: 1.1,
+      duration: 400, ease: 'Cubic.easeOut',
+      onComplete: () => clone.destroy()
+    });
+  }
+
+  showFloatingNumber(x, y, text, colorHex) {
+    const t = this.add.text(x, y, text, {
+      fontFamily: '"VT323"', fontSize: '20px', color: colorHex,
+      stroke: '#000000', strokeThickness: 2
+    }).setOrigin(0.5).setDepth(1002);
+    this.fxContainer.add(t);
+    this.tweens.add({
+      targets: t, y: y - 24, alpha: 0,
+      duration: 800, ease: 'Cubic.easeIn',
+      onComplete: () => t.destroy()
+    });
+  }
+
+  screenFlash(colorHex) {
+    const c = Phaser.Display.Color.HexStringToColor(colorHex).color;
+    const r = this.add.rectangle(320, 180, 640, 360, c, 0.25).setDepth(1001);
+    this.fxContainer.add(r);
+    this.tweens.add({
+      targets: r, alpha: 0,
+      duration: 250, ease: 'Cubic.easeOut',
+      onComplete: () => r.destroy()
+    });
+  }
+
+  shakeContainer(container) {
+    if (!container || container.list.length === 0) return;
+    this.tweens.add({
+      targets: container, x: container.x + 2,
+      duration: 60, yoyo: true, repeat: 2,
+      onComplete: () => { if (container.active) container.x -= 2; }
+    });
+  }
+
+  shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  toggleMenu() {
+    if (this.state.gameOver) return;
+    if (this.menuOpen) this.closeMenu();
+    else this.openMenu();
+  }
+
+  openMenu() {
+    if (this.menuOpen) return;
+    this.menuOpen = true;
+    if (this.state.timerEvent) { this.state.timerEvent.remove(); this.state.timerEvent = null; }
+    this.hideCreatureCard();
+    this.tweens.killTweensOf(this.handContainer.list);
+    this.collapseHand();
+    this.handHotZones.forEach(z => z.disableInteractive());
+
+    const W = 640, H = 360;
+    const layer = this.add.container(0, 0).setDepth(5000);
+    this.menuOverlay = layer;
+
+    const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.6)
+      .setInteractive({ useHandCursor: false });
+    dim.on('pointerdown', () => this.closeMenu());
+    layer.add(dim);
+
+    VFX.lcdPanel(this, layer, W / 2, H / 2, 200, 140, 'MENU');
+    layer.add(this.add.text(W / 2, H / 2 - 50, 'MENU', {
+      fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#faba72'
+    }).setOrigin(0.5));
+
+    const continuar = this.add.rectangle(W / 2, H / 2 - 10, 160, 26, 0x16213e)
+      .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#bdcd9c').color)
+      .setInteractive({ useHandCursor: true });
+    this.add.text(W / 2, H / 2 - 10, 'CONTINUAR', {
+      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#bdcd9c'
+    }).setOrigin(0.5);
+    continuar.on('pointerdown', () => this.closeMenu());
+    layer.add(continuar);
+
+    const rendirse = this.add.rectangle(W / 2, H / 2 + 30, 160, 26, 0x16213e)
+      .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#ff6b6b').color)
+      .setInteractive({ useHandCursor: true });
+    this.add.text(W / 2, H / 2 + 30, 'RENDIRSE', {
+      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
+    }).setOrigin(0.5);
+    rendirse.on('pointerdown', () => this.surrender());
+    layer.add(rendirse);
+  }
+
+  closeMenu() {
+    if (!this.menuOpen) return;
+    this.menuOpen = false;
+    if (this.menuOverlay) { this.menuOverlay.destroy(true); this.menuOverlay = null; }
+    this.handHotZones.forEach((z, i) => {
+      const entry = this.handCards[i];
+      if (entry && entry.canPlay) z.setInteractive({ useHandCursor: true });
+    });
+    if (this.state.phase === 'player' && !this.state.gameOver && this.mode !== 'test') {
+      this.startTimer();
+    }
+  }
+
+  surrender() {
+    if (this.state.timerEvent) { this.state.timerEvent.remove(); this.state.timerEvent = null; }
+    if (this.menuOverlay) { this.menuOverlay.destroy(true); this.menuOverlay = null; }
+    this.menuOpen = false;
+    if (this.mode === 'test') {
+      this.scene.start('MenuScene');
+    } else {
+      this.scene.start('GameOverScene', {
+        win: false,
+        turn: this.state.turn,
+        damageTaken: this.player.maxHp - this.player.hp,
+        cardsPlayed: this.player.cardsPlayed,
+        hpLeft: 0,
+        mode: this.mode,
+        classId: this.selectedClass
+      });
+    }
+  }
+}
+
+window.GameScene = GameScene;

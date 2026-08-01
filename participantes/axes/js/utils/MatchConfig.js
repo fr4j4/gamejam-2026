@@ -4,16 +4,19 @@ const GAME_MODES = Object.freeze({
   VS_AI: 'vs-ai',
 });
 
-/** @param {number} gridSize @param {string} mode @returns {{gridSize: number, mode: string, players: Array}} */
-function createMatchConfig(gridSize, mode = GAME_MODES.LOCAL) {
+/** @param {number} gridSize @param {string} mode @param {string} difficulty @returns {{gridSize: number, mode: string, players: Array}} */
+function createMatchConfig(gridSize, mode = GAME_MODES.LOCAL, difficulty = AI_CONFIG.defaultDifficulty) {
   const selectedMode = mode === GAME_MODES.VS_AI ? GAME_MODES.VS_AI : GAME_MODES.LOCAL;
+  const selectedDifficulty = Object.values(AI_DIFFICULTY).includes(difficulty)
+    ? difficulty
+    : AI_CONFIG.defaultDifficulty;
   return {
     gridSize,
     mode: selectedMode,
     players: [
       { id: 0, type: 'human' },
       selectedMode === GAME_MODES.VS_AI
-        ? { id: 1, type: 'ai', difficulty: AI_CONFIG.defaultDifficulty }
+        ? { id: 1, type: 'ai', difficulty: selectedDifficulty }
         : { id: 1, type: 'human' },
     ],
   };

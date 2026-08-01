@@ -89,6 +89,11 @@ class ApocryphaScene extends Phaser.Scene {
       fontSize: '14px',
       color: '#8f897c'
     });
+
+    // auto-cast para verificación (solo con ?beam en la URL)
+    if (new URLSearchParams(location.search).has('beam')) {
+      this.castLight(400, 440);
+    }
   }
 
   // siluetas de montañas / arboleda
@@ -134,56 +139,42 @@ class ApocryphaScene extends Phaser.Scene {
   }
 
   castLight(x, y) {
-    // una sola intervención: cono de luz divina + núcleo + halo
+    // una sola intervención: cono de luz divina + núcleo + halo (mezcla ADITIVA)
     if (this.beamT > 0) return; // ya hay una activa
     this.beamT = 1;
-    const yBase = Math.max(y, this.groundY - 60);
+    this.beamLife = 0;
+    this.beamFading = false;
 
+    const yBase = Math.max(y, this.groundY - 60);
+    const bm = Phaser.BlendModes.ADD; // la luz se suma al fondo: se siente divina
+
+    // cono de luz: dos capas (ancho + núcleo del haz)
     const beam = this.add.graphics();
-    beam.fillStyle(PAL.divine, 0.14);
-    beam.fillPoints([[x - 40, 0], [x + 40, 0], [x + 90, yBase + 20], [x - 90, yBase + 20]], true);
-    beam.fillStyle(PAL.divine, 0.16);
-    beam.fillPoints([[x - 18, 0], [x + 18, 0], [x + 45, yBase], [x - 45, yBase]], true);
+    beam.setBlendMode(bm);
+    beam.fillStyle(PAL.divine, 0.38);
+    beam.fillPoints([[x - 60, 0], [x + 60, 0], [x + 130, yBase + 26], [x - 130, yBase + 26]], true);
+    beam.fillStyle(PAL.core, 0.30);
+    beam.fillPoints([[x - 26, 0], [x + 26, 0], [x + 62, yBase + 6], [x - 62, yBase + 6]], true);
     this.beam = beam;
 
-    const core = this.add.circle(x, yBase + 8, 12, PAL.core, 0.95);
+    // núcleo brillante
+    const core = this.add.circle(x, yBase + 8, 14, PAL.core, 1);
+    core.setBlendMode(bm);
     this.beamCore = core;
 
-    const halo = this.add.circle(x, yBase + 8, 34, 0x000000, 0);
-    halo.setStrokeStyle(1.5, PAL.divine, 0.8);
+    // halo: anillo + resplandor interior
+    const halo = this.add.circle(x, yBase + 8, 30, PAL.divine, 0.28);
+    halo.setStrokeStyle(2, PAL.divine, 0.95);
+    halo.setBlendMode(bm);
     this.beamHalo = halo;
 
-    // parpadeo orgánico del rayo
-    this.tweens.add({
-      targets: beam,
-      alpha: { from: 0.75, to: 1 },
-      duration: 260,
-      yoyo: true,
-      repeat: 7
-    });
-    this.tweens.add({
-      targets: halo,
-      scale: { from: 0.6, to: 1.15 },
-      alpha: { from: 0, to: 1 },
-      duration: 900,
-      yoyo: true,
-      repeat: 1,
-      onComplete: () => {
-        this.tweens.add({
-          targets: [beam, core, halo],
-          alpha: 0,
-          duration: 700,
-          onComplete: () => {
-            beam.destroy(); core.destroy(); halo.destroy();
-            this.beam = this.beamCore = this.beamHalo = null;
-            this.beamT = 0;
-          }
-        });
-      }
-    });
+    // resplandor que baña el suelo
+    const glow = this.add.ellipse(x, yBase + 14, 170, 42, PAL.divine, 0.30);
+    glow.setBlendMode(bm);
+    this.beamGlow = glow;
   }
 
-  update(time) {
+  update(time, delta) {
     // ---- ciclo de día/noche: 0..1..0 (período ~40s) ----
     const period = 40000;
     const phase = (time % period) / period;          // 0..1
@@ -204,10 +195,33 @@ class ApocryphaScene extends Phaser.Scene {
     this.orb.setFillStyle(this.dayFactor > 0.5 ? PAL.sun : 0xcfd8e3);
     this.orb.setAlpha(0.35 + 0.65 * this.dayFactor);
 
-    // parpadeo sutil de la luz activa
-    if (this.beam && this.beamCore) {
-      const flicker = 0.85 + 0.15 * Math.sin(time / 60);
-      this.beamCore.setAlpha(0.8 * flicker);
+    // parpadeo sutil de la luz activa (vida ~4s: pulsa, se desvanece, se destruye)
+    if (this.beamT > 0 && this.beam) {
+      this.beamLife += delta;
+      const life = this.beamLife;
+
+      if (life > 3200 && !this.beamFading) this.beamFading = true;
+
+      let a = 1;
+      if (this.beamFading) a = Math.max(0, 1 - (life - 3200) / 700);
+
+      const flicker = 0.85 + 0.15 * Math.sin(time / 55);
+      this.beam.setAlpha(a * flicker);
+      this.beamCore.setAlpha(0.9 * a * flicker);
+      this.beamHalo.setAlpha(0.9 * a);
+      this.beamGlow.setAlpha(0.55 * a);
+
+      // el núcleo late
+      this.beamCore.setScale(1 + 0.06 * Math.sin(time / 80));
+
+      if (life > 3900) {
+        this.beam.destroy();
+        this.beamCore.destroy();
+        this.beamHalo.destroy();
+        this.beamGlow.destroy();
+        this.beam = this.beamCore = this.beamHalo = this.beamGlow = null;
+        this.beamT = 0;
+      }
     }
   }
 }

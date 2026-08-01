@@ -1,4 +1,11 @@
-const { cameraSpeed, isCaughtByCamera, torqueForInput, choosePartToShed } = LastreModel;
+const {
+  cameraSpeed,
+  isCaughtByCamera,
+  torqueForInput,
+  choosePartToShed,
+  jumpForceForMass,
+  canHop
+} = LastreModel;
 
 const COLORS = {
   sky: 0x0b1320,
@@ -23,6 +30,7 @@ class LastreScene extends Phaser.Scene {
     this.startedAt = this.time.now;
     this.dead = false;
     this.shedCooldown = 0;
+    this.jumpCooldown = 0;
     this.collected = new Set();
 
     this.makeBackdrop();
@@ -37,7 +45,8 @@ class LastreScene extends Phaser.Scene {
       leftA: Phaser.Input.Keyboard.KeyCodes.A,
       rightD: Phaser.Input.Keyboard.KeyCodes.D,
       leftArrow: Phaser.Input.Keyboard.KeyCodes.LEFT,
-      rightArrow: Phaser.Input.Keyboard.KeyCodes.RIGHT
+      rightArrow: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+      jump: Phaser.Input.Keyboard.KeyCodes.SPACE
     });
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
 
@@ -114,6 +123,7 @@ class LastreScene extends Phaser.Scene {
       restitution: 0.04
     });
     this.matter.world.add(this.blob);
+    this.coreMass = this.blob.mass;
     this.matter.body.setVelocity(this.blob, { x: 2.05, y: 0 });
   }
 
@@ -251,6 +261,24 @@ class LastreScene extends Phaser.Scene {
     }
   }
 
+  hop() {
+    if (!canHop(this.blob.bounds.max.y, 380, this.jumpCooldown)) return;
+    const force = jumpForceForMass(this.blob.mass, this.coreMass, 0.038);
+    this.matter.body.applyForce(this.blob, this.blob.position, { x: 0, y: -force });
+    this.jumpCooldown = 520;
+    const pulse = this.add.circle(this.blob.position.x, this.blob.bounds.max.y, 12, 0x000000, 0)
+      .setStrokeStyle(3, COLORS.glow, 0.9).setDepth(19);
+    this.tweens.add({
+      targets: pulse,
+      scaleX: 3.2,
+      scaleY: 0.65,
+      alpha: 0,
+      duration: 420,
+      ease: 'Cubic.easeOut',
+      onComplete: () => pulse.destroy()
+    });
+  }
+
   lose() {
     if (this.dead) return;
     this.dead = true;
@@ -267,10 +295,12 @@ class LastreScene extends Phaser.Scene {
   update(time, delta) {
     if (this.dead) return;
     this.shedCooldown = Math.max(0, this.shedCooldown - delta);
+    this.jumpCooldown = Math.max(0, this.jumpCooldown - delta);
 
     const left = this.keys.leftA.isDown || this.keys.leftArrow.isDown;
     const right = this.keys.rightD.isDown || this.keys.rightArrow.isDown;
     this.blob.torque += torqueForInput(left, right, 0.018) * this.blob.mass;
+    if (Phaser.Input.Keyboard.JustDown(this.keys.jump)) this.hop();
 
     this.blob.force.x += 0.00042;
     if (this.blob.velocity.x > 4.2) this.matter.body.setVelocity(this.blob, { x: 4.2, y: this.blob.velocity.y });
@@ -286,7 +316,8 @@ class LastreScene extends Phaser.Scene {
 
     const pieces = this.blob.parts.length - 1;
     const distance = Math.floor(this.cameras.main.scrollX / 10);
-    this.hud.setText(`LASTRE  ·  ${distance} m  ·  masa ${pieces}  ·  velocidad ${Math.max(0, this.blob.velocity.x).toFixed(1)}`);
+    const hopState = this.jumpCooldown > 0 ? 'RECARGA' : 'LISTO';
+    this.hud.setText(`LASTRE  ·  ${distance} m  ·  masa ${pieces}  ·  velocidad ${Math.max(0, this.blob.velocity.x).toFixed(1)}  ·  pulso ${hopState}`);
     this.warning.setText(relative < 130 ? '◀ EL BORDE TE ESTÁ ALCANZANDO' : '');
   }
 }

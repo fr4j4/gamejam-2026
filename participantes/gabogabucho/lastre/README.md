@@ -18,6 +18,7 @@ Abrir:
 
 - **A / ←** — torque antihorario.
 - **D / →** — torque horario.
+- **Espacio** — pulso magnético corto. Cuanta más masa, menor altura.
 - **R** — reiniciar.
 
 ## Objetivo
@@ -28,6 +29,7 @@ Avanzar mientras la cámara empuja. La materia luminosa se pega al cuerpo; la pi
 
 - [x] Corte 0: cuerpo compuesto mutable con Matter; masa, inercia y centroide se recalculan.
 - [x] Corte 1: loop básico crecer → deformarse → rasparse → recuperar terreno.
+- [x] Pulso magnético dependiente de masa para reorientar aterrizajes.
 - [ ] Corte 2: diseño de obstáculos y pasos angostos.
 - [ ] Corte 3: arte, sonido y feedback.
 

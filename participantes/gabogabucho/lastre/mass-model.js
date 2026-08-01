@@ -27,5 +27,21 @@
     return candidates[0].id;
   }
 
-  return { cameraSpeed, screenX, isCaughtByCamera, torqueForInput, choosePartToShed };
+  function jumpForceForMass(mass, coreMass, baseForce) {
+    return baseForce * Math.sqrt(Math.max(1, mass / coreMass));
+  }
+
+  function canHop(boundsMaxY, groundY, cooldownMs) {
+    return cooldownMs <= 0 && boundsMaxY >= groundY - 5;
+  }
+
+  return {
+    cameraSpeed,
+    screenX,
+    isCaughtByCamera,
+    torqueForInput,
+    choosePartToShed,
+    jumpForceForMass,
+    canHop
+  };
 });

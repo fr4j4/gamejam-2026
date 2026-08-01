@@ -6,7 +6,7 @@ Un auto-runner lateral sobre **crecer por accidente y adelgazar a propósito**. 
 
 ## Verbo central
 
-**Inclinar.** El jugador no salta ni acelera: aplica torque hacia la izquierda o la derecha mientras el mundo lo empuja.
+**Inclinar.** El jugador aplica torque hacia la izquierda o la derecha mientras el mundo lo empuja. Un pulso magnético corto permite despegarse apenas del suelo para cambiar el aterrizaje; no reemplaza el control de forma.
 
 ## Loop de cinco segundos
 
@@ -21,7 +21,17 @@ Un auto-runner lateral sobre **crecer por accidente y adelgazar a propósito**. 
 - **Blando se pega.** Más volumen implica más inercia y peor rodadura.
 - **Piedra arranca.** El contacto desprende la parte del lado golpeado.
 - **El borde izquierdo mata.** Ningún obstáculo produce muerte instantánea.
-- **A/D o ←/→ aplican torque.** No existe salto.
+- **A/D o ←/→ aplican torque.** Espacio produce un hop bajo que pierde altura con la masa.
+
+## Dirección conceptual: chatarra magnética
+
+El núcleo es un electroimán blanco-cian. Lo que recoge no son partículas abstractas: son tornillos, chapas, resortes, tuercas y engranajes oxidados.
+
+La regla de producción es estricta: **la forma dibujada debe coincidir con la forma Matter**. Una chapa larga necesita un collider largo; un engranaje puede aproximarse con un círculo. Las piezas no se simulan por separado una vez adheridas: pasan a ser partes convexas del mismo cuerpo compuesto.
+
+La chatarra explica el loop sin tutorial: metal se adhiere al imán, hormigón y piedra lo raspan, una trituradora puede arrancar piezas. El mundo será industrial y desaturado; el núcleo magnético conserva el único color luminoso.
+
+La referencia estructural es Katamari, pero la inversión es esencial: allí crecer es el objetivo y la esfera se normaliza; aquí crecer es deuda, la forma empeora y desprender materia es una habilidad.
 
 ## Alcance de la primera sesión
 

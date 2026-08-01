@@ -12,7 +12,7 @@ python -m http.server 8080
 
 Abrir:
 
-`http://localhost:8080/participantes/gabogabucho/lastre/`
+`http://localhost:8080/participantes/gabogabucho/`
 
 ## Controles
 

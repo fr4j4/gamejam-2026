@@ -19,13 +19,20 @@ class HUD {
       fontStyle: 'bold',
       letterSpacing: 1,
     }).setOrigin(0.5);
+    this.thinkingText = scene.add.text(400, 90, '', {
+      color: SVG_COLORS.playerTwo,
+      fontFamily: FONTS.GAME,
+      fontSize: '14px',
+      fontStyle: 'bold',
+      letterSpacing: 2,
+    }).setOrigin(0.5);
 
     this.restartButton = new GlitchButton(this.scene, 680, 750, 150, 42, 'REINICIAR', () => this.onRestart(), {
       fontSize: '15px',
     });
     [this.playerOneCard.card, this.playerOneCard.label, this.playerOneCard.score,
       this.playerTwoCard.card, this.playerTwoCard.label, this.playerTwoCard.score,
-      this.turnPill, this.turnText].forEach((object) => object.setDepth(DEPTH.hud));
+      this.turnPill, this.turnText, this.thinkingText].forEach((object) => object.setDepth(DEPTH.hud));
     this.restartButton.setDepth(DEPTH.controls);
   }
 
@@ -78,6 +85,12 @@ class HUD {
   /** Habilita o bloquea REINICIAR sin cambiar su visibilidad. */
   setRestartEnabled(enabled) {
     this.restartButton.setEnabled(enabled);
+  }
+
+  /** Muestra feedback durante el turno automático sin cambiar las reglas. */
+  setAiThinking(isThinking) {
+    this.thinkingText.setText(isThinking ? AI_CONFIG.thinkingText : '');
+    this.thinkingText.setVisible(isThinking);
   }
 
   destroy() {

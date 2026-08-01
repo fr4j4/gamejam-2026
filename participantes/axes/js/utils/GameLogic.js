@@ -41,6 +41,28 @@ function checkCompletedBoxes(state, lineId) {
     .map((box) => box.id);
 }
 
+/** @param {{lines: Array}} state @returns {string[]} */
+function getAvailableMoves(state) {
+  return state.lines.filter((line) => line.owner === null).map((line) => line.id);
+}
+
+/**
+ * Calcula las cajas que completaría una línea sin modificar el estado recibido.
+ * @param {ReturnType<typeof initBoard>} state
+ * @param {string} lineId
+ * @returns {string[]}
+ */
+function getCompletedBoxesForMove(state, lineId) {
+  const target = state.lines.find((line) => line.id === lineId);
+  if (!target || target.owner !== null) return [];
+
+  const simulatedState = {
+    ...state,
+    lines: state.lines.map((line) => (line.id === lineId ? { ...line, owner: state.currentPlayer } : { ...line })),
+  };
+  return checkCompletedBoxes(simulatedState, lineId);
+}
+
 /**
  * Traza una línea de forma inmutable y devuelve el resultado de la jugada.
  * @param {ReturnType<typeof initBoard>} state
@@ -60,7 +82,7 @@ function drawLine(state, lineId, player) {
     boxes: state.boxes.map((box) => ({ ...box })),
     scores: [...state.scores],
   };
-  const completedBoxIds = checkCompletedBoxes(nextState, lineId);
+  const completedBoxIds = getCompletedBoxesForMove(state, lineId);
   nextState.boxes = nextState.boxes.map((box) => (
     completedBoxIds.includes(box.id) ? { ...box, owner: player } : box
   ));
@@ -73,6 +95,11 @@ function drawLine(state, lineId, player) {
   }
 
   return { state: nextState, accepted: true, completedBoxIds };
+}
+
+/** Aplica el movimiento del jugador actual sin mutar el estado original. */
+function applyMove(state, lineId) {
+  return drawLine(state, lineId, state.currentPlayer);
 }
 
 /** @param {{lines: Array}} state @returns {boolean} */

@@ -16,6 +16,7 @@ class Board {
     this.boxes = [];
     this.lineById = new Map();
     this.inputEnabled = true;
+    this.moveEnabled = true;
     this.activePlayer = this.state.currentPlayer;
     this.svg = this.createSvg();
     this.render();
@@ -100,12 +101,23 @@ class Board {
 
   handleLineClick(lineId) {
     if (!this.inputEnabled) return;
+    return this.playMove(lineId);
+  }
+
+  /**
+   * Entrada única para movimientos humanos y de IA.
+   * @param {string} lineId
+   * @returns {{state: object, accepted: boolean, completedBoxIds: string[]}}
+   */
+  playMove(lineId) {
+    if (!this.moveEnabled) return { state: this.state, accepted: false, completedBoxIds: [] };
     const result = drawLine(this.state, lineId, this.state.currentPlayer);
-    if (!result.accepted) return;
+    if (!result.accepted) return result;
     this.state = result.state;
     this.activePlayer = result.state.currentPlayer;
     this.renderState();
     this.onMove?.(result);
+    return result;
   }
 
   renderState() {
@@ -128,6 +140,11 @@ class Board {
     this.lines.forEach((line) => line.setInteractive(enabled));
   }
 
+  /** Bloquea o permite movimientos de cualquier origen, incluido el turno IA. */
+  setMoveEnabled(enabled) {
+    this.moveEnabled = Boolean(enabled);
+  }
+
   /** Baja el SVG bajo el canvas para que los modales Phaser queden encima. */
   setModalLayer(isModalOpen) {
     this.svg.classList.toggle('is-behind-modal', isModalOpen);
@@ -135,6 +152,7 @@ class Board {
   }
 
   destroy() {
+    this.moveEnabled = false;
     this.setInteractive(false);
     this.onMove = null;
     this.setInteractive(false);

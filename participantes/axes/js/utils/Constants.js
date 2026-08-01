@@ -117,6 +117,18 @@ const GAME_TIMING = Object.freeze({
   gameOverDelay: 650,
 });
 
+const AI_DIFFICULTY = Object.freeze({
+  EASY: 'easy',
+  MEDIUM: 'medium',
+  HARD: 'hard',
+});
+
+const AI_CONFIG = Object.freeze({
+  turnDelay: 550,
+  defaultDifficulty: AI_DIFFICULTY.EASY,
+  thinkingText: 'IA PENSANDO...',
+});
+
 // Glitch experimental de cajas. enabled es la única bandera de activación.
 const BOX_CLAIM_GLITCH = Object.freeze({
   enabled: true,
@@ -203,14 +215,17 @@ const GAME_OVER_STYLE = Object.freeze({
 // Layout compartido del modal de confirmación de acciones.
 const CONFIRM_MODAL_STYLE = Object.freeze({
   panelWidth: 560,
-  panelHeight: 250,
+  panelHeight: 320,
   centerX: GAME_WIDTH / 2,
   centerY: GAME_HEIGHT / 2,
-  titleY: 330,
-  messageY: 385,
-  buttonsY: 465,
+  titleY: 300,
+  messageY: 350,
+  buttonsY: 425,
+  menuButtonY: 505,
   buttonWidth: 150,
   buttonHeight: 48,
+  menuButtonWidth: 324,
+  menuButtonHeight: 44,
   buttonGap: 24,
   overlayAlpha: 0.78,
   panelAlpha: 0.99,

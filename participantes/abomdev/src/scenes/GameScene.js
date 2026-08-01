@@ -38,6 +38,7 @@ export default class GameScene extends Phaser.Scene {
     this.elapsed = 0;
     this.isLevelingUp = false;
     this.isGameOver = false;
+    this.hasStarted = false;
     this.lastHitAt = -Infinity;
 
     this.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE);
@@ -68,11 +69,19 @@ export default class GameScene extends Phaser.Scene {
     this.spawnTimer = this.time.addEvent({ delay: 1000, loop: true, callback: this.spawnEnemy, callbackScope: this });
     this.attackTimer = this.time.addEvent({ delay: this.stats.fireRate, loop: true, callback: this.fireAtNearest, callbackScope: this });
     this.difficultyTimer = this.time.addEvent({ delay: DIFFICULTY_RAMP_MS, loop: true, callback: this.rampDifficulty, callbackScope: this });
+    this.spawnTimer.paused = true;
+    this.attackTimer.paused = true;
+    this.difficultyTimer.paused = true;
 
     this.buildLevelUpUI();
+    this.buildHud();
+    this.buildStartScreen();
+    this.updateHud();
   }
 
   generateTextures() {
+    if (this.textures.exists('player')) return;
+
     const player = this.add.graphics();
     player.fillStyle(0x66ffcc, 1);
     player.fillCircle(16, 16, 16);
@@ -98,13 +107,64 @@ export default class GameScene extends Phaser.Scene {
     xp.destroy();
   }
 
+  buildStartScreen() {
+    this.startText = this.add.text(400, 300,
+      'SURVIVORS\n\nWASD / Flechas para moverte\nAtaque automático al enemigo más cercano\n\nPresioná una tecla para empezar',
+      { fontFamily: 'monospace', fontSize: '20px', color: '#ffffff', align: 'center' }
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(300);
+
+    this.input.keyboard.once('keydown', () => this.startGame());
+    this.input.once('pointerdown', () => this.startGame());
+  }
+
+  startGame() {
+    if (this.hasStarted) return;
+    this.hasStarted = true;
+    this.startText.destroy();
+    this.spawnTimer.paused = false;
+    this.attackTimer.paused = false;
+    this.difficultyTimer.paused = false;
+  }
+
+  buildHud() {
+    this.add.rectangle(20, 20, 200, 18, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150);
+    this.hpBarFill = this.add.rectangle(22, 22, 196, 14, 0xff5566).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
+    this.hpText = this.add.text(226, 20, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setScrollFactor(0).setDepth(151);
+
+    this.add.rectangle(20, 44, 200, 10, 0x222244).setOrigin(0, 0).setScrollFactor(0).setDepth(150);
+    this.xpBarFill = this.add.rectangle(21, 45, 198, 8, 0xaa88ff).setOrigin(0, 0).setScrollFactor(0).setDepth(151);
+
+    this.levelText = this.add.text(20, 58, '', { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' }).setScrollFactor(0).setDepth(151);
+    this.timerText = this.add.text(780, 20, '', { fontFamily: 'monospace', fontSize: '18px', color: '#ffffff' }).setOrigin(1, 0).setScrollFactor(0).setDepth(151);
+  }
+
+  updateHud() {
+    const hpRatio = Phaser.Math.Clamp(this.stats.hp / this.stats.maxHp, 0, 1);
+    this.hpBarFill.width = 196 * hpRatio;
+    this.hpText.setText(`${Math.ceil(this.stats.hp)}/${this.stats.maxHp}`);
+
+    const xpRatio = Phaser.Math.Clamp(this.xp / this.xpToNext, 0, 1);
+    this.xpBarFill.width = 198 * xpRatio;
+    this.levelText.setText(`Nivel ${this.level}`);
+
+    this.timerText.setText(this.formatTime(this.elapsed));
+  }
+
+  formatTime(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+    const ss = String(totalSeconds % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
+
   update(time, delta) {
-    if (this.isGameOver || this.isLevelingUp) {
+    if (!this.hasStarted || this.isGameOver || this.isLevelingUp) {
       this.player.setVelocity(0, 0);
       return;
     }
 
     this.elapsed += delta;
+    this.updateHud();
 
     const left = this.cursors.left.isDown || this.wasd.A.isDown;
     const right = this.cursors.right.isDown || this.wasd.D.isDown;
@@ -231,10 +291,17 @@ export default class GameScene extends Phaser.Scene {
     this.spawnTimer.paused = true;
     this.attackTimer.paused = true;
     this.difficultyTimer.paused = true;
-    this.add.text(400, 300, 'GAME OVER', { fontFamily: 'monospace', fontSize: '40px', color: '#ff5566' })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(200);
+
+    this.add.text(400, 280, 'GAME OVER', { fontFamily: 'monospace', fontSize: '40px', color: '#ff5566' })
+      .setOrigin(0.5).setScrollFactor(0).setDepth(200);
+    this.add.text(400, 330, `Sobreviviste ${this.formatTime(this.elapsed)} - Nivel ${this.level}`, {
+      fontFamily: 'monospace', fontSize: '18px', color: '#ffffff',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+    this.add.text(400, 365, 'Presioná R para reiniciar', {
+      fontFamily: 'monospace', fontSize: '16px', color: '#aaaaaa',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+
+    this.input.keyboard.once('keydown-R', () => this.scene.restart());
   }
 
   buildLevelUpUI() {

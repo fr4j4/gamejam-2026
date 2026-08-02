@@ -1,0 +1,34 @@
+.opencode/
+.superpowers/
+docs/superpowers/
+AGENTS.md
+GDD.md
+ROADMAP.md
+
+# Dependencias
+node_modules/
+vendor/
+.bundle/
+
+# Build
+dist/
+build/
+out/
+*.exe
+*.app
+*.dmg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

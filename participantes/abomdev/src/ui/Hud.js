@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { BAR, FONT_SIZE, TEXT } from '../config/theme.js';
 import { edgePadding, getSafeInsets, isCompactMode } from './layout.js';
 import { bar, formatTime, icon, text } from './widgets.js';
+import { getTouchLayout } from '../utils/touchLayout.js';
 
 const DEPTH = 150;
 const BAR_W_DESKTOP = 200;
@@ -64,14 +65,26 @@ export default class Hud {
     const topInset = edgePadding('top', 0, insets);
     const rightInset = edgePadding('right', 0, insets);
 
-    // En compact, el bloque izquierdo arranca a la derecha del botón de pausa
-    // (TouchControls reserva la esquina superior izquierda). En desktop no hay
-    // botón de pausa mobile, asi que arrancamos pegado al borde.
-    const leftReserved = compact ? Math.max(PAUSE_RESERVED_W, leftInset + 60) : ICON_X + leftInset;
+    // En compact el boton de pausa mobile vive en la esquina opuesta al joystick.
+    // Reservamos ese lado para que el HUD no se monte con el boton.
+    // - joystick 'right' (default) => boton pausa en top-left => reserva izquierda
+    // - joystick 'left'           => boton pausa en top-right => reserva derecha
+    const touchSide = getTouchLayout();
+    let leftReserved = 0;
+    let rightReserved = 0;
+    if (compact) {
+      if (touchSide === 'left') {
+        rightReserved = Math.max(PAUSE_RESERVED_W, rightInset + 60);
+      } else {
+        leftReserved = Math.max(PAUSE_RESERVED_W, leftInset + 60);
+      }
+    }
 
     // Ancho de barras: en compact, la barra ocupa una fraccion del ancho total
     // (no mas del 40% del viewport) para que el bloque derecho tenga lugar.
-    const barW = compact ? Math.min(BAR_W_DESKTOP, w * 0.4) : BAR_W_DESKTOP;
+    const barW = compact
+      ? Math.min(BAR_W_DESKTOP, (w - leftReserved - rightReserved) * 0.4)
+      : BAR_W_DESKTOP;
     const iconX = (compact ? ICON_X_COMPACT : ICON_X) + leftInset;
     // En compact usamos la reserva maxima para que el bloque izquierdo no se
     // superponga con el boton de pausa.
@@ -116,7 +129,7 @@ export default class Hud {
       this.stageText.setPosition(barX + 104, headerPad + 50);
     }
 
-    const timerX = w - 20 - rightInset;
+    const timerX = w - 20 - rightInset - rightReserved;
     this.timerText.setPosition(timerX, headerPad);
     // El timerText tiene originX=1 (borde derecho en timerX). El icono debe
     // quedar a la izquierda del texto con margen. Para que el icono arranque

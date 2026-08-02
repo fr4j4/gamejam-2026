@@ -52,3 +52,11 @@ export function getSafeInsets() {
 export function edgePadding(side, fallback, insets = getSafeInsets()) {
   return Math.max(fallback, insets[side]);
 }
+
+// Heuristica para decidir si el menu de level-up debe usar el carrusel 1-card
+// en vez de la grilla 2x2. Mas agresiva que `isCompactMode()` para capturar
+// portrait de tablet (ej. 768x1024), donde el breakpoint absoluto no dispara
+// pero el viewport claramente no admite 4 cards grandes.
+export function shouldUseCompactLevelUp(w, h) {
+  return w < 720 || h < 480 || h > w * 1.2;
+}

@@ -4,7 +4,7 @@ import {
   BOSS_COUNTDOWN_MS, BOSS_FIGHT_LIMIT_MS, BOSS_OVERSTAY_MULTIPLIER, BOSS_PROJECTILE_LIFETIME,
   BOSS_PROJECTILE_SPEED, BOSS_RANGED_PREFERRED_DIST, BOSS_SHOT_COOLDOWN_MS, BOSS_TELEGRAPH_MS,
   BOSS_WARNING_MS, CHEST_DELAY_MS, CHEST_TRIGGER_RADIUS, DIFFICULTY_RAMP_MS, ENEMY_KNOCKBACK_MS,
-  ENEMY_KNOCKBACK_SPEED, HIT_INVULN_MS, MAX_ENEMIES, MAX_SPAWN_PER_TICK, ORBIT_HIT_COOLDOWN_MS,
+  ENEMY_KNOCKBACK_SPEED, HIT_INVULN_MS, LEVEL_UP_DEBUG_KEY, MAX_ENEMIES, MAX_SPAWN_PER_TICK, ORBIT_HIT_COOLDOWN_MS,
   ORBIT_HIT_RADIUS, PIERCE_LIFETIME, PLAYER_KNOCKBACK_MS, PLAYER_KNOCKBACK_SPEED, PLAYER_MAX_HP,
   PORTAL_TRIGGER_RADIUS, PROJECTILE_LIFETIME, PROJECTILE_SPEED, SHIELD_REGEN_DELAY_MS,
   SPAWN_DELAY_MIN, SPAWN_RADIUS_MARGIN, STAGE_BOSS_MULTIPLIER, STAGE_PORTAL_MULTIPLIER,
@@ -243,6 +243,10 @@ export default class GameScene extends Phaser.Scene {
       if (result === 'on') lockLandscape();
       else if (result === 'off') unlockOrientation();
     });
+    if (LEVEL_UP_DEBUG_KEY) {
+      this.input.keyboard.on('keydown-U', () => this._debugToggleLevelUp());
+    }
+    this._debugLevelUpOpen = false;
 
     this.onResize = () => {
       this.cameras.main.setSize(this.scale.width, this.scale.height);
@@ -1052,6 +1056,7 @@ export default class GameScene extends Phaser.Scene {
     this.player.setVelocity(0, 0);
     this.physics.world.pause();
     this.touchControls?.setVisible(false);
+    this.hud.setAlpha(0.4);
 
     this.levelUpChoices = this.pickWeighted(this.getAvailableUpgrades(), 4);
     this.levelUpMenu.show(this.levelUpChoices, this.stats);
@@ -1069,14 +1074,26 @@ export default class GameScene extends Phaser.Scene {
 
     this.levelUpMenu.hide();
     this.isLevelingUp = false;
+    this._debugLevelUpOpen = false;
     this.physics.world.resume();
     this.touchControls?.setVisible(!this.isPortrait());
+    this.hud.setAlpha(1);
     // Respiro de invulnerabilidad al volver, para no comer un golpe al cerrar el menú.
     this.lastHitAt = this.time.now;
 
     if (this.pendingPortalHint) {
       this.pendingPortalHint = false;
       this.showPortalHint();
+    }
+  }
+
+  _debugToggleLevelUp() {
+    if (this.isPaused || this.isGameOver || this.hasWon) return;
+    if (!this.isLevelingUp) {
+      this.startLevelUp();
+      this._debugLevelUpOpen = true;
+    } else if (this._debugLevelUpOpen) {
+      this.chooseUpgrade(0);
     }
   }
 

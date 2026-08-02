@@ -8,6 +8,7 @@ import {
   getViewportScale,
   getViewportSize,
   isCompactMode,
+  shouldUseCompactLevelUp,
 } from './layout.js';
 
 describe('isCompactMode', () => {
@@ -74,5 +75,27 @@ describe('edgePadding', () => {
 
   it('usa el inset si es mayor que el fallback', () => {
     expect(edgePadding('top', 12, { top: 44, right: 0, bottom: 0, left: 0 })).toBe(44);
+  });
+});
+
+describe('shouldUseCompactLevelUp', () => {
+  it('true en portrait de telefono (375x667)', () => {
+    expect(shouldUseCompactLevelUp(375, 667)).toBe(true);
+  });
+
+  it('true en portrait de tablet (768x1024) aunque isCompactMode seria false', () => {
+    expect(shouldUseCompactLevelUp(768, 1024)).toBe(true);
+  });
+
+  it('false en desktop landscape (1280x720)', () => {
+    expect(shouldUseCompactLevelUp(1280, 720)).toBe(false);
+  });
+
+  it('false en 1080p desktop (1920x1080)', () => {
+    expect(shouldUseCompactLevelUp(1920, 1080)).toBe(false);
+  });
+
+  it('true cuando el alto es chico aunque el ancho sea desktop', () => {
+    expect(shouldUseCompactLevelUp(1280, 400)).toBe(true);
   });
 });

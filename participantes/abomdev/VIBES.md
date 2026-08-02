@@ -82,3 +82,37 @@ Auditoría completa del layout y refactor responsive para mobile. Se detectó qu
 - **Banner publicitado para el notch** — los iPhones con Dynamic Island pueden tapar el bloque del timer. Se podría reemplazar el timerText por uno que se mueva dinámicamente debajo del island. Alto costo, bajo beneficio.
 - **Sonido/vibración al entrar/salir de compact** — feedback háptico para el jugador que rota. Descartado por conservadurismo (no queremos interrumpir la partida).
 - **Tests de integración con un mock de Phaser** — verificaría que `Hud.layout(640, 360)` no tira. Skipeado por la regla del proyecto ("no tests que requieran Phaser").
+
+## Fase 2 — abomdev
+
+### Resumen
+Tres mejoras para que el menú de level-up funcione en mobile y se pueda testear sin farmear XP: hotkey `U` (debug) para abrir/cerrar el menú con choices reales, una heurística `shouldUseCompactLevelUp` que captura portrait de tablet (768×1024) sin tocar `isCompactMode`, y un modo carrusel 1-card con flechas/dots/swipe + atenuación del HUD a 0.4 mientras el menú está abierto. Bonus: el hint del menú principal ya no menciona WASD en touch devices.
+
+### Cambios realizados
+- **Hotkey `U` (debug temporal)** — `LEVEL_UP_DEBUG_KEY = true` en `src/config/constants.js`. Registra `keydown-U` en `GameScene.create()` que dispara `startLevelUp()` si no está abierto, o cierra eligiendo el índice 0 si ya está abierto por debug (no se interpone con un level-up real en curso). Bloqueado en pause, game over y victory. Apagar el flag en `constants.js` borra la hotkey.
+- **Helper `shouldUseCompactLevelUp(w, h)`** (`src/ui/layout.js`) — `w < 720 || h < 480 || h > w * 1.2`. Más agresivo que `isCompactMode()` para capturar portrait de tablet. Usado solo por `LevelUpMenu`.
+- **Carrusel 1-card en compact** (`src/ui/LevelUpMenu.js`) — modo `grid|carousel` decidido en `layout()`. En carrusel solo se ve la card activa, con flechas izquierda/derecha (chevron-left/right de lucide), dots en el bottom y swipe horizontal (`pointermove` con delta > 60 px). Header `1 / 4` arriba de la card. Las teclas `1‑4` siguen funcionando (en carrusel saltean directo a la N-ésima). El tap en una card no activa salta el cursor; el tap en la card activa la elige.
+- **Atenuación del HUD durante level-up** (`src/ui/Hud.js::setAlpha`) — nuevo método que aplica alpha a todos los sprites hijos. `GameScene.startLevelUp()` setea 0.4; `chooseUpgrade()` restaura a 1.0. Resuelve el bug de la captura donde las cards 2×2 tapaban el texto del HUD.
+- **Hint mobile en menú** (`src/scenes/MenuScene.js`) — el hint de controles ahora es `'Joystick para moverte · ESC: pausa'` cuando `isTouchDevice()` es true, en vez del `'WASD / Flechas ...'` desktop.
+- **Iconos chevron-left/right** (`src/assets/icons.js`) — importados de lucide-static y agregados al catálogo de iconos para las flechas del carrusel.
+- **5 tests nuevos** (`src/ui/layout.test.js`) — `shouldUseCompactLevelUp` cubre phone portrait (375×667), tablet portrait (768×1024), desktop landscape (1280×720), 1080p y viewport con altura chica.
+
+### Lo que quedó frágil
+- **Hotkey `U` es debug, no feature.** Queda activa por ahora para iterar. Cuando se retire, cambiar `LEVEL_UP_DEBUG_KEY = false`. La decisión de incluirla en producción la dejé documentada en el spec para que sea reversible en una sola línea.
+- **Swipe horizontal puede chocar con el joystick virtual.** La hot zone del joystick ocupa la mitad izquierda/derecha del viewport; un swipe que arranque dentro se confunde con movimiento del personaje. No hay zona de exclusión todavía.
+- **Resize durante menú abierto** — pasar de compact a desktop con el menú abierto reinicia `activeIndex` a 0 y vuelve a la grilla 2×2. Comportamiento intencional pero no animado (las 4 cards aparecen de golpe).
+- **Animación de slide entre cards del carrusel no incluida.** El cambio de `activeIndex` es instantáneo. Aceptable para esta iteración; se puede sumar después con un `tween` de x.
+
+### Ideas no implementadas
+- **Dots clickeables** además de las flechas — sumar handlers `pointerdown` en los círculos para saltar directo al índice.
+- **Slide animado entre cards** — tween de x de las cards al cambiar de índice. Bajo costo con Phaser tweens.
+- **Excluir hot zone del swipe** — durante el carrusel, detectar si el `pointerdown` original cayó dentro de la hot zone del joystick y descartar el swipe.
+- **Badge `[DEV]` en el hint** cuando la hotkey `U` esté activa — para no olvidarla activa en producción.
+- **Picker aleatorio reproducible** — debug que arme N choices pre-fijadas para validar el layout contra una entrada conocida.
+
+## Ideas para explorar
+- **HUD informativo de armas** — Mostrar las armas activas con su daño y stats relevantes, usando iconos o una presentación que no sature la pantalla.
+- **Feedback al recoger experiencia** — Sumar un efecto visual (halo, brillo, etc.) cuando se recoge XP para reforzar la sensación de progreso.
+- **Auditoría de comportamiento de enemigos** — Revisar los tipos de enemigo actuales y sus patrones de movimiento para identificar mejoras y nuevos patrones.
+- **Estética neón con switch clásico/neón** — Agregar una opción para alternar entre el tema visual clásico y un tema neón con colores vibrantes y pulsantes.
+- **Música chiptune durante el gameplay** — Evaluar librerías tipo chiptune o similares para sumar música de fondo que acompañe la partida.

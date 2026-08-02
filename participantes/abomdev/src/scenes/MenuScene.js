@@ -65,7 +65,9 @@ export default class MenuScene extends Phaser.Scene {
       });
     }
 
-    this.hint = text(this, 'WASD / Flechas para moverte · ESC: pausa · F: pantalla completa', {
+    this.hint = text(this, isTouchDevice()
+      ? 'Joystick para moverte · ESC: pausa'
+      : 'WASD / Flechas para moverte · ESC: pausa · F: pantalla completa', {
       size: FONT_SIZE.tiny, color: TEXT.muted, depth: DEPTH + 1, origin: 0.5, wordWrapWidth: PANEL_W - 60,
     });
 

@@ -219,4 +219,21 @@ export default class Hud {
   setBossHealthRatio(ratio) {
     this.bossBar.fill.width = this.bossBarMaxWidth * ratio;
   }
+
+  // Atenua/restaurar la visibilidad del HUD entero (para menus modales encima).
+  // Acepta cualquier alpha entre 0 y 1. Aplicamos sobre cada elemento porque
+  // Hud no usa un Container.
+  setAlpha(value) {
+    const a = Phaser.Math.Clamp(value, 0, 1);
+    const parts = [
+      this.shieldIcon, this.shieldBar.track, this.shieldBar.fill, this.shieldText,
+      this.hpIcon, this.hpBar.track, this.hpBar.fill, this.hpText,
+      this.xpIcon, this.xpBar.track, this.xpBar.fill,
+      this.levelText, this.stageIcon, this.stageText,
+      this.timerIcon, this.timerText,
+      this.bossCountIcon, this.nextBossText,
+      this.bossLabel, this.bossBar.track, this.bossBar.fill,
+    ];
+    parts.forEach((p) => p.setAlpha(a));
+  }
 }

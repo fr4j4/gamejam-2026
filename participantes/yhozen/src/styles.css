@@ -1,0 +1,66 @@
+:root {
+  color: #effff8;
+  background: #03060c;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#game-shell {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #03060c;
+}
+
+.game-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(28, 78, 93, 0.4), transparent 42%),
+    linear-gradient(145deg, #07101a, #02040a 72%);
+}
+
+#enable3d-three-canvas,
+#enable3d-phaser-canvas,
+.game-shell > canvas {
+  position: absolute !important;
+  inset: 0;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#enable3d-three-canvas {
+  z-index: 0;
+}
+
+#enable3d-phaser-canvas {
+  z-index: 1;
+}
+
+.game-shell:focus-visible {
+  outline: 2px solid #83ffc3;
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-shell {
+    scroll-behavior: auto;
+  }
+}

@@ -1,0 +1,156 @@
+:root {
+  color-scheme: dark;
+  background: var(--bg-base, #0a0b10);
+  font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg-base, #0a0b10);
+}
+
+body {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-primary, #e6edf3);
+  font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-background, 0);
+  pointer-events: none;
+  content: '';
+  opacity: 0.18;
+  background-image: linear-gradient(var(--grid-border, rgba(0, 245, 255, 0.08)) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-border, rgba(0, 245, 255, 0.08)) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, #000, transparent 82%);
+}
+
+#game {
+  position: relative;
+  z-index: var(--layer-app, 1);
+  width: min(96vw, 800px);
+  height: min(88vh, 800px);
+  background: var(--bg-base, #0a0b10);
+}
+
+#game canvas {
+  position: absolute;
+  inset: 0;
+  /* Phaser contiene el modal; debe estar sobre el SVG externo. */
+  z-index: var(--layer-canvas, 50);
+  display: block;
+  border: 1px solid var(--gray-border, #2a2d38);
+  border-radius: 0;
+  box-shadow: none;
+  transition: border-color 160ms ease, border-width 160ms ease;
+}
+
+#board-svg {
+  position: absolute;
+  inset: 0;
+  /* El canvas transparente deja ver esta capa durante la partida. */
+  z-index: var(--layer-board-interactive, 60);
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+#board-svg .board-line-hitbox {
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+#board-svg .board-decoration,
+#board-svg .board-box-fill,
+#board-svg .board-dot,
+#board-svg .box-claim-glitch {
+  pointer-events: none;
+}
+
+/* Al abrir un modal, el canvas transparente debe quedar sobre el SVG. */
+#board-svg.is-behind-modal {
+  z-index: var(--layer-board, 20);
+  pointer-events: none;
+}
+
+#board-svg .line-reveal-segment {
+  animation: line-reveal-from-center var(--line-reveal-duration, 240ms) cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
+  filter: drop-shadow(0 0 5px currentColor);
+}
+
+#board-svg .box-filled {
+  animation: box-filled var(--box-reveal-duration, 220ms) cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes line-reveal-from-center {
+  from { stroke-dashoffset: var(--line-segment-length); }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes box-filled {
+  from {
+    fill-opacity: 0;
+    transform: scale(var(--box-reveal-initial-scale, 0.02));
+  }
+  to {
+    fill-opacity: var(--box-owner-opacity, 0.28);
+    transform: scale(1);
+  }
+}
+
+.site-footer {
+  position: relative;
+  z-index: var(--layer-app, 1);
+  min-height: 20px;
+  color: var(--gray-text, #8b949e);
+  font: 500 11px var(--font-game, 'Rajdhani', sans-serif);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.site-footer a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 140ms ease;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible {
+  color: var(--player-one, #00e5ff);
+  outline: none;
+}
+
+.loading {
+  color: var(--gray-text, #8b949e);
+  font-family: var(--font-game, 'Rajdhani', sans-serif);
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  body { gap: 4px; }
+  #game { width: 100vw; height: calc(100svh - 28px); }
+  #game canvas { border: 0; border-radius: 0; }
+  .site-footer { font-size: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

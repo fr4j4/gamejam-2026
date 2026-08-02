@@ -1,0 +1,128 @@
+/**
+ * Crea un estado nuevo de Timbiriche sin depender de Phaser ni del DOM.
+ * @param {number} size cantidad de puntos por lado
+ * @returns {{size: number, lines: Array, boxes: Array, currentPlayer: number, scores: number[], gameOver: boolean}}
+ */
+function initBoard(size) {
+  const lines = [];
+  const boxes = [];
+
+  for (let row = 0; row < size; row += 1) {
+    for (let column = 0; column < size - 1; column += 1) {
+      lines.push({ id: `h-${row}-${column}`, type: 'h', owner: null, position: [row, column] });
+    }
+  }
+
+  for (let row = 0; row < size - 1; row += 1) {
+    for (let column = 0; column < size; column += 1) {
+      lines.push({ id: `v-${row}-${column}`, type: 'v', owner: null, position: [row, column] });
+    }
+  }
+
+  for (let row = 0; row < size - 1; row += 1) {
+    for (let column = 0; column < size - 1; column += 1) {
+      boxes.push({
+        id: `box-${row}-${column}`,
+        position: [row, column],
+        owner: null,
+        edges: [`h-${row}-${column}`, `h-${row + 1}-${column}`, `v-${row}-${column}`, `v-${row}-${column + 1}`],
+      });
+    }
+  }
+
+  return { size, lines, boxes, currentPlayer: 0, scores: [0, 0], gameOver: false };
+}
+
+/** @param {{lines: Array, boxes: Array}} state @param {string} lineId @returns {string[]} */
+function checkCompletedBoxes(state, lineId) {
+  return state.boxes
+    .filter((box) => box.owner === null && box.edges.includes(lineId))
+    .filter((box) => box.edges.every((edgeId) => state.lines.find((line) => line.id === edgeId)?.owner !== null))
+    .map((box) => box.id);
+}
+
+/** @param {{lines: Array}} state @returns {string[]} */
+function getAvailableMoves(state) {
+  return state.lines.filter((line) => line.owner === null).map((line) => line.id);
+}
+
+/**
+ * Calcula las cajas que completaría una línea sin modificar el estado recibido.
+ * @param {ReturnType<typeof initBoard>} state
+ * @param {string} lineId
+ * @returns {string[]}
+ */
+function getCompletedBoxesForMove(state, lineId) {
+  const target = state.lines.find((line) => line.id === lineId);
+  if (!target || target.owner !== null) return [];
+
+  const simulatedState = {
+    ...state,
+    lines: state.lines.map((line) => (line.id === lineId ? { ...line, owner: state.currentPlayer } : { ...line })),
+  };
+  return checkCompletedBoxes(simulatedState, lineId);
+}
+
+/**
+ * Traza una línea de forma inmutable y devuelve el resultado de la jugada.
+ * @param {ReturnType<typeof initBoard>} state
+ * @param {string} lineId
+ * @param {number} player
+ * @returns {{state: ReturnType<typeof initBoard>, accepted: boolean, completedBoxIds: string[]}}
+ */
+function drawLine(state, lineId, player) {
+  const target = state.lines.find((line) => line.id === lineId);
+  if (!target || target.owner !== null || state.gameOver || player !== state.currentPlayer) {
+    return { state, accepted: false, completedBoxIds: [] };
+  }
+
+  const nextState = {
+    ...state,
+    lines: state.lines.map((line) => (line.id === lineId ? { ...line, owner: player } : { ...line })),
+    boxes: state.boxes.map((box) => ({ ...box })),
+    scores: [...state.scores],
+  };
+  const completedBoxIds = getCompletedBoxesForMove(state, lineId);
+  nextState.boxes = nextState.boxes.map((box) => (
+    completedBoxIds.includes(box.id) ? { ...box, owner: player } : box
+  ));
+  nextState.scores[player] += completedBoxIds.length;
+  nextState.gameOver = isGameOver(nextState);
+
+  // Completar un cuadro conserva el turno; si no, pasa al otro jugador.
+  if (completedBoxIds.length === 0 && !nextState.gameOver) {
+    nextState.currentPlayer = player === 0 ? 1 : 0;
+  }
+
+  return { state: nextState, accepted: true, completedBoxIds };
+}
+
+/** Aplica el movimiento del jugador actual sin mutar el estado original. */
+function applyMove(state, lineId) {
+  return drawLine(state, lineId, state.currentPlayer);
+}
+
+/** @param {{lines: Array}} state @returns {boolean} */
+function isGameOver(state) {
+  const allLinesUsed = state.lines.every((line) => line.owner !== null);
+  const allBoxesOwned = state.boxes.every((box) => box.owner !== null);
+  // Ambas condiciones son equivalentes en un tablero válido; la segunda
+  // mantiene la detección robusta si la presentación se actualiza por cuadros.
+  return allLinesUsed || allBoxesOwned;
+}
+
+/** @param {{scores: number[]}} state @returns {number|null} */
+function getWinner(state) {
+  if (state.scores[0] === state.scores[1]) return null;
+  return state.scores[0] > state.scores[1] ? 0 : 1;
+}
+
+/**
+ * Resume el resultado final para que la UI solo lo represente.
+ * @param {ReturnType<typeof initBoard>} state
+ * @returns {{winner: number|null, isDraw: boolean, scores: number[]}}
+ */
+function getGameResult(state) {
+  const winner = getWinner(state);
+  return { winner, isDraw: winner === null, scores: [...state.scores] };
+}

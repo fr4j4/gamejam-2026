@@ -100,8 +100,6 @@
   .cta-primary:hover, .cta-repo:hover { transform: translate(-2px, -2px) }
   .cta-primary:active { transform: translate(3px, 3px) }
   .cta-repo:active { transform: translate(2px, 2px) }
-  .copy-big:hover { border-color: #f4f1e8 }
-  .copy-small:hover { opacity: .85 }
 
   /* ---- sprite del héroe: caja fija para que no baile entre sets ---------- */
   /* anclado por right/top, cada set traía su propio tamaño y el centro saltaba
@@ -129,23 +127,23 @@
 
   /* ---- señal de tele vieja en los botones -------------------------------- */
   @keyframes vsync { from { transform: translateY(-150%) } to { transform: translateY(260%) } }
-  :is(.cta-primary, .cta-repo, .copy-big, .copy-small, #soundtrack-mini button) {
+  :is(.cta-primary, .cta-repo, #soundtrack-mini button) {
     position: relative;
     overflow: hidden;
   }
-  :is(.cta-primary, .cta-repo, .copy-big, .copy-small, #soundtrack-mini button)::before,
-  :is(.cta-primary, .cta-repo, .copy-big, .copy-small, #soundtrack-mini button)::after {
+  :is(.cta-primary, .cta-repo, #soundtrack-mini button)::before,
+  :is(.cta-primary, .cta-repo, #soundtrack-mini button)::after {
     content: '';
     position: absolute;
     pointer-events: none;
   }
   /* líneas de barrido fijas */
-  :is(.cta-primary, .cta-repo, .copy-big, .copy-small, #soundtrack-mini button)::before {
+  :is(.cta-primary, .cta-repo, #soundtrack-mini button)::before {
     inset: 0;
     background: repeating-linear-gradient(180deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
   }
   /* banda de sincronía bajando, como una tele desajustada */
-  :is(.cta-primary, .cta-repo, .copy-big, .copy-small, #soundtrack-mini button)::after {
+  :is(.cta-primary, .cta-repo, #soundtrack-mini button)::after {
     top: 0; left: 0; right: 0;
     height: 34%;
     background: linear-gradient(180deg, transparent, rgba(255,255,255,.13), transparent);
@@ -222,9 +220,6 @@
     <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #0e0d0b; background: var(--accent); padding: 7px 11px; margin-bottom: clamp(20px, 4vw, 30px); animation: fadeup .6s ease-out both">Edición 01 · Online · Phaser 4</div>
     <h1 style="font-family: 'Press Start 2P', monospace; font-size: clamp(28px, 7.6vw, 72px); line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 clamp(16px, 3vw, 24px); padding-right: clamp(70px, 18vw, 190px); animation: fadeup .7s ease-out .08s both">GAMEJAM IA<br><span style="color: var(--accent)">2026</span></h1>
     <p style="font-size: clamp(15.5px, 4.2vw, 19px); line-height: 1.6; color: #b8b1a4; max-width: 46ch; margin: 0 0 clamp(22px, 5vw, 32px); text-wrap: pretty; animation: fadeup .7s ease-out .16s both">Un fin de semana de AI Jam en Phaser: primero construyes tu juego con tu agente, después heredas el de otra persona y lo dejas mejor de como lo encontraste.</p>
-    <div style="display: flex; flex-wrap: wrap; gap: 12px; animation: fadeup .7s ease-out .32s both">
-      <button id="copy-1" class="copy-big" style="flex: 1 1 210px; text-align: center; font-family: 'Press Start 2P', monospace; font-size: 11px; line-height: 1.5; background: #0e0d0b; color: #f4f1e8; padding: 18px 22px; border: 3px solid #3a352d; cursor: pointer; transition: border-color .1s"><span id="copy-1-label">COPIAR PROMPT</span></button>
-    </div>
 
     <div style="position: absolute; top: clamp(60px, calc(196px - 8vw), 158px); right: clamp(10px, 6vw, 96px); display: grid; grid-template-columns: var(--sprite-cols); grid-auto-rows: var(--sprite-px); animation: var(--sprite-anim); transform-style: preserve-3d; filter: var(--sprite-glow); cursor: pointer; opacity: 1" id="hero-sprite" title="tócalo"></div>
   </section>
@@ -659,31 +654,7 @@
   document.addEventListener('touchstart', startBGM, { once: true });
   document.addEventListener('keydown', startBGM, { once: true });
 
-  // ---- copy prompt -------------------------------------------------------
-  var promptText = document.getElementById('prompt-text').textContent;
-  // One shared `copied` flag drives both buttons, as in the original — a
-  // per-button timer would let one label stick when the other is clicked.
-  var LABELS = [
-    { el: document.getElementById('copy-1-label'), idle: 'COPIAR PROMPT', done: 'COPIADO' },
-    { el: document.getElementById('copy-2-label'), idle: 'Copiar prompt', done: 'Copiado ✓' }
-  ];
-  var copyTimer = null;
-  function setCopied(on) {
-    LABELS.forEach(function (l) { l.el.textContent = on ? l.done : l.idle; });
-  }
-  function copy() {
-    var done = function () {
-      setCopied(true);
-      clearTimeout(copyTimer);
-      copyTimer = setTimeout(function () { setCopied(false); }, 1800);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(promptText).then(done, done);
-    } else { done(); }
-  }
-  document.getElementById('copy-1').addEventListener('click', copy);
-  document.getElementById('copy-2').addEventListener('click', copy);
-})();
+  })();
 </script>
 </body>
 </html>

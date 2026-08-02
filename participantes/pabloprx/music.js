@@ -1336,6 +1336,128 @@ export const LEVELS = {
       { row: 164, lane: 3, kind: "block" },
     ],
   },
+
+  // NIVEL 3. Kobosil - BR3ATH3, marcado a mano (155bpm, 287 filas). Arranca MINIMO como el 2:
+  // 4 carriles, fondo declarado y SIN guion. El guion se dicta bailando despues (`Y` graba,
+  // `U` exporta), igual que los otros dos. El schema trae el outro MAS ALLA del corte (hasta la
+  // fila 394), o sea que la ultima seccion se recorta a la fila 286 (la ultima jugable).
+  "breathe": {
+    schema: "assets/breathe.schema.json",
+    audio: "assets/breathe-cut.mp3",
+    // CUATRO carriles, como el nivel 2 (el paso sigue siendo 170, ver `lanesX` en physics.js).
+    lanes: 4,
+    // VELOCIDAD MEDIDA, no copiada. La ventana de carril es `beat - (d+PLAYER_D)/v` con d=75
+    // (block) y PLAYER_D=28, o sea 103/v de descuento. A 155bpm (beat 0.387097s) la cuenta de
+    // la seccion 5 de la GUIA da v = 103/(0.387097-0.36437) = 4532, que es absurda: a esa
+    // velocidad el viaje entero dura 0.79s y no hay forma de leer nada. Se acepta una ventana
+    // MAS CORTA que la del nivel 1 (que a 155bpm es lo honesto): a v=1400 la ventana de carril
+    // es 0.387097 - 103/1400 = **313ms** (>= 300ms, el minimo que exige el test) y la caja te
+    // tapa 73.6ms. Es mas dificil que el nivel 1, que es lo que pide un tema a 155bpm.
+    speed: 1400,
+    bg: "#0a0a12",     // negro azulado casi puro: el fondo de la familia cyan-verde
+    // DECORADO encendido, por nombre de capa (ver la lista blanca en el renderer). Todas las
+    // capas ya existen en el nivel 1 o el 2: no se agrega ninguna capa nueva al renderer.
+    decor: ["mesh", "rig", "pins", "gates", "shapes", "rave", "bars", "flash", "ghost", "lights"],
+    // LA PALETA DE LA MALLA: el cyan-verde de la familia del nivel, sobre el negro azulado.
+    // `lo` es el valle y `hi` la cresta (ver `drawMesh`).
+    mesh: { lo: "#0a1a2a", hi: "#3ef2b5" },
+    // LA PALETA DEL NIVEL 3: la familia cyan-verde (la misma de la que sale `MESH_LO`/`MESH_HI`
+    // en el renderer). `sec` es el color del marco y de las bandas del suelo por seccion; el
+    // drop va al cyan-verde claro (es el tramo en el que se juega) y el resto a los medios.
+    neon: {
+      fam: ["#3ef2b5", "#00d8ff", "#a8ffff", "#5fe8ff"],
+      sec: { drop: "#3ef2b5", break: "#00d8ff", break2: "#5fe8ff", outro: "#2f8fbf" },
+      def: "#3ef2b5",
+    },
+    // Capas de detalle sobre el color base. Estrellas + un eq con VARIANTES por sector (ver
+    // `drawBars`): 12 modos, uno por sector del suelo, para verlas todas en una corrida.
+    layers: [
+      { id: "stars", kind: "stars", k: 0.01, step: 90, h: 0.9, color: "#3b4166" },
+      { id: "eq", kind: "bars", k: 0.3, step: 32, h: 0.34, color: "#3ef2b5",
+        modes: ["analyzer", "sweep", "center", "constelacion",
+          "spectro", "color", "sweep", "analyzer",
+          "center", "spectro", "color", "sweep"] },
+    ],
+    // canal -> rol del juego. Sin obstaculos todavia: los roles solo alimentan la luz
+    // (`pulse`, `beat`) y las lineas numeradas del modo diseno, que es lo que se referencia
+    // para dictar.
+    map: {
+      // el pulso: 20 golpes repartidos entre intro (7), buildup (5) y break2 (8). Es el bajo.
+      bass: { role: "bg" },
+      // la voz: 106 eventos, la UNICA senal que suena en todas las secciones (21/16/4/22/23/20).
+      // Por eso es la MARCA: late en todo el nivel.
+      "vocal melody": { role: "mark" },
+      // la linea del drop: 83 eventos, todos en el drop. De "fx" barre y queda numerada para
+      // dictar; el `fx: "acid"` la hace volar como letras (ver `drawAcid`).
+      "melody drop": { role: "fx", fx: "acid" },
+      // los pads del outro: 23 eventos, todos en el outro. De "fx" barre y queda numerada.
+      outropads: { role: "fx" },
+    },
+    // QUE LATE CON QUE, por seccion. La voz (mark) es la unica que suena en las seis, o sea
+    // que todo late con la voz: es lo que hace que el nivel respire con la linea cantada.
+    glow: { intro: "mark", buildup: "mark", break: "mark", drop: "mark", break2: "mark", outro: "mark" },
+    // COMO ENTRA el obstaculo, por seccion. Todavia no hay obstaculos: queda declarado para
+    // que el dia que se dicte el guion no entren todos igual, y para que no falte una seccion.
+    enter: { intro: "grow", buildup: "side", break: "wide", drop: "slam", break2: "roll", outro: "grow" },
+    // SECTORES del suelo (solo color de las bandas). 287 filas: f0..f286, medido con
+    // `rowAt(len - 1e-9)`. Cortados por COMPASES enteros (4 filas) y pegados a las secciones,
+    // que caen en las filas 32 (intro/buildup), 56 (buildup/break), 64 (break/drop),
+    // 160 (drop/break2) y 191 (break2/outro):
+    //   f0-f23   intro, cada 24 filas (6 compases)
+    //   f24-f47  intro/buildup, cada 24 filas
+    //   f48-f55  buildup, 2 compases
+    //   f56-f63  el break, 2 compases
+    //   f64-f87  el drop, cada 24 filas (6 compases)
+    //   f88-f111 f112-f135 f136-f159 el drop, cada 24 filas
+    //   f160-f183 el break2, cada 24 filas
+    //   f184-f207 f208-f231 el break2/outro, cada 24 filas
+    //   f232-286 el outro, el ultimo tramo se queda con el resto del corte
+    sectors: [
+      { from: 0, to: 23, color: "#0d3a4a" },
+      { from: 24, to: 47, color: "#0e5a5a" },
+      { from: 48, to: 55, color: "#0b3a55" },
+      { from: 56, to: 63, color: "#0a2a3a" },
+      { from: 64, to: 87, color: "#00d8ff" },
+      { from: 88, to: 111, color: "#3ef2b5" },
+      { from: 112, to: 135, color: "#5fe8ff" },
+      { from: 136, to: 159, color: "#a8ffff" },
+      { from: 160, to: 183, color: "#2f8fbf" },
+      { from: 184, to: 207, color: "#1f6f9f" },
+      { from: 208, to: 231, color: "#164f78" },
+      { from: 232, to: 286, color: "#0b2f4a" },
+    ],
+    zones: [],
+    // LA OLA POR SECCION (`drawMesh`). Las seis secciones declaradas: el drop va con la OTRA
+    // ola (`mode` 1, el doble de crestas en z y la deriva al reves) y faceteada (`shape:
+    // "pyra"`), y es la mas opaca. El break la deja en 0 (ahi la pantalla es negra por el
+    // `dark`). El nivel 1 no declara `wave`, o sea a=1 y mode=0: lo que el renderer hacia antes.
+    wave: {
+      intro: { a: 1.2, to: 0.9 },
+      buildup: { a: 1.3, to: 0.4 },
+      break: { a: 1.2, to: 0 },
+      drop: { a: 1.4, mode: 1, shape: "pyra" },
+      break2: { a: 1.3, to: 0.6 },
+      outro: { a: 1.2, to: 0.45, mode: 1 },
+    },
+    // el metronomo de la grilla como PISO de lo que late (ver `gridAt` y `metro` en LEVELS).
+    // La voz (mark) no suena en todos los beats, o sea que sin esto la malla se congelaria en
+    // los huecos. 0.3 y no mas: la senal queda de acento encima.
+    metro: 0.3,
+    // TRAMOS DE EFECTO POR FILA (ver `fxOfRow`).
+    fx: [
+      // EL APAGON del break (f56-f63): es donde la cancion se queda sola con la voz. Negro
+      // entero, como el break del nivel 1 y el del 2. Va vacio de obstaculos (el test lo exige).
+      { kind: "dark", from: 56, to: 63 },
+      // EL NEGATIVO del outro (f240-f255): la imagen entera con los colores dados vuelta, un
+      // tajo por BEAT y en creciente (`cut` -> `ramp`, el mismo motor que el gate). No pisa el
+      // `dark` (f56-f63) ni ningun otro tramo a pantalla completa.
+      { kind: "neg", from: 240, to: 255, div: 1, cut: 0.08, ramp: 0.20 },
+    ],
+    // EL GUION queda PENDIENTE de dictar bailando (`Y` graba, `U` exporta). No se escribe a
+    // mano: se dicta sobre la corrida, igual que los otros dos niveles. Con `script: []` no
+    // hay obstaculos y el solver de `test-music.js` no corre (solo corre si hay obstaculos).
+    script: [],
+  },
 };
 
 const hex2n = (s) => (typeof s === "string" ? parseInt(s.replace("#", ""), 16) : s);

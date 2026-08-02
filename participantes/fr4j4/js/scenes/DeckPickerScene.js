@@ -17,8 +17,12 @@ class DeckPickerScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#0d0d1a');
     this.isMobile = window.innerWidth < 700;
 
-    VFX.stars(this, this);
-    VFX.header(this, this, 'ELIGE BARAJA', '#faba72', { width: W, height: 22 });
+    this.bgLayer = this.add.layer().setDepth(0);
+    this.uiLayer = this.add.layer().setDepth(10);
+    this.modalLayer = this.add.layer().setDepth(20);
+
+    VFX.stars(this, this.bgLayer);
+    VFX.header(this, this.uiLayer, 'ELIGE BARAJA', '#faba72', { width: W, height: 22 });
     this.renderBody();
     CRT.addScanlines(this);
   }
@@ -32,7 +36,7 @@ class DeckPickerScene extends Phaser.Scene {
     const leftW = 180;
     const leftX = 8;
     const leftY = 28;
-    const leftH = H - leftY - 38;
+    const leftH = H - leftY - 56;
 
     const rightX = leftX + leftW + 8;
     const rightW = W - rightX - 8;
@@ -40,7 +44,7 @@ class DeckPickerScene extends Phaser.Scene {
     const rightH = leftH;
 
     // Left panel — class picker
-    VFX.lcdPanel(this, this, leftX + leftW / 2, leftY + leftH / 2, leftW, leftH);
+    VFX.lcdPanel(this, this.uiLayer, leftX + leftW / 2, leftY + leftH / 2, leftW, leftH);
     const rowH = Math.floor(leftH / CLASSES.length);
     CLASSES.forEach((cl, i) => {
       const y = leftY + i * rowH + rowH / 2;
@@ -49,30 +53,35 @@ class DeckPickerScene extends Phaser.Scene {
       const bg = this.add.rectangle(leftX + leftW / 2, y, leftW - 12, rowH - 4, 0x16213e)
         .setStrokeStyle(2, active ? color : 0x2a2a4a)
         .setInteractive({ useHandCursor: true });
+      this.uiLayer.add(bg);
       bg.on('pointerdown', () => { this.selectedClass = cl.id; this.activeSlot = 0; this.renderBody(); });
-      VFX.classSeal(this, this, leftX + 24, y, 14, cl.icon, cl.colorHex, active);
-      UI.text(this, leftX + 44, y - 4, cl.name.toUpperCase(), {
+      VFX.classSeal(this, this.uiLayer, leftX + 24, y, 14, cl.icon, cl.colorHex, active);
+      const nameTxt = UI.text(this, leftX + 44, y - 4, cl.name.toUpperCase(), {
         fontFamily: '"Press Start 2P"', fontSize: '7px',
         color: active ? cl.colorHex : '#e0e0e0'
       }).setOrigin(0, 0.5);
-      UI.text(this, leftX + 44, y + 8, cl.style, {
-        fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#8892a0'
+      this.uiLayer.add(nameTxt);
+      const styleTxt = UI.text(this, leftX + 44, y + 8, cl.style, {
+        fontFamily: '"Press Start 2P"', fontSize: '6px', color: '#8892a0'
       }).setOrigin(0, 0.5);
+      this.uiLayer.add(styleTxt);
       if (active) {
-        UI.text(this, leftX + leftW - 12, y, '>', {
+        const arrow = UI.text(this, leftX + leftW - 12, y, '>', {
           fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#faba72'
         }).setOrigin(1, 0.5);
+        this.uiLayer.add(arrow);
       }
     });
 
     // Right panel — slot list
-    VFX.lcdPanel(this, this, rightX + rightW / 2, rightY + rightH / 2, rightW, rightH);
+    VFX.lcdPanel(this, this.uiLayer, rightX + rightW / 2, rightY + rightH / 2, rightW, rightH);
     const slots = this.allDecks[this.selectedClass] || [];
 
     if (slots.length === 0) {
-      UI.text(this, rightX + rightW / 2, rightY + rightH / 2 - 10, 'No tienes barajas.\nCrea una en el\nDeckbuilder.', {
+      const emptyTxt = UI.text(this, rightX + rightW / 2, rightY + rightH / 2 - 10, 'No tienes barajas.\nCrea una en el\nDeckbuilder.', {
         fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#8892a0', align: 'center'
       }).setOrigin(0.5);
+      this.uiLayer.add(emptyTxt);
     } else {
       const slotH = 44;
       const slotGap = 4;
@@ -90,50 +99,69 @@ class DeckPickerScene extends Phaser.Scene {
         const bg = this.add.rectangle(rightX + rightW / 2, y, rightW - 12, slotH, 0x16213e)
           .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor(accent).color)
           .setInteractive({ useHandCursor: true });
+        this.uiLayer.add(bg);
         bg.on('pointerdown', () => { this.activeSlot = i; this.renderBody(); });
         this.attachSlotMenu(bg, i);
 
-        UI.text(this, rightX + 16, y - 8, (s.name || 'Baraja').toUpperCase(), {
+        const nameTxt = UI.text(this, rightX + 16, y - 8, (s.name || 'Baraja').toUpperCase(), {
           fontFamily: '"Press Start 2P"', fontSize: '7px',
           color: active ? clsColor : '#e0e0e0'
         }).setOrigin(0, 0.5);
-        UI.text(this, rightX + 16, y + 8, `${total} cartas`, {
+        this.uiLayer.add(nameTxt);
+        const countTxt = UI.text(this, rightX + 16, y + 8, `${total} cartas`, {
           fontFamily: '"Press Start 2P"', fontSize: '6px',
           color: valid ? '#bdcd9c' : '#ff6b6b'
         }).setOrigin(0, 0.5);
+        this.uiLayer.add(countTxt);
         if (active) {
-          UI.text(this, rightX + rightW - 16, y, '>', {
+          const arrow = UI.text(this, rightX + rightW - 16, y, '>', {
             fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#faba72'
           }).setOrigin(1, 0.5);
+          this.uiLayer.add(arrow);
         }
       });
     }
 
     // Footer buttons
-    const btnY = H - 14;
-    VFX.switchButton(this, this, 60, btnY, 80, 20, 'ATRAS', '#8892a0', () => this.scene.start('MenuScene'));
+    this.renderFooter(slots, clsColor);
+  }
+
+  renderFooter(slots, clsColor) {
+    const W = this.W, H = this.H;
+
+    const back = UI.button(this, 70, H - 18, 'ATRÁS', '#8892a0', () => this.scene.start('MenuScene'), { layer: this.uiLayer, minWidth: 80, height: 24, fontSize: '8px' });
+    this.uiLayer.add(back.container);
 
     if (slots.length === 0) {
-      VFX.switchButton(this, this, W - 80, btnY, 120, 20, 'DECKBUILDER', '#9fcafd', () => this.scene.start('DeckScene', { fromPicker: true, mode: this.mode }));
+      const build = UI.button(this, W - 100, H - 18, 'DECKBUILDER', '#9fcafd',
+        () => this.scene.start('DeckScene', { fromPicker: true, mode: this.mode }), { layer: this.uiLayer, minWidth: 130, height: 24, fontSize: '8px' });
+      this.uiLayer.add(build.container);
     } else {
-      VFX.switchButton(this, this, W - 160, btnY, 80, 20, 'DECKBUILDER', '#9fcafd', () => this.scene.start('DeckScene', { fromPicker: true, mode: this.mode }));
+      const build = UI.button(this, W - 130, H - 36, 'DECKBUILDER', '#9fcafd',
+        () => this.scene.start('DeckScene', { fromPicker: true, mode: this.mode }), { layer: this.uiLayer, minWidth: 130, height: 22, fontSize: '7px' });
+      this.uiLayer.add(build.container);
+
       const slot = slots[this.activeSlot];
       const total = Object.values(slot.cards || {}).reduce((a, b) => a + b, 0);
       if (total >= 5) {
-        VFX.switchButton(this, this, W - 60, btnY, 100, 22, 'COMBATIR', clsColor, () => {
-          this.cameras.main.fadeOut(200, 13, 13, 26);
-          this.time.delayedCall(220, () => {
-            this.scene.start('GameScene', {
-              mode: this.mode,
-              classId: this.selectedClass,
-              slotIndex: this.activeSlot
+        const fight = UI.button(this, W - 130, H - 16, 'COMBATIR', clsColor,
+          () => {
+            this.cameras.main.fadeOut(200, 13, 13, 26);
+            this.time.delayedCall(220, () => {
+              this.scene.start('GameScene', {
+                mode: this.mode,
+                classId: this.selectedClass,
+                slotIndex: this.activeSlot
+              });
             });
-          });
-        });
+          },
+          { minWidth: 130, height: 22, fontSize: '7px' });
+        this.uiLayer.add(fight.container);
       } else {
-        UI.text(this, W - 60, btnY, 'MIN 5', {
-          fontFamily: '"Press Start 2P"', fontSize: '6px', color: '#ff6b6b'
+        const minTxt = UI.text(this, W - 130, H - 16, 'MIN 5', {
+          fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
         }).setOrigin(0.5);
+        this.uiLayer.add(minTxt);
       }
     }
   }
@@ -154,7 +182,7 @@ class DeckPickerScene extends Phaser.Scene {
   openSlotMenu(slotIndex, x, y) {
     this.clearModalLayer();
     const m = this.add.container(0, 0).setDepth(500);
-    this.modalLayer = m;
+    this.modalLayer.add(m);
     const menuW = 130, menuH = 90;
     let mx = x, my = y;
     if (mx + menuW > this.W) mx = this.W - menuW - 4;
@@ -231,7 +259,7 @@ class DeckPickerScene extends Phaser.Scene {
   confirmAction(msg, onYes) {
     this.clearModalLayer();
     const m = this.add.container(0, 0).setDepth(600);
-    this.modalLayer = m;
+    this.modalLayer.add(m);
     const overlay = this.add.rectangle(this.W / 2, this.H / 2, this.W, this.H, 0x000000, 0.7)
       .setInteractive();
     m.add(overlay);
@@ -260,10 +288,7 @@ class DeckPickerScene extends Phaser.Scene {
   }
 
   clearModalLayer() {
-    if (this.modalLayer) {
-      this.modalLayer.destroy(true);
-      this.modalLayer = null;
-    }
+    if (this.modalLayer) this.modalLayer.removeAll(true);
   }
 
   closeModalLayer() {

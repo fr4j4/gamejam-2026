@@ -19,6 +19,11 @@ canvas {
   margin: 0 auto;
 }
 </style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+  if (e.target.tagName === 'CANVAS') e.preventDefault();
+});
+</script>
 </head>
 <body>
 <div id="game-container"></div>

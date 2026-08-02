@@ -6,6 +6,84 @@ window.UI = {
     const t = scene.add.text(x, y, content, style || {});
     if (t.setResolution) t.setResolution(2);
     return t;
+  },
+
+  button(scene, x, y, label, colorHex, callback, options = {}) {
+    const color = Phaser.Display.Color.HexStringToColor(colorHex).color;
+    const fontSize = options.fontSize || '8px';
+    const minWidth = options.minWidth || 80;
+    const padding = options.padding || 16;
+    const height = options.height || 26;
+    const targetLayer = options.layer || null;
+
+    const container = scene.add.container(x, y);
+
+    const textObj = UI.text(scene, 0, 0, label, {
+      fontFamily: '"Press Start 2P"', fontSize, color: colorHex
+    }).setOrigin(0.5);
+    const textW = Math.max(textObj.width, textObj.getBounds().width);
+    const bgW = Math.max(minWidth, textW + padding);
+
+    const bg = scene.add.rectangle(0, 0, bgW, height, 0x16213e)
+      .setStrokeStyle(2, color);
+    const hi = scene.add.rectangle(0, -height / 2 + 1, bgW - 2, 1, 0x3a3a5e).setOrigin(0.5, 0);
+    const lo = scene.add.rectangle(0, height / 2 - 1, bgW - 2, 1, 0x050510).setOrigin(0.5, 1);
+    const led = scene.add.circle(-bgW / 2 + 10, 0, 3, color);
+    if (Phaser.BlendModes && Phaser.BlendModes.ADD) led.setBlendMode(Phaser.BlendModes.ADD);
+
+    container.add([bg, hi, lo, led, textObj]);
+    container.setSize(bgW, height);
+    container.setInteractive({ useHandCursor: true });
+
+    container.on('pointerover', () => {
+      bg.setFillStyle(0x1a2a4e);
+      container.setScale(1.04);
+    });
+    container.on('pointerout', () => {
+      bg.setFillStyle(0x16213e);
+      container.setScale(1);
+    });
+    container.on('pointerdown', () => {
+      if (callback) callback();
+    });
+
+    if (targetLayer) {
+      targetLayer.add(container);
+    }
+
+    return { container, bg, text: textObj, width: bgW, height };
+  },
+
+  tooltip(scene, x, y, title, desc, options = {}) {
+    const width = options.width || 200;
+    const colorHex = options.color || '#faba72';
+    const color = Phaser.Display.Color.HexStringToColor(colorHex).color;
+    const fontSize = options.fontSize || '8px';
+    const targetLayer = options.layer || null;
+
+    const container = scene.add.container(x, y);
+
+    const bg = scene.add.rectangle(0, 0, width, 56, 0x0a0a14, 0.95)
+      .setStrokeStyle(2, color);
+    const hi = scene.add.rectangle(0, -28 + 1, width - 2, 1, 0x3a3a5e).setOrigin(0.5, 0);
+    const lo = scene.add.rectangle(0, 28 - 1, width - 2, 1, 0x050510).setOrigin(0.5, 1);
+
+    const titleTxt = UI.text(scene, 0, -14, title, {
+      fontFamily: '"Press Start 2P"', fontSize, color: colorHex
+    }).setOrigin(0.5);
+
+    const descTxt = UI.text(scene, 0, 8, desc, {
+      fontFamily: '"VT323"', fontSize: '13px', color: '#e0e0e0',
+      align: 'center', wordWrap: { width: width - 16 }
+    }).setOrigin(0.5);
+
+    container.add([bg, hi, lo, titleTxt, descTxt]);
+
+    if (targetLayer) {
+      targetLayer.add(container);
+    }
+
+    return { container, bg, title: titleTxt, desc: descTxt };
   }
 };
 
@@ -36,17 +114,19 @@ window.VFX = {
 
   switchButton(scene, container, x, y, w, h, label, colorHex, callback) {
     const c = Phaser.Display.Color.HexStringToColor(colorHex).color;
-    const bg = scene.add.rectangle(x, y, w, h, 0x16213e)
-      .setStrokeStyle(2, c)
-      .setInteractive({ useHandCursor: true });
-    const hi = scene.add.rectangle(x, y - h / 2 + 1, w - 2, 1, 0x3a3a5e).setOrigin(0.5, 0);
-    const lo = scene.add.rectangle(x, y + h / 2 - 1, w - 2, 1, 0x050510).setOrigin(0.5, 1);
-    const led = scene.add.circle(x - w / 2 + 10, y, 3, c);
-    if (Phaser.BlendModes && Phaser.BlendModes.ADD) led.setBlendMode(Phaser.BlendModes.ADD);
-    const txt = UI.text(scene, x - w / 2 + 18, y, label, {
+    const txt = UI.text(scene, x, y, label, {
       fontFamily: '"Press Start 2P"', fontSize: '7px',
       color: '#' + c.toString(16).padStart(6, '0')
-    }).setOrigin(0, 0.5);
+    }).setOrigin(0.5);
+    const textW = Math.max(txt.width, txt.getBounds().width);
+    const finalW = Math.max(w, textW + 14);
+    const bg = scene.add.rectangle(x, y, finalW, h, 0x16213e)
+      .setStrokeStyle(2, c)
+      .setInteractive({ useHandCursor: true });
+    const hi = scene.add.rectangle(x, y - h / 2 + 1, finalW - 2, 1, 0x3a3a5e).setOrigin(0.5, 0);
+    const lo = scene.add.rectangle(x, y + h / 2 - 1, finalW - 2, 1, 0x050510).setOrigin(0.5, 1);
+    const led = scene.add.circle(x - finalW / 2 + 10, y, 3, c);
+    if (Phaser.BlendModes && Phaser.BlendModes.ADD) led.setBlendMode(Phaser.BlendModes.ADD);
     bg.on('pointerover', () => bg.setFillStyle(0x1a2a4e));
     bg.on('pointerout', () => bg.setFillStyle(0x16213e));
     if (callback) bg.on('pointerdown', callback);

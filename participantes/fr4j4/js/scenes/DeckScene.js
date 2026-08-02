@@ -26,6 +26,10 @@ class DeckScene extends Phaser.Scene {
     this.W = W; this.H = H;
     this.cameras.main.setBackgroundColor('#0d0d1a');
 
+    this.bgLayer = this.add.layer().setDepth(0);
+    this.uiLayer = this.add.layer().setDepth(10);
+    this.modalLayer = this.add.layer().setDepth(20);
+
     this.isMobile = window.innerWidth < 700;
     this.currentStep = 1;
     this.selectedClass = 'mago';
@@ -37,7 +41,7 @@ class DeckScene extends Phaser.Scene {
     this.costFilters = new Set();
     this.typeFilters = new Set();
     this.showOnlyInDeck = false;
-    this.modalLayer = null;
+    this.openSlotTimers = [];
 
     this.L = this.isMobile
       ? { gridCols: 1, panelSide: 'bottom' }
@@ -84,8 +88,23 @@ class DeckScene extends Phaser.Scene {
 
   showStep(n) {
     [this.step1, this.step2, this.step3, this.step4].forEach((s, i) => {
-      s.setVisible(i + 1 === n);
-      if (i + 1 === n) s.removeAll(true);
+      if (s) { s.removeAll(true); s.setVisible(i + 1 === n); }
+    });
+    if (this.uiLayer) this.uiLayer.removeAll(true);
+    if (this.bgLayer) this.bgLayer.removeAll(true);
+    if (this.modalLayer) this.modalLayer.removeAll(true);
+    if (this.fxContainer) this.fxContainer.removeAll(true);
+    if (this.slotGridScrollable) { this.slotGridScrollable.destroy(true); this.slotGridScrollable = null; }
+    if (this.cardGridScrollable) { this.cardGridScrollable.destroy(true); this.cardGridScrollable = null; }
+    if (this.openSlotTimers) {
+      this.openSlotTimers.forEach(t => { if (t && t.remove) t.remove(); });
+      this.openSlotTimers = [];
+    }
+    this.time.removeAllEvents();
+    this.children.list.forEach(c => {
+      if (c.type === 'Text' && (c.text === '▼' || c.text === '▲')) {
+        c.destroy();
+      }
     });
     this.currentStep = n;
     this.stars = [];
@@ -179,11 +198,11 @@ class DeckScene extends Phaser.Scene {
       fontFamily: '"VT323"', fontSize: '11px', color: '#e0e0e0'
     }).setOrigin(0, 0.5));
 
-    VFX.switchButton(this, c, 60, this.H - 28, 80, 20, 'ATRAS', '#8892a0', () => {
+    UI.button(this, 60, this.H - 28, 'ATRAS', '#8892a0', () => {
       if (this.fromPicker) this.scene.start('DeckPickerScene', { mode: this.mode || 'test' });
       else this.scene.start('MenuScene');
-    });
-    VFX.switchButton(this, c, this.W - 80, this.H - 28, 120, 24, 'SELECCIONAR', selectedCls.colorHex, () => this.showStep(2));
+    }, { layer: this.uiLayer, minWidth: 80, height: 20, fontSize: '7px' });
+    UI.button(this, this.W - 80, this.H - 28, 'SELECCIONAR', selectedCls.colorHex, () => this.showStep(2), { layer: this.uiLayer, minWidth: 120, height: 24, fontSize: '7px' });
   }
 
   // ===== STEP 2: SLOT =====
@@ -200,8 +219,8 @@ class DeckScene extends Phaser.Scene {
       const slotAreaX = 8, slotAreaY = 36, slotAreaW = cardW;
       const slotAreaH = this.H - 36 - 86; // leave room for ATRAS + NUEVA BARAJA
       this.renderSlotGrid(c, slots, { cardW, cardH, cols: 1, gap: 4, slotAreaX, slotAreaY, slotAreaW, slotAreaH, showArrows: false });
-      VFX.switchButton(this, c, 60, this.H - 56, 80, 20, 'ATRAS', '#8892a0', () => this.showStep(1));
-      VFX.switchButton(this, c, this.W / 2, this.H - 30, this.W - 32, 32, '+ NUEVA BARAJA', '#faba72', () => this.createSlot());
+      UI.button(this, 60, this.H - 56, 'ATRAS', '#8892a0', () => this.showStep(1), { layer: this.uiLayer, minWidth: 80, height: 20, fontSize: '7px' });
+      UI.button(this, this.W / 2, this.H - 30, '+ NUEVA BARAJA', '#faba72', () => this.createSlot(), { layer: this.uiLayer, minWidth: this.W - 32, height: 32, fontSize: '7px' });
     } else {
       const cardW = 140, cardH = 70, cols = 2, gap = 16;
       const slotAreaW = cols * cardW + (cols - 1) * gap;
@@ -209,8 +228,8 @@ class DeckScene extends Phaser.Scene {
       const slotAreaY = 40;
       const slotAreaH = this.H - 40 - 42; // stop before + NUEVA BARAJA (y≈332, h=26)
       this.renderSlotGrid(c, slots, { cardW, cardH, cols, gap, slotAreaX, slotAreaY, slotAreaW, slotAreaH, showArrows: true });
-      VFX.switchButton(this, c, 60, this.H - 28, 80, 20, 'ATRAS', '#8892a0', () => this.showStep(1));
-      VFX.switchButton(this, c, this.W - 80, this.H - 28, 140, 26, '+ NUEVA BARAJA', '#faba72', () => this.createSlot());
+      UI.button(this, 60, this.H - 28, 'ATRAS', '#8892a0', () => this.showStep(1), { layer: this.uiLayer, minWidth: 80, height: 20, fontSize: '7px' });
+      UI.button(this, this.W - 80, this.H - 28, '+ NUEVA BARAJA', '#faba72', () => this.createSlot(), { layer: this.uiLayer, minWidth: 140, height: 26, fontSize: '7px' });
     }
   }
 
@@ -242,7 +261,6 @@ class DeckScene extends Phaser.Scene {
         .setStrokeStyle(2, accent(i === this.activeSlot))
         .setInteractive({ useHandCursor: true });
       bg.on('pointerdown', () => { this.activeSlot = i; this.showStep(3); });
-      this.attachSlotMenu(bg, i);
       slotContainer.add(bg);
 
       if (this.isMobile) {
@@ -254,10 +272,22 @@ class DeckScene extends Phaser.Scene {
         }).setOrigin(0, 0.5));
         slotContainer.add(this.add.circle(-cardW / 2 + 14, 10, 6, 0x0d0d1a).setStrokeStyle(1, 0x050510));
         slotContainer.add(this.add.circle(-cardW / 2 + 32, 10, 6, 0x0d0d1a).setStrokeStyle(1, 0x050510));
-        slotContainer.add(UI.text(this, cardW / 2 - 8, 10, `${total}`, {
+        slotContainer.add(UI.text(this, cardW / 2 - 22, 10, `${total}`, {
           fontFamily: '"Press Start 2P"', fontSize: '12px',
           color: total >= 5 ? '#bdcd9c' : '#ff6b6b'
         }).setOrigin(1, 0.5));
+
+        const menuBtn = this.add.rectangle(cardW / 2 - 8, -cardH / 2 + 11, 14, 14, 0x1a2a4e)
+          .setStrokeStyle(1, 0xfaba72)
+          .setInteractive({ useHandCursor: true });
+        menuBtn.on('pointerdown', (pointer) => {
+          pointer.event && pointer.event.stopPropagation();
+          this.openSlotMenu(i, slotContainer.x + cardW / 2 - 8, slotContainer.y - cardH / 2 + 11);
+        });
+        slotContainer.add(menuBtn);
+        slotContainer.add(UI.text(this, cardW / 2 - 8, -cardH / 2 + 11, '⋯', {
+          fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#faba72'
+        }).setOrigin(0.5));
       } else {
         slotContainer.add(this.add.rectangle(0, -cardH / 2 + 12, cardW, 22, 0x0a0a14).setStrokeStyle(1, 0x050510));
         slotContainer.add(UI.text(this, -cardW / 2 + 8, -cardH / 2 + 12, (s.name || 'Baraja').toUpperCase(), {
@@ -267,13 +297,26 @@ class DeckScene extends Phaser.Scene {
         slotContainer.add(this.add.circle(-cardW / 2 + 10, 8, 6, 0x0d0d1a).setStrokeStyle(1, 0x050510));
         slotContainer.add(this.add.circle(-cardW / 2 + 26, 8, 6, 0x0d0d1a).setStrokeStyle(1, 0x050510));
         const total = Object.values(s.cards || {}).reduce((a, b) => a + b, 0);
-        slotContainer.add(UI.text(this, cardW / 2 - 8, 8, `${total} CARTAS`, {
+        slotContainer.add(UI.text(this, cardW / 2 - 22, 8, `${total} CARTAS`, {
           fontFamily: '"Press Start 2P"', fontSize: '6px',
           color: total >= 5 ? '#bdcd9c' : '#ff6b6b'
         }).setOrigin(1, 0.5));
+
+        const menuBtn = this.add.rectangle(cardW / 2 - 8, -cardH / 2 + 12, 12, 14, 0x1a2a4e)
+          .setStrokeStyle(1, 0xfaba72)
+          .setInteractive({ useHandCursor: true });
+        menuBtn.on('pointerdown', (pointer) => {
+          pointer.event && pointer.event.stopPropagation();
+          this.openSlotMenu(i, slotContainer.x + cardW / 2 - 8, slotContainer.y - cardH / 2 + 12);
+        });
+        slotContainer.add(menuBtn);
+        slotContainer.add(UI.text(this, cardW / 2 - 8, -cardH / 2 + 12, '⋯', {
+          fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#faba72'
+        }).setOrigin(0.5));
+
         if (i === this.activeSlot) {
-          slotContainer.add(this.add.rectangle(cardW / 2 - 24, -cardH / 2 + 10, 40, 10, 0xfaba72));
-          slotContainer.add(UI.text(this, cardW / 2 - 24, -cardH / 2 + 10, 'ACTIVE', {
+          slotContainer.add(this.add.rectangle(cardW / 2 - 36, -cardH / 2 + 10, 40, 10, 0xfaba72));
+          slotContainer.add(UI.text(this, cardW / 2 - 36, -cardH / 2 + 10, 'ACTIVE', {
             fontFamily: '"Press Start 2P"', fontSize: '5px', color: '#0d0d1a'
           }).setOrigin(0.5));
         }
@@ -350,19 +393,6 @@ class DeckScene extends Phaser.Scene {
       const top = y - halfH;
       const bot = y + halfH;
       child.setVisible(bot > viewTop && top < viewBottom && bot <= viewBottom && top >= viewTop);
-    });
-  }
-
-  attachSlotMenu(bg, slotIndex) {
-    let pressTimer = null;
-    bg.on('pointerdown', (pointer) => {
-      pressTimer = this.time.delayedCall(450, () => this.openSlotMenu(slotIndex, pointer.x, pointer.y));
-    });
-    bg.on('pointerup', () => { if (pressTimer) pressTimer.remove(); });
-    bg.on('pointerout', () => { if (pressTimer) pressTimer.remove(); });
-    bg.on('contextmenu', (pointer) => {
-      pointer.event.preventDefault();
-      this.openSlotMenu(slotIndex, pointer.x, pointer.y);
     });
   }
 
@@ -522,8 +552,8 @@ class DeckScene extends Phaser.Scene {
         const h = Math.max(3, (eqData[m] / eqMax) * 24);
         VFX.eqBar(this, c, eqStartX + m * (eqBarW + eqGap), eqBaseY, h, 0x4af0c8, h + 1);
       }
-      VFX.switchButton(this, c, panelX + panelW - 60, panelY + 30, 56, 20, 'CLEAR', '#ff6b6b', () => this.clearDeck());
-      VFX.switchButton(this, c, panelX + panelW - 60, panelY + 58, 56, 20, 'AUTO', '#9fcafd', () => this.quickFill());
+      UI.button(this, panelX + panelW - 60, panelY + 30, 'CLEAR', '#ff6b6b', () => this.clearDeck(), { layer: this.uiLayer, minWidth: 56, height: 20, fontSize: '7px' });
+      UI.button(this, panelX + panelW - 60, panelY + 58, 'AUTO', '#9fcafd', () => this.quickFill(), { layer: this.uiLayer, minWidth: 56, height: 20, fontSize: '7px' });
     } else {
       const eqBarW = 14, eqGap = 6, eqBaseY = panelY + 60;
       const eqStartX = panelX + (panelW - (7 * eqBarW + 6 * eqGap)) / 2 + eqBarW / 2;
@@ -559,12 +589,12 @@ class DeckScene extends Phaser.Scene {
         }).setOrigin(1, 0));
         ty += 13;
       });
-      VFX.switchButton(this, c, panelX + 45, panelY + panelH - 14, 70, 18, 'CLEAR', '#ff6b6b', () => this.clearDeck());
-      VFX.switchButton(this, c, panelX + 125, panelY + panelH - 14, 70, 18, 'AUTO', '#9fcafd', () => this.quickFill());
+      UI.button(this, panelX + 45, panelY + panelH - 14, 'CLEAR', '#ff6b6b', () => this.clearDeck(), { layer: this.uiLayer, minWidth: 70, height: 18, fontSize: '7px' });
+      UI.button(this, panelX + 125, panelY + panelH - 14, 'AUTO', '#9fcafd', () => this.quickFill(), { layer: this.uiLayer, minWidth: 70, height: 18, fontSize: '7px' });
     }
 
-    VFX.switchButton(this, c, 60, this.H - 14, 80, 20, 'ATRAS', '#8892a0', () => this.showStep(2));
-    VFX.switchButton(this, c, this.W - 60, this.H - 14, 80, 20, 'SIGUIENTE', '#faba72', () => this.showStep(4));
+    UI.button(this, 60, this.H - 14, 'ATRAS', '#8892a0', () => this.showStep(2), { layer: this.uiLayer, minWidth: 80, height: 20, fontSize: '7px' });
+    UI.button(this, this.W - 60, this.H - 14, 'SIGUIENTE', '#faba72', () => this.showStep(4), { layer: this.uiLayer, minWidth: 80, height: 20, fontSize: '7px' });
 
     // Top cap: hide any card grid overflow above the grid frame.
     const topCap = this.add.graphics();
@@ -770,8 +800,8 @@ class DeckScene extends Phaser.Scene {
         ty += 9;
       });
       // ATRAS is placed above the wide GUARDAR button on mobile to avoid overlap
-      VFX.switchButton(this, c, 60, this.H - 38, 80, 20, 'ATRAS', '#8892a0', () => this.showStep(3));
-      VFX.switchButton(this, c, this.W / 2, this.H - 14, this.W - 32, 22, 'GUARDAR', '#faba72', () => this.saveDeck());
+      UI.button(this, 60, this.H - 38, 'ATRAS', '#8892a0', () => this.showStep(3), { layer: this.uiLayer, minWidth: 80, height: 20, fontSize: '7px' });
+      UI.button(this, this.W / 2, this.H - 14, 'GUARDAR', '#faba72', () => this.saveDeck(), { layer: this.uiLayer, minWidth: this.W - 32, height: 22, fontSize: '7px' });
     } else {
       const leftW = 220;
       let ly = 32;
@@ -819,8 +849,8 @@ class DeckScene extends Phaser.Scene {
         }
       }
       // Lift GUARDAR/PROBAR above the bottom navigation strip so nothing overlaps ATRAS/SIGUIENTE
-      VFX.switchButton(this, c, leftW / 2 - 40, this.H - 52, 90, 24, 'GUARDAR', '#faba72', () => this.saveDeck());
-      VFX.switchButton(this, c, leftW / 2 + 70, this.H - 52, 70, 24, 'PROBAR', '#bdcd9c', () => { this.saveDeck(); this.scene.start('DeckPickerScene', { mode: 'test' }); });
+      UI.button(this, leftW / 2 - 40, this.H - 52, 'GUARDAR', '#faba72', () => this.saveDeck(), { layer: this.uiLayer, minWidth: 90, height: 24, fontSize: '7px' });
+      UI.button(this, leftW / 2 + 70, this.H - 52, 'PROBAR', '#bdcd9c', () => { this.saveDeck(); this.scene.start('DeckPickerScene', { mode: 'test' }); }, { layer: this.uiLayer, minWidth: 70, height: 24, fontSize: '7px' });
 
       const listX = leftW + 24;
       const listW = this.W - listX - 8;
@@ -853,7 +883,7 @@ class DeckScene extends Phaser.Scene {
     }
 
     if (!this.isMobile) {
-      VFX.switchButton(this, c, 60, this.H - 14, 80, 20, 'ATRAS', '#8892a0', () => this.showStep(3));
+      UI.button(this, 60, this.H - 14, 'ATRAS', '#8892a0', () => this.showStep(3), { layer: this.uiLayer, minWidth: 80, height: 20, fontSize: '7px' });
     }
   }
 
@@ -867,10 +897,11 @@ class DeckScene extends Phaser.Scene {
 
   // ===== MODAL LAYER (Phaser-native) =====
   clearModalLayer() {
-    if (this.modalLayer) {
-      this.modalLayer.destroy(true);
-      this.modalLayer = null;
-    }
+    if (this.modalLayer) this.modalLayer.removeAll(true);
+  }
+
+  closeModalLayer() {
+    this.clearModalLayer();
   }
 
   // ===== CARD DETAIL MODAL =====
@@ -879,7 +910,7 @@ class DeckScene extends Phaser.Scene {
     this.previewOpen = true;
     this.clearModalLayer();
     const m = this.add.container(0, 0).setDepth(500);
-    this.modalLayer = m;
+    this.modalLayer.add(m);
 
     const overlay = this.add.rectangle(this.W / 2, this.H / 2, this.W, this.H, 0x000000, 0.7)
       .setInteractive({ useHandCursor: false });
@@ -997,7 +1028,7 @@ class DeckScene extends Phaser.Scene {
   openSlotMenu(slotIndex, x, y) {
     this.clearModalLayer();
     const m = this.add.container(0, 0).setDepth(500);
-    this.modalLayer = m;
+    this.modalLayer.add(m);
     const menuW = 130, menuH = 90;
     let mx = x, my = y;
     if (mx + menuW > this.W) mx = this.W - menuW - 4;
@@ -1026,11 +1057,14 @@ class DeckScene extends Phaser.Scene {
       bb.on('pointerout', () => bb.setFillStyle(0x16213e, 1));
       bb.on('pointerdown', a.cb);
     });
+  }
 
-    // Dismiss on outside tap
-    const overlay = this.add.rectangle(this.W / 2, this.H / 2, this.W, this.H, 0x000000, 0.001)
-      .setInteractive().setDepth(499);
-    overlay.on('pointerdown', () => { this.closeModalLayer(); overlay.destroy(); });
+  clearModalLayer() {
+    if (this.modalLayer) this.modalLayer.removeAll(true);
+  }
+
+  closeModalLayer() {
+    this.clearModalLayer();
   }
 
   createSlot() {
@@ -1085,14 +1119,17 @@ class DeckScene extends Phaser.Scene {
       if (this.activeSlot >= slots.length) this.activeSlot = Math.max(0, slots.length - 1);
       this.saveAllDecks();
       this.showStep(2);
-    });
+    }, { noLabel: 'CANCELAR', yesLabel: 'ELIMINAR', yesColor: '#ff6b6b' });
   }
 
   // ===== CONFIRM DIALOG (Phaser-native) =====
-  confirmAction(msg, onYes) {
+  confirmAction(msg, onYes, options = {}) {
+    const noLabel = options.noLabel || 'CANCELAR';
+    const yesLabel = options.yesLabel || 'SALIR';
+    const yesColor = options.yesColor || '#ff6b6b';
     this.clearModalLayer();
     const m = this.add.container(0, 0).setDepth(600);
-    this.modalLayer = m;
+    this.modalLayer.add(m);
     const overlay = this.add.rectangle(this.W / 2, this.H / 2, this.W, this.H, 0x000000, 0.7)
       .setInteractive();
     m.add(overlay);
@@ -1107,14 +1144,14 @@ class DeckScene extends Phaser.Scene {
     const noBg = this.add.rectangle(px - 50, py + 18, 90, 22, 0x16213e)
       .setStrokeStyle(1, 0x2a2a4a).setInteractive({ useHandCursor: true });
     m.add(noBg);
-    m.add(UI.text(this, px - 50, py + 18, 'CANCELAR', {
+    m.add(UI.text(this, px - 50, py + 18, noLabel, {
       fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#e0e0e0'
     }).setOrigin(0.5));
     const yesBg = this.add.rectangle(px + 50, py + 18, 90, 22, 0x16213e)
-      .setStrokeStyle(2, 0xff6b6b).setInteractive({ useHandCursor: true });
+      .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor(yesColor).color).setInteractive({ useHandCursor: true });
     m.add(yesBg);
-    m.add(UI.text(this, px + 50, py + 18, 'SALIR', {
-      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
+    m.add(UI.text(this, px + 50, py + 18, yesLabel, {
+      fontFamily: '"Press Start 2P"', fontSize: '7px', color: yesColor
     }).setOrigin(0.5));
     noBg.on('pointerdown', () => this.clearModalLayer());
     yesBg.on('pointerdown', () => { this.clearModalLayer(); onYes(); });
@@ -1149,7 +1186,7 @@ class DeckScene extends Phaser.Scene {
     if (window.innerWidth < window.innerHeight && localStorage.getItem('deckstiny_rotated_dismissed') !== 'true') {
       this.clearModalLayer();
       const m = this.add.container(0, 0).setDepth(800);
-      this.modalLayer = m;
+      this.modalLayer.add(m);
       const overlay = this.add.rectangle(this.W / 2, this.H / 2, this.W, this.H, 0x000000, 0.92)
         .setInteractive();
       m.add(overlay);

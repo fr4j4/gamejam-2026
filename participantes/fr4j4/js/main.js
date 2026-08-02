@@ -23,7 +23,15 @@ const config = {
   },
   resolution: 2,
   backgroundColor: '#0d0d1a',
-  scene: [BootScene, MenuScene, DeckPickerScene, DeckScene, GameScene, GameOverScene]
+  scene: [BootScene, MenuScene, DeckPickerScene, DeckScene, GameScene, GameOverScene],
+  callbacks: {
+    postBoot: (game) => {
+      const canvas = game.canvas;
+      if (canvas) {
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+      }
+    }
+  }
 };
 
 const game = new Phaser.Game(config);

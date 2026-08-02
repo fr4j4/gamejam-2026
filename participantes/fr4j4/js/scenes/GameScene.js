@@ -23,12 +23,19 @@ class GameScene extends Phaser.Scene {
     const H = 360;
     this.cameras.main.setBackgroundColor('#0d0d1a');
 
+    this.bgLayer = this.add.layer().setDepth(0);
+    this.uiLayer = this.add.layer().setDepth(10);
+    this.handContainer = this.add.container(0, 0).setDepth(15);
+    this.modalLayer = this.add.layer().setDepth(20);
+    this.fxContainer = this.add.container(0, 0).setDepth(1001);
+
     ensureStarterDecks();
 
     if (!this.classId) {
-      UI.text(this, W / 2, H / 2, 'NO TIENES BARAJA — VUELVE AL MENÚ', {
+      const t = UI.text(this, W / 2, H / 2, 'NO TIENES BARAJA — VUELVE AL MENÚ', {
         fontFamily: '"Press Start 2P"', fontSize: '10px', color: '#ff6b6b'
       }).setOrigin(0.5);
+      this.uiLayer.add(t);
       this.time.delayedCall(2000, () => this.scene.start('MenuScene'));
       return;
     }
@@ -102,28 +109,55 @@ class GameScene extends Phaser.Scene {
     const W = 640, H = 360;
     const clsColor = this.cls ? this.cls.colorHex : '#9fcafd';
 
-    VFX.stars(this, this, 20);
-    VFX.header(this, this, 'COMBATE', clsColor, { width: W, height: 26 });
+    VFX.stars(this, this.bgLayer, 20);
+    VFX.header(this, this.uiLayer, 'COMBATE', clsColor, { width: W, height: 26 });
 
     // --- STATUS BAR ---
     const barY = 15;
     this.menuBtn = this.add.rectangle(15, barY, 22, 22, 0x16213e)
       .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#faba72').color)
       .setInteractive({ useHandCursor: true });
-    UI.text(this, 15, barY, '☰', {
+    this.uiLayer.add(this.menuBtn);
+    const menuIcon = UI.text(this, 15, barY, '☰', {
       fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#faba72'
     }).setOrigin(0.5);
+    this.uiLayer.add(menuIcon);
     this.menuBtn.on('pointerdown', () => this.toggleMenu());
     this.turnText = UI.text(this, 30, barY, 'Turno 1', {
       fontFamily: '"VT323"', fontSize: '16px', color: '#faba72'
     }).setOrigin(0, 0.5);
+    this.uiLayer.add(this.turnText);
     this.phaseText = UI.text(this, 118, barY, 'Tu turno', {
       fontFamily: '"VT323"', fontSize: '16px', color: '#8892a0'
     }).setOrigin(0, 0.5);
+    this.uiLayer.add(this.phaseText);
     this.timerText = UI.text(this, W - 180, barY, '60s', {
       fontFamily: '"VT323"', fontSize: '16px', color: '#ff6b6b'
     }).setOrigin(0, 0.5);
-    this.heroPowerBtn = VFX.switchButton(this, this, W - 96, barY, 80, 22, `HEROE (${this.cls.heroPower.cost}M)`, '#faba72', () => this.useHeroPower());
+    this.uiLayer.add(this.timerText);
+
+    // Hero power button (Design D): pill compacto con icono + nombre + coste
+    const heroName = this.cls.heroPower.name.toUpperCase();
+    const heroCost = this.cls.heroPower.cost;
+    const heroIcon = '⚡';
+    const heroLabel = `${heroIcon} ${heroName} ${heroCost}M`;
+    this.heroPowerBtn = UI.button(this, W - 90, barY, heroLabel, '#faba72',
+      () => this.useHeroPower(), { layer: this.uiLayer, minWidth: 110, height: 22, fontSize: '7px' });
+    this.uiLayer.add(this.heroPowerBtn.container);
+
+    // Hero power tooltip (oculto por defecto)
+    this.heroTooltip = UI.tooltip(this, W - 90, barY + 40,
+      heroName, `${heroCost}M — ${this.cls.heroPower.desc}`,
+      { width: 220, color: '#faba72', fontSize: '7px' });
+    this.heroTooltip.container.setVisible(false);
+    this.uiLayer.add(this.heroTooltip.container);
+
+    this.heroPowerBtn.container.on('pointerover', () => {
+      this.heroTooltip.container.setVisible(true);
+    });
+    this.heroPowerBtn.container.on('pointerout', () => {
+      this.heroTooltip.container.setVisible(false);
+    });
 
     // --- HERO ZONES ---
     this.pInfoContainer = this.add.container(0, 0);
@@ -133,20 +167,16 @@ class GameScene extends Phaser.Scene {
     this.pBoardContainer = this.add.container(0, 0);
     this.eBoardContainer = this.add.container(0, 0);
 
-    // --- HAND ---
-    this.handContainer = this.add.container(0, 0).setDepth(10);
-
     // --- END TURN ---
     this.endTurnBtn = this.add.rectangle(W - 76, H - 22, 120, 32, 0x16213e)
       .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#faba72').color)
       .setInteractive({ useHandCursor: true });
+    this.uiLayer.add(this.endTurnBtn);
     this.endTurnText = UI.text(this, W - 76, H - 22, 'FIN DE TURNO', {
       fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#faba72'
     }).setOrigin(0.5);
+    this.uiLayer.add(this.endTurnText);
     this.endTurnBtn.on('pointerdown', () => this.endTurn());
-
-    // --- FX LAYER ---
-    this.fxContainer = this.add.container(0, 0).setDepth(1001);
 
     this.renderAll();
   }
@@ -1230,36 +1260,31 @@ class GameScene extends Phaser.Scene {
     this.handZones.forEach(z => z.disableInteractive());
 
     const W = 640, H = 360;
-    const layer = this.add.container(0, 0).setDepth(5000);
+    const layer = this.add.container(W / 2, H / 2);
+    this.modalLayer.add(layer);
     this.menuOverlay = layer;
 
-    const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.6)
+    const dim = this.add.rectangle(0, 0, W, H, 0x000000, 0.6)
       .setInteractive({ useHandCursor: false });
     dim.on('pointerdown', () => this.closeMenu());
     layer.add(dim);
 
-    VFX.lcdPanel(this, layer, W / 2, H / 2, 200, 140, 'MENU');
-    layer.add(UI.text(this, W / 2, H / 2 - 50, 'MENU', {
-      fontFamily: '"Press Start 2P"', fontSize: '8px', color: '#faba72'
-    }).setOrigin(0.5));
+    const panel = this.add.rectangle(0, 0, 240, 150, 0x16213e)
+      .setStrokeStyle(2, 0xfaba72);
+    layer.add(panel);
 
-    const continuar = this.add.rectangle(W / 2, H / 2 - 10, 160, 26, 0x16213e)
-      .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#bdcd9c').color)
-      .setInteractive({ useHandCursor: true });
-    UI.text(this, W / 2, H / 2 - 10, 'CONTINUAR', {
-      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#bdcd9c'
+    const titleTxt = UI.text(this, 0, -56, 'MENU', {
+      fontFamily: '"Press Start 2P"', fontSize: '12px', color: '#faba72'
     }).setOrigin(0.5);
-    continuar.on('pointerdown', () => this.closeMenu());
-    layer.add(continuar);
+    layer.add(titleTxt);
 
-    const rendirse = this.add.rectangle(W / 2, H / 2 + 30, 160, 26, 0x16213e)
-      .setStrokeStyle(2, Phaser.Display.Color.HexStringToColor('#ff6b6b').color)
-      .setInteractive({ useHandCursor: true });
-    UI.text(this, W / 2, H / 2 + 30, 'RENDIRSE', {
-      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#ff6b6b'
-    }).setOrigin(0.5);
-    rendirse.on('pointerdown', () => this.surrender());
-    layer.add(rendirse);
+    const continueBtn = UI.button(this, 0, -16, 'CONTINUAR', '#bdcd9c',
+      () => this.closeMenu(), { layer: this.uiLayer, minWidth: 160, height: 26, fontSize: '8px' });
+    layer.add(continueBtn.container);
+
+    const surrenderBtn = UI.button(this, 0, 30, 'RENDIRSE', '#ff6b6b',
+      () => this.surrender(), { layer: this.uiLayer, minWidth: 160, height: 26, fontSize: '8px' });
+    layer.add(surrenderBtn.container);
   }
 
   closeMenu() {

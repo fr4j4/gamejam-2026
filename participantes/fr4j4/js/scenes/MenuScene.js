@@ -8,13 +8,17 @@ class MenuScene extends Phaser.Scene {
     const H = 360;
     this.cameras.main.setBackgroundColor('#0d0d1a');
 
+    this.bgLayer = this.add.layer().setDepth(0);
+    this.uiLayer = this.add.layer().setDepth(10);
+    this.modalLayer = this.add.layer().setDepth(20);
+
     this.menuObjects = [];
-    VFX.stars(this, this, 60);
+    VFX.stars(this, this.bgLayer, 60);
     this.createAmbientEffects();
     this.createTitle();
     this.createButtons();
 
-    this.menuObjects.push(VFX.terminalFooter(this, this, W - 8, H - 8, 'fr4j4 - 2026'));
+    this.menuObjects.push(VFX.terminalFooter(this, this.uiLayer, W - 8, H - 8, 'fr4j4 - 2026'));
 
     CRT.addScanlines(this);
   }
@@ -34,7 +38,7 @@ class MenuScene extends Phaser.Scene {
 
   createAmbientEffects() {
     this.menuObjects.push(
-      ...VFX.ambientParticles(this, this, 24, ['#9fcafd', '#b388ff', '#faba72'])
+      ...VFX.ambientParticles(this, this.bgLayer, 24, ['#9fcafd', '#b388ff', '#faba72'])
     );
     const seals = [
       { x: 70, y: 70, r: 24, icon: '🔮', color: '#b388ff' },
@@ -43,12 +47,12 @@ class MenuScene extends Phaser.Scene {
       { x: 50, y: 290, r: 26, icon: '🗡️', color: '#ff6b6b' },
       { x: 320, y: 330, r: 30, icon: '📜', color: '#9fcafd' }
     ];
-    seals.forEach(s => this.menuObjects.push(VFX.classSealWatermark(this, this, s.x, s.y, s.r, s.icon, s.color)));
+    seals.forEach(s => this.menuObjects.push(VFX.classSealWatermark(this, this.bgLayer, s.x, s.y, s.r, s.icon, s.color)));
   }
 
   createTitle() {
     const W = 640;
-    const title = VFX.glitchTitle(this, this, W / 2, 92, 'DECKSTINY', '#faba72');
+    const title = VFX.glitchTitle(this, this.uiLayer, W / 2, 92, 'DECKSTINY', '#faba72');
     this.menuObjects.push(title);
     title.setScale(0.85);
     this.tweens.add({
@@ -59,6 +63,7 @@ class MenuScene extends Phaser.Scene {
     const subtitle = UI.text(this, W / 2, 138, 'BARAJAS EN DUELO', {
       fontFamily: '"VT323"', fontSize: '18px', color: '#9fcafd'
     }).setOrigin(0.5).setAlpha(0);
+    this.uiLayer.add(subtitle);
     this.menuObjects.push(subtitle);
     this.tweens.add({
       targets: subtitle, alpha: 1, duration: 500, delay: 600
@@ -97,7 +102,7 @@ class MenuScene extends Phaser.Scene {
     const gap = 42;
     btnData.forEach((btn, i) => {
       const y = startY + i * gap;
-      const { group, bg } = this.createInteractiveButton(W / 2, y, 320, 38, btn.label, btn.color, () => {
+      const result = UI.button(this, W / 2, y, btn.label, btn.color, () => {
         ensureStarterDecks();
         let targetScene = btn.scene;
         let payload = btn.mode ? { mode: btn.mode } : {};
@@ -106,61 +111,15 @@ class MenuScene extends Phaser.Scene {
         this.time.delayedCall(220, () => {
           this.scene.start(targetScene, payload);
         });
-      });
-      group.setAlpha(0);
+      }, { minWidth: 240, height: 34, fontSize: '8px' });
+
+      result.container.setAlpha(0);
+      this.uiLayer.add(result.container);
+      this.menuObjects.push(result.container);
       this.tweens.add({
-        targets: group, alpha: 1, duration: 400, delay: 300 + i * 120, ease: 'Linear',
-        onComplete: () => bg.setInteractive({ useHandCursor: true })
+        targets: result.container, alpha: 1, duration: 400, delay: 300 + i * 120, ease: 'Linear'
       });
     });
-  }
-
-  createInteractiveButton(x, y, w, h, label, colorHex, callback) {
-    const c = Phaser.Display.Color.HexStringToColor(colorHex).color;
-    const group = this.add.container(x, y);
-
-    const glow = this.add.rectangle(0, 0, w + 10, h + 10, c)
-      .setAlpha(0).setDepth(-1);
-    if (Phaser.BlendModes && Phaser.BlendModes.ADD) glow.setBlendMode(Phaser.BlendModes.ADD);
-
-    const bg = this.add.rectangle(0, 0, w, h, 0x16213e)
-      .setStrokeStyle(2, c)
-      .disableInteractive();
-    const hi = this.add.rectangle(0, -h / 2 + 1, w - 2, 1, 0x3a3a5e).setOrigin(0.5, 0);
-    const lo = this.add.rectangle(0, h / 2 - 1, w - 2, 1, 0x050510).setOrigin(0.5, 1);
-    const led = this.add.circle(-w / 2 + 10, 0, 3, c);
-    if (Phaser.BlendModes && Phaser.BlendModes.ADD) led.setBlendMode(Phaser.BlendModes.ADD);
-    const txt = UI.text(this, 4, 0, label, {
-      fontFamily: '"Press Start 2P"', fontSize: '8px',
-      color: '#' + c.toString(16).padStart(6, '0')
-    }).setOrigin(0.5);
-
-    group.add([glow, bg, hi, lo, led, txt]);
-
-    bg.on('pointerover', () => {
-      bg.setFillStyle(0x1a2a4e);
-      glow.setAlpha(0.35);
-      txt.setScale(1.05);
-      led.setFillStyle(0xffffff);
-      this.tweens.killTweensOf(group);
-      this.tweens.add({ targets: group, scaleX: 1.04, scaleY: 1.04, duration: 120, ease: 'Sine.easeOut' });
-    });
-    bg.on('pointerout', () => {
-      bg.setFillStyle(0x16213e);
-      glow.setAlpha(0);
-      txt.setScale(1);
-      led.setFillStyle(c);
-      this.tweens.killTweensOf(group);
-      this.tweens.add({ targets: group, scaleX: 1, scaleY: 1, duration: 160, ease: 'Sine.easeOut' });
-    });
-    bg.on('pointerdown', () => {
-      this.cameras.main.shake(60, 0.006);
-      this.cameras.main.flash(80, (c >> 16) & 0xff, (c >> 8) & 0xff, c & 0xff);
-      if (callback) callback();
-    });
-
-    this.add.existing(group);
-    return { group, bg };
   }
 }
 

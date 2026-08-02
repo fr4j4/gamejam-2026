@@ -108,8 +108,8 @@ export default class Hud {
       // En compact, nivel y etapa van inline al lado de la barra de XP para
       // no desperdiciar 2 filas mas (la pantalla ya esta apretada).
       this.levelText.setPosition(barX, headerPad + 50);
-      this.stageIcon.setPosition(barX + 60, headerPad + 57);
-      this.stageText.setPosition(barX + 72, headerPad + 50);
+      this.stageIcon.setPosition(barX + 78, headerPad + 57);
+      this.stageText.setPosition(barX + 92, headerPad + 50);
     } else {
       this.levelText.setPosition(barX, headerPad + 50);
       this.stageIcon.setPosition(barX + 92, headerPad + 57);

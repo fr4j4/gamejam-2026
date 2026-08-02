@@ -72,51 +72,7 @@ export default class PauseMenu {
       this.box, this.boxTitle, this.boxDivider,
     ];
 
-    this._drag = { active: false, startY: 0, target: null, startOffset: 0 };
-    this._dragListenersAttached = false;
-  }
-
-  _onPointerDown(pointer, currentlyOver) {
-    if (!this._drag || !this.invBox || !this.invBox.visible) return;
-    // Si el pointerdown fue sobre un boton (u otro interactivo) no iniciar drag.
-    if (Array.isArray(currentlyOver) && currentlyOver.length > 0) return;
-    const target = this._hitScrollColumn(pointer);
-    if (!target) return;
-    this._drag.active = true;
-    this._drag.startY = pointer.y;
-    this._drag.target = target;
-    this._drag.startOffset = target === 'invMask' ? this.invScroll.offset : this.statsScroll.offset;
-  }
-
-  _hitScrollColumn(pointer) {
-    if (this.invMask && this._inMask(this.invMask, pointer)) return 'invMask';
-    if (this.statsMask && this._inMask(this.statsMask, pointer)) return 'statsMask';
-    return null;
-  }
-
-  _inMask(m, p) {
-    return p.x >= m.x && p.x <= m.x + m.w && p.y >= m.y && p.y <= m.y + m.h;
-  }
-
-  _onPointerMove(pointer) {
-    if (!this._drag || !this._drag.active) return;
-    const dy = pointer.y - this._drag.startY;
-    const target = this._drag.target;
-    if (target === 'invMask') {
-      this.invScroll.offset = Math.max(0, Math.min(this.invScroll.height, this._drag.startOffset - dy));
-    } else if (target === 'statsMask') {
-      this.statsScroll.offset = Math.max(0, Math.min(this.statsScroll.height, this._drag.startOffset - dy));
-    }
-    this.layout(this.scene.scale.width, this.scene.scale.height);
-  }
-
-  _onPointerUp() {
-    if (this._drag) this._drag.active = false;
-  }
-
-  destroy() {
-    this._detachDragListeners();
-    this._removeMasks();
+    this._clipCounts = { inv: Infinity, rows: Infinity };
   }
 
   buildInventory(scene) {
@@ -134,8 +90,6 @@ export default class PauseMenu {
       name: text(scene, WEAPON_INFO[key].name, { size: FONT_SIZE.small, color: TEXT.secondary, depth: DEPTH + 2 }).setVisible(false),
       detail: text(scene, '', { size: FONT_SIZE.tiny, color: TEXT.dim, depth: DEPTH + 2 }).setVisible(false),
     }));
-
-    this.invScroll = { offset: 0, height: 0 };
   }
 
   buildStats(scene) {
@@ -149,13 +103,15 @@ export default class PauseMenu {
       icon: icon(scene, 'icon-swords', { size: ROW_ICON, color: 0xffffff, depth: DEPTH + 1 }).setVisible(false),
       label: text(scene, '', { size: FONT_SIZE.small, color: TEXT.secondary, depth: DEPTH + 1 }).setVisible(false),
     }));
-
-    this.statsScroll = { offset: 0, height: 0 };
   }
 
   buildButtons(scene, actions) {
     const touch = isTouchDevice();
-    const fsButton = touch
+    const compact = touch && isCompactMode();
+    // En compact fullscreen no se ofrece en la pausa porque el jugador ya esta
+    // en touch y el boton se controla desde el menu principal. Asi la lista
+    // de botones queda corta y entra en pantallas de 360h.
+    const fsButton = touch && !compact
       ? button(scene, { label: 'Pantalla completa', width: 210, height: 38, depth: DEPTH + 1, color: TEXT.gold, onClick: () => this.tryFullscreen() })
       : null;
 
@@ -227,73 +183,71 @@ export default class PauseMenu {
 
     if (compact) {
       // Layout en dos columnas: inventario a la izquierda, stats a la derecha.
-      // Cada columna es scrolleable verticalmente con mask (drag con pointer).
+      // En mobile no hay scroll: solo mostramos los items que entran. Los items
+      // que no entran quedan ocultos (setVisible(false) via clipCounts).
       const colGap = 8;
       const colW = (w - 2 * (padding + leftInset) - colGap) / 2;
       const invX = leftInset + padding;
       const statsX = invX + colW + colGap;
       const columnsTop = titleY + 60;
-      const buttonsArea = 120;
-      const columnsH = Math.max(120, h - columnsTop - buttonsArea);
+      // 4 botones en compact: 4 x 26 + 3 x 4 = 116. Dejamos 130 para safety.
+      const buttonsArea = 130;
+      const columnsH = Math.max(80, h - columnsTop - buttonsArea);
 
-      this.invBox.setSize(colW, columnsH).setPosition(invX + colW / 2, columnsTop + columnsH / 2);
+      this.invBox.setSize(colW, columnsH).setPosition(invX, columnsTop);
       this.invTitle.setPosition(invX + padding, columnsTop + padding);
       this.invDivider.setSize(colW - padding * 2, 2).setPosition(invX + padding, columnsTop + 36);
 
-      const slotsTotalH = this.slots.length * slotH;
+      // Slots: cuanto caben segun columnsH real. Si no entran todos, los que
+      // sobran se ocultan (clipCounts ajusta la visibilidad en show()).
       const slotsClipY = columnsTop + 46;
       const slotsVisibleH = columnsH - 46 - padding;
-      this.invScroll.height = Math.max(0, slotsTotalH - slotsVisibleH);
-      this.invScroll.offset = Math.min(this.invScroll.offset, this.invScroll.height);
-      const invOffsetY = -this.invScroll.offset;
+      const slotsFit = Math.floor(slotsVisibleH / slotH);
+      this._clipCounts.inv = slotsFit;
+      const slotStep = slotH;
       this.slots.forEach((slot, i) => {
-        const y = slotsClipY + i * slotH;
-        slot.frame.setSize(colW - padding * 2, slotH - 8).setPosition(invX + padding, y + invOffsetY);
-        slot.icon.setPosition(invX + padding + 18, y + (slotH - 8) / 2 + invOffsetY);
-        slot.name.setPosition(invX + padding + 38, y + 8 + invOffsetY);
-        slot.detail.setPosition(invX + padding + 38, y + 24 + invOffsetY);
+        const y = slotsClipY + i * slotStep;
+        if (i >= slotsFit) return;
+        slot.frame.setSize(colW - padding * 2, slotH - 8).setPosition(invX + padding, y);
+        slot.icon.setPosition(invX + padding + 18, y + (slotH - 8) / 2);
+        slot.name.setPosition(invX + padding + 38, y + 8);
+        slot.detail.setPosition(invX + padding + 38, y + 24);
       });
 
-      this.box.setSize(colW, columnsH).setPosition(statsX + colW / 2, columnsTop + columnsH / 2);
+      this.box.setSize(colW, columnsH).setPosition(statsX, columnsTop);
       this.boxTitle.setPosition(statsX + padding, columnsTop + padding);
       this.boxDivider.setSize(colW - padding * 2, 2).setPosition(statsX + padding, columnsTop + 36);
 
       const rowsClipY = columnsTop + 46;
       const rowsVisibleH = columnsH - 46 - padding;
-      this.statsScroll.height = Math.max(0, MAX_ROWS * ROW_H - rowsVisibleH);
-      this.statsScroll.offset = Math.min(this.statsScroll.offset, this.statsScroll.height);
-      const statsOffsetY = -this.statsScroll.offset;
+      const rowsFit = Math.floor(rowsVisibleH / ROW_H);
+      this._clipCounts.rows = rowsFit;
       this.rows.forEach((row, i) => {
         const y = rowsClipY + i * ROW_H;
-        row.icon.setPosition(statsX + padding + ROW_ICON / 2, y + 8 + statsOffsetY);
-        row.label.setPosition(statsX + padding + ROW_ICON + 10, y + statsOffsetY);
+        if (i >= rowsFit) return;
+        row.icon.setPosition(statsX + padding + ROW_ICON / 2, y + 8);
+        row.label.setPosition(statsX + padding + ROW_ICON + 10, y);
       });
 
-      // Botones en grilla 2 columnas abajo (entran mejor en compact).
-      const buttonWidth = Math.min(150, (w - 2 * (padding + leftInset) - 12) / 2);
-      this.buttons.forEach((b) => b.setSize(buttonWidth, 36));
-      const buttonsY = columnsTop + columnsH + 14;
-      const buttonsPerRow = 2;
-      const rowGap = 10;
-      const colGapBtns = 12;
-      const totalBtnW = buttonsPerRow * buttonWidth + (buttonsPerRow - 1) * colGapBtns;
-      const startBtnX = cx - totalBtnW / 2 + buttonWidth / 2;
+      // Botones en una sola columna centrada, compactos para que entren 4-5.
+      const buttonWidth = Math.min(220, w - 2 * (padding + leftInset));
+      const buttonsY = columnsTop + columnsH + 10;
+      const availForButtons = h - 8 - buttonsY;
+      const buttonHeight = Math.max(22, Math.min(30, Math.floor(availForButtons / Math.max(1, this.buttons.length)) - 4));
+      this.buttons.forEach((b) => b.setSize(buttonWidth, buttonHeight));
+      const rowGap = 3;
       this.buttons.forEach((b, i) => {
-        const row = Math.floor(i / buttonsPerRow);
-        const col = i % buttonsPerRow;
-        const x = startBtnX + col * (buttonWidth + colGapBtns);
-        const y = buttonsY + row * (36 + rowGap);
-        b.setPosition(x, y);
+        const y = buttonsY + i * (buttonHeight + rowGap);
+        if (y + buttonHeight <= h - 4) b.setPosition(cx, y);
       });
-
-      // Setea las masks para clipping. Phaser soporta GeometryMask via rectangle.
-      this._setupScrollMasks(w, h);
     } else {
       const boxY = Math.max(150, topInset + 90);
 
       let invX;
       let statsX;
       if (this.side === 'right') {
+        // Joystick a la derecha: minimapa en bottom-left, ESTADISTICAS a la
+        // derecha del HUD timer (no en bottom-left que choca con el minimapa).
         invX = w - INVENTORY_W - 40 - rightInset;
         statsX = 40 + leftInset;
       } else {
@@ -333,75 +287,6 @@ export default class PauseMenu {
     this.layout(this.scene.scale.width, this.scene.scale.height);
   }
 
-  // Crea o reusa las masks de scroll para las columnas inventario y stats en
-  // compact. El clip es un rectangulo del tamano de la zona scrolleable.
-  _setupScrollMasks(w, h) {
-    const compact = isTouchDevice() && isCompactMode();
-    if (!compact) {
-      this._removeMasks();
-      return;
-    }
-    const padding = PADDING_COMPACT;
-    const leftInset = edgePadding('left', 0, getSafeInsets());
-    const topInset = edgePadding('top', 0, getSafeInsets());
-    const titleY = topInset + 55;
-    const columnsTop = titleY + 60;
-    const buttonsArea = 120;
-    const columnsH = Math.max(120, h - columnsTop - buttonsArea);
-    const colGap = 8;
-    const colW = (w - 2 * (padding + leftInset) - colGap) / 2;
-    const invX = leftInset + padding;
-    const statsX = invX + colW + colGap;
-    const clipY = columnsTop + 46;
-    const clipH = columnsH - 46 - padding;
-
-    this._ensureMask('invMask', this.slots, invX, clipY, colW, clipH);
-    this._ensureMask('statsMask', this.rows, statsX, clipY, colW, clipH);
-  }
-
-  _ensureMask(name, items, x, y, w, h) {
-    const scene = this.scene;
-    if (!this[name]) {
-      const shape = scene.add.rectangle(x + w / 2, y + h / 2, w, h, 0xffffff, 0)
-        .setOrigin(0.5).setVisible(false).setDepth(DEPTH + 3);
-      const mask = shape.createGeometryMask();
-      mask.setInvertAlpha(false);
-      this[name] = { shape, mask, x, y, w, h };
-    }
-    const m = this[name];
-    m.shape.setPosition(x + w / 2, y + h / 2);
-    m.shape.setSize(w, h);
-    m.x = x;
-    m.y = y;
-    m.w = w;
-    m.h = h;
-    items.forEach((item) => {
-      Object.values(item).forEach((obj) => {
-        if (obj && typeof obj.setMask === 'function' && !obj.mask) obj.setMask(m.mask);
-      });
-    });
-  }
-
-  _removeMasks() {
-    if (this.invMask) {
-      this.invMask.shape.destroy();
-      this.invMask = null;
-      this.slots.forEach((slot) => {
-        slot.frame.clearMask();
-        slot.icon.clearMask();
-        slot.name.clearMask();
-        slot.detail.clearMask();
-      });
-    }
-    if (this.statsMask) {
-      this.statsMask.shape.destroy();
-      this.statsMask = null;
-      this.rows.forEach((row) => {
-        row.icon.clearMask();
-        row.label.clearMask();
-      });
-    }
-  }
 
   // El ancho del texto cambia con el número de etapa, así que el grupo icono+texto
   // se recentra cada vez en lugar de usar posiciones fijas.
@@ -417,11 +302,9 @@ export default class PauseMenu {
   // stats: filas de buildStatRows(). weapons: estado de armas de buildWeaponSlots().
   // stageLabel: texto de etapa a mostrar bajo el título.
   show(stats, weapons, stageLabel) {
-    this._attachDragListeners();
-
     this.rows.forEach((row, i) => {
       const data = stats[i];
-      if (!data) {
+      if (!data || i >= this._clipCounts.rows) {
         setVisible([row.icon, row.label], false);
         return;
       }
@@ -429,9 +312,13 @@ export default class PauseMenu {
       row.label.setText(data.label).setVisible(true);
     });
 
-    this.slots.forEach((slot) => {
+    this.slots.forEach((slot, i) => {
       const info = WEAPON_INFO[slot.key];
       const state = weapons[slot.key];
+      if (i >= this._clipCounts.inv) {
+        setVisible([slot.frame, slot.icon, slot.name, slot.detail], false);
+        return;
+      }
       // Las armas bloqueadas quedan atenuadas, no ocultas.
       slot.frame.setStrokeStyle(2, state.unlocked ? info.color : 0x333355).setVisible(true);
       slot.icon.setTint(state.unlocked ? info.color : 0x444455).setVisible(true);
@@ -451,28 +338,6 @@ export default class PauseMenu {
     setVisible(this.buttonParts, false);
     this.rows.forEach((row) => setVisible([row.icon, row.label], false));
     this.slots.forEach((slot) => setVisible([slot.frame, slot.icon, slot.name, slot.detail], false));
-    this._detachDragListeners();
-    if (this._drag) this._drag.active = false;
-  }
-
-  _attachDragListeners() {
-    if (this._dragListenersAttached || !isTouchDevice()) return;
-    const scene = this.scene;
-    scene.input.on('pointerdown', this._onPointerDown, this);
-    scene.input.on('pointermove', this._onPointerMove, this);
-    scene.input.on('pointerup', this._onPointerUp, this);
-    scene.input.on('pointerupoutside', this._onPointerUp, this);
-    this._dragListenersAttached = true;
-  }
-
-  _detachDragListeners() {
-    if (!this._dragListenersAttached) return;
-    const scene = this.scene;
-    scene.input.off('pointerdown', this._onPointerDown, this);
-    scene.input.off('pointermove', this._onPointerMove, this);
-    scene.input.off('pointerup', this._onPointerUp, this);
-    scene.input.off('pointerupoutside', this._onPointerUp, this);
-    this._dragListenersAttached = false;
   }
 
   // Oculta solo el contenido, dejando el overlay: se usa al abrir configuración

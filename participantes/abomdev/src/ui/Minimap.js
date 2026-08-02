@@ -29,14 +29,23 @@ export default class Minimap {
     const insets = getSafeInsets();
     const leftInset = edgePadding('left', 0, insets);
     const rightInset = edgePadding('right', 0, insets);
+    const topInset = edgePadding('top', 0, insets);
     const bottomInset = edgePadding('bottom', 0, insets);
     const margin = MARGIN + bottomInset;
     if (this.side === 'right') {
+      // Joystick a la derecha: minimapa en la otra esquina para no chocar.
       this.x = MARGIN + leftInset;
     } else {
       this.x = w - MARGIN - rightInset - this.size;
     }
-    this.y = h - margin - this.size;
+    // En compact va al fondo (no choca con la pausa porque la pausa mobile
+    // reorganiza el layout). En desktop lo subimos debajo del HUD para que no
+    // se solape con la caja ESTADISTICAS del pause menu.
+    if (isCompactMode()) {
+      this.y = h - margin - this.size;
+    } else {
+      this.y = topInset + 90;
+    }
   }
 
   setLayout(value) {

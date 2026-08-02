@@ -1112,6 +1112,177 @@ console.log(`flip: ${f1.t.toFixed(3)}s -> techo, ${f2.t.toFixed(3)}s -> piso (${
     + Object.entries(porRol).map(([r, n]) => `${n} ${r}`).join(", ") + ")");
 }
 
+// --- nivel 3: breathe ---------------------------------------------------------------------
+// Arranca MINIMO (4 carriles, fondo declarado, SIN guion). Lo que se afirma es que la grilla,
+// las secciones, los sectores, los modos del eq, el decor, la ola, el glow/enter y la velocidad
+// cierran. El guion se dicta bailando despues (`Y`/`U`), igual que los otros dos: con `script:
+// []` no hay obstaculos y el solver por filas no corre (solo corre si hay obstaculos).
+{
+  const doc3 = JSON.parse(readFileSync("./assets/breathe.schema.json", "utf8"));
+  assert.deepEqual(validate(doc3), [], "el schema de breathe no valida");
+  const lv3 = LEVELS["breathe"];
+  const g3 = grid(doc3);
+  const L3 = { ...g3, ...lv3 };
+  const t0 = doc3.track.trim.start, len3 = doc3.track.trim.end - t0;
+
+  // la grilla es de 155bpm y el corte cae en una fila entera: la ultima jugable es la 286
+  const ultima3 = rowAt(len3 - 1e-9, g3);
+  assert.equal(ultima3, 286, `el corte da ${ultima3 + 1} filas, no 287`);
+  assert(Math.abs(g3.beat - 60 / 155) < 1e-9, "la grilla no es de 155bpm");
+  // el corte cae DENTRO de la ultima fila (286): la f287 arranca 1.46ms despues del corte, o
+  // sea que la ultima jugable es la 286 (mismo criterio que el nivel 2, que se mide con `rowAt`).
+  assert(len3 >= g3.off + 286 * g3.beat && len3 < g3.off + 287 * g3.beat,
+    "el corte no cae dentro de la ultima fila");
+
+  assert.equal(lv3.lanes, 4, "breathe es de 4 carriles");
+  assert.deepEqual(lanesX(lv3.lanes).length, 4, "laneX no trae 4 posiciones");
+
+  // secciones: contiguas, de 0 al final del corte (mismo criterio que los otros dos). El
+  // schema trae el outro MAS ALLA del corte (hasta la fila 394), o sea que la ultima seccion
+  // se recorta a la fila 286: `sectionAt` usa los tiempos del schema, asi que el recorte se
+  // hace en el test comparando contra `len3`, no contra el `end` crudo del schema.
+  const secs3 = doc3.sections.map((s) => ({ label: s.label, start: s.start - t0, end: s.end - t0 }));
+  // la intro arranca 0.15ms ANTES del corte (el schema la abre un pelo antes del trim): se
+  // acepta ese epsilon, o sea que la primera seccion cubre el arranque del corte.
+  assert(Math.abs(secs3[0].start) < 0.001, "la primera seccion no arranca en 0");
+  for (let i = 1; i < secs3.length; i++) {
+    assert.equal(secs3[i].start, secs3[i - 1].end,
+      `hueco entre ${secs3[i - 1].label} y ${secs3[i].label}`);
+  }
+  for (const s of secs3) assert(s.end - s.start > g3.beat, `${s.label} dura menos de un beat`);
+  for (const s of secs3) assert(lv3.glow[s.label] && lv3.enter[s.label],
+    `la seccion ${s.label} no tiene glow/enter`);
+
+  // sectores del suelo: contiguos, de la f0 a la ultima (286). Un agujero devuelve el suelo al
+  // color de la seccion en medio de la pista y se lee como un bug.
+  assert.equal(lv3.sectors[0].from, 0, "los sectores no arrancan en la fila 0");
+  for (let i = 1; i < lv3.sectors.length; i++) {
+    assert.equal(lv3.sectors[i].from, lv3.sectors[i - 1].to + 1,
+      `hueco/solape entre sectores en la fila ${lv3.sectors[i].from}`);
+  }
+  assert.equal(lv3.sectors.at(-1).to, ultima3, "los sectores no llegan justo a la ultima fila");
+
+  // DECOR: la lista blanca se saca del renderer (`this.dec("...")`), igual que los otros dos.
+  {
+    const src3 = readFileSync("./AIRunnerGame.js", "utf8");
+    const DECOR3 = [...new Set([...src3.matchAll(/\bdec\("([a-z]+)"\)/g)].map((m) => m[1]))];
+    for (const d of lv3.decor) assert(DECOR3.includes(d), `decor "${d}" no existe en el renderer`);
+  }
+
+  // MODOS DEL EQ: uno por sector, y todos tienen que existir en `drawBars`. El eq es la capa
+  // `bars` de `layers`; `drawBars` lee `L.modes[si]` con `si` = indice del sector.
+  {
+    const eq = lv3.layers.find((l) => l.kind === "bars");
+    assert(eq, "breathe no declara el eq en `layers`");
+    assert.equal(eq.modes.length, lv3.sectors.length,
+      `el eq tiene ${eq.modes.length} modos para ${lv3.sectors.length} sectores`);
+    const VALID = ["analyzer", "sweep", "center", "spectro", "color", "constelacion"];
+    for (const m of eq.modes) assert(VALID.includes(m), `modo de eq desconocido: "${m}"`);
+  }
+
+  // WAVE: las seis secciones declaradas (si falta una, la malla vuelve al agua del nivel 2).
+  for (const sc of secs3) assert(lv3.wave[sc.label], `la seccion ${sc.label} no declara \`wave\``);
+  // el drop es la seccion mas opaca y va con la OTRA ola y faceteada
+  assert.equal(lv3.wave.drop.a, Math.max(...secs3.map((sc) => lv3.wave[sc.label].a)),
+    "el drop no es la seccion mas opaca");
+  assert.notEqual(lv3.wave.drop.mode ?? 0, lv3.wave.buildup.mode ?? 0,
+    "el drop usa la misma ola que el buildup");
+  assert.equal(lv3.wave.drop.shape, "pyra", "el drop no facetea la ola");
+  for (const sc of secs3) {
+    if (sc.label === "drop") continue;
+    assert(!lv3.wave[sc.label].shape, `la seccion ${sc.label} facetea la ola y no es el drop`);
+  }
+  // el break deja la ola en 0 (ahi la pantalla es negra por el `dark`)
+  assert.equal(lv3.wave.break.to, 0, "el break no deja la ola en 0");
+  // y el alpha de la malla no puede pasar de 1.5 (por encima de la pista)
+  for (const [l, w] of Object.entries(lv3.wave)) {
+    for (const v of [w.a, w.to ?? w.a]) assert(v <= 1.5, `la ola de ${l} llega a ${v}`);
+  }
+
+  // GLOW: cada seccion con un rol que tenga >=1 cue en ese tramo. La voz (mark) suena en las
+  // seis, o sea que todo late con la voz.
+  {
+    const c3 = cues(doc3, lv3);
+    for (const sc of secs3) {
+      const rol = lv3.glow[sc.label];
+      const n = c3.filter((x) => x.role === rol && x.t >= sc.start && x.t < sc.end).length;
+      assert(n >= 1, `la seccion ${sc.label} late con "${rol}" pero no tiene ni una cue ahi`);
+    }
+  }
+
+  // ENTER: cada seccion con un valor valido (los que dibuja `drawBox`).
+  {
+    const VALID = ["fade", "grow", "side", "wide", "slam", "roll"];
+    for (const sc of secs3) {
+      assert(VALID.includes(lv3.enter[sc.label]),
+        `la seccion ${sc.label} tiene un enter invalido: "${lv3.enter[sc.label]}"`);
+    }
+  }
+
+  // VELOCIDAD: la ventana de carril tiene que ser >= 300ms. A 155bpm la cuenta de la GUIA da
+  // v=4532 (absurda), o sea que se acepta una ventana mas corta que la del nivel 1: a v=1400
+  // la ventana es beat - 103/v = 0.387097 - 0.073571 = **313ms**.
+  {
+    const ventana = g3.beat - (KINDS.block.d + PLAYER_D) / lv3.speed;
+    assert(ventana >= 0.3, `la ventana de carril es ${(ventana * 1000).toFixed(0)}ms, < 300ms`);
+    console.log(`breathe velocidad: ventana de carril ${(ventana * 1000).toFixed(0)}ms a v=${lv3.speed}`);
+  }
+
+  // FX: el apagon (dark f56-f63) y el negativo (neg f240-f255). El negativo no puede pisar el
+  // dark ni ningun otro tramo a pantalla completa.
+  {
+    for (const f of lv3.fx) {
+      assert(["dark", "neg"].includes(f.kind), `tramo fx de tipo desconocido: ${f.kind}`);
+      assert(f.to >= f.from, `tramo fx f${f.from} vacio`);
+    }
+    const [dark3] = lv3.fx.filter((f) => f.kind === "dark");
+    assert(dark3, "breathe no declara el apagon");
+    assert.equal(dark3.from, 56, "el apagon no arranca en la f56");
+    assert.equal(dark3.to, 63, "el apagon no termina en la f63");
+    for (const f of lv3.fx.filter((x) => x.kind === "neg")) {
+      for (const o of lv3.fx) {
+        if (!["dark", "ghost", "gate"].includes(o.kind)) continue;
+        assert(f.to < o.from || f.from > o.to,
+          `el negativo f${f.from}-f${f.to} pisa un ${o.kind} (f${o.from}-f${o.to})`);
+      }
+      const hz = (f.div ?? 4) / g3.beat;
+      assert(hz <= 3, `el negativo destella a ${hz.toFixed(2)}Hz (el limite son 3/s)`);
+    }
+  }
+
+  // EL GUION: con `script: []` no hay obstaculos, o sea que el solver no corre (solo corre si
+  // hay obstaculos). Se afirma que el guion esta vacio y que el apagon no pide accion.
+  const c3 = cues(doc3, lv3);
+  const ob3 = c3.filter((x) => x.role === "obstacle");
+  assert.equal(ob3.length, 0, "breathe no deberia tener obstaculos todavia (guion sin dictar)");
+  for (const x of c3) assert(x.t >= -1e-6 && x.t <= len3, `cue fuera del corte: ${x.t}`);
+
+  // EL NIVEL 1 Y EL 2 NO SE MUEVEN: no heredan nada del nivel 3. El nivel 1 YA tiene su propio
+  // eq con modos (14 sectores, 14 modos) y el nivel 2 no declara `layers`. Lo que hay que
+  // afirmar es que el eq del nivel 3 no se cuela en el 1 (sus 14 modos siguen siendo los suyos)
+  // y que el 2 sigue sin capas.
+  assert.deepEqual(LEVELS["orbit-motion"].layers ?? [], [], "el nivel 2 heredo capas del nivel 3");
+  {
+    const eq1 = (LEVELS["insomnia-drop"].layers ?? []).find((l) => l.kind === "bars");
+    assert(eq1 && eq1.modes, "el nivel 1 perdio su eq con modos");
+    assert.equal(eq1.modes.length, 14, "el nivel 1 cambio el numero de modos de su eq");
+    // y ninguno de los modos del nivel 3 es el del nivel 1 (los dos eq son distintos)
+    const eq3 = lv3.layers.find((l) => l.kind === "bars");
+    assert.notDeepEqual(eq3.modes, eq1.modes, "el eq del nivel 3 es identico al del nivel 1");
+  }
+  // y el nivel 3 no declara `rigOver` (el rig queda en el cielo, como el nivel 1)
+  assert.equal(!!L3.rigOver, false, "breathe declara `rigOver`");
+
+  const porRol3 = {};
+  for (const x of c3) porRol3[x.role] = (porRol3[x.role] ?? 0) + 1;
+  console.log(`breathe: ${ultima3 + 1} filas de ${g3.beat.toFixed(4)}s (${len3.toFixed(2)}s), `
+    + `${lv3.lanes} carriles en [${lanesX(lv3.lanes)}], v=${lv3.speed}, `
+    + `${secs3.length} secciones (${secs3.map((s) => s.label).join("/")}), `
+    + `${lv3.sectors.length} sectores f0-f${lv3.sectors.at(-1).to}, decor ${lv3.decor.join("+")}`);
+  console.log(`breathe cues: ${c3.length} (`
+    + Object.entries(porRol3).map(([r, n]) => `${n} ${r}`).join(", ") + "), guion vacio (pendiente de dictar)");
+}
+
 // --- el reactor: misma geometria, dos backends -------------------------------------------
 // `reactor.js` no importa Phaser, o sea que su backend de dibujo corre desde node con un
 // doble. Aca va lo minimo (los ids que se animan, que no explota y que sale simetrico); el

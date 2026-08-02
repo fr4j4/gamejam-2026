@@ -1,2 +1,8 @@
 node_modules/
 dist/
+
+# OpenCode local tooling — mirror of upstream skills, not part of the game
+.opencode/
+
+# Agent instruction file — local to this workspace, never commit
+AGENTS.md

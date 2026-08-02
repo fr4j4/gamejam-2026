@@ -270,7 +270,10 @@ export default class PauseMenu {
     const touchConfigured = (() => {
       try { return localStorage.getItem('survivorsTouchLayout') !== null; } catch { return false; }
     })();
-    const compact = isTouchDevice() || touchConfigured;
+    // Compact solo cuando el navegador es touch, o cuando el viewport es chico
+    // Y el jugador habia configurado el touchLayout. En desktop puro, no
+    // forzamos el layout mobile aunque el localStorage diga touchConfigured.
+    const compact = isTouchDevice() || (isCompactMode() && touchConfigured);
     this._isCompact = compact;
     const cx = w / 2;
     this.overlay.width = w;
@@ -371,25 +374,47 @@ export default class PauseMenu {
         b.setPosition(buttonsCx, y);
       });
     } else {
-      const boxY = Math.max(150, topInset + 90);
+      // Layout desktop: las cajas se escalan segun el viewport. boxY arriba
+      // (debajo del titulo), BOX_H_DESKTOP capeado para que no se extienda
+      // mas alla del viewport. El contenido se centra verticalmente dentro
+      // de las cajas (header + items + bottom).
+      const boxY = Math.max(120, topInset + 90);
+      const maxBoxH = Math.max(220, h - boxY - 60);
+      const boxH = Math.min(BOX_H_DESKTOP, maxBoxH);
+      const sideGap = 40;
+
+      // Escalado responsivo: el ancho de cada columna crece con el viewport
+      // sin superar el ancho "natural" de desktop.
+      const w = cx * 2;
+      const maxInvW = Math.min(INVENTORY_W, (w - sideGap * 3) * 0.28);
+      const maxStatsW = Math.min(STATS_W, (w - sideGap * 3) * 0.32);
+      const invW = Math.max(200, maxInvW);
+      const statsW = Math.max(220, maxStatsW);
 
       let invX;
       let statsX;
       if (this.side === 'right') {
-        // Joystick a la derecha: minimapa en bottom-left, ESTADISTICAS a la
-        // derecha del HUD timer (no en bottom-left que choca con el minimapa).
-        invX = w - INVENTORY_W - 40 - rightInset;
-        statsX = 40 + leftInset;
+        // Joystick a la derecha: minimapa en bottom-left, ARMAS a la derecha.
+        invX = w - invW - rightInset - sideGap;
+        statsX = sideGap + leftInset;
       } else {
-        invX = 40 + leftInset;
-        statsX = w - STATS_W - 40 - rightInset;
+        invX = sideGap + leftInset;
+        statsX = w - statsW - rightInset - sideGap;
       }
+
+      const invSlotStart = boxY + 56;
+      const statRowStart = boxY + 56;
+      const slotsTotalH = this.slots.length * SLOT_H;
+      const statsTotalH = MAX_ROWS * ROW_H;
+      // Centrado vertical del contenido dentro de la caja.
+      const invContentPad = Math.max(0, (boxH - slotsTotalH) / 2);
+      const statsContentPad = Math.max(0, (boxH - statsTotalH) / 2);
 
       this.invBox.setPosition(invX, boxY);
       this.invTitle.setPosition(invX + PADDING, boxY + PADDING);
       this.invDivider.setPosition(invX + PADDING, boxY + 42);
       this.slots.forEach((slot, i) => {
-        const y = boxY + 56 + i * SLOT_H;
+        const y = invSlotStart + invContentPad + i * SLOT_H;
         slot.frame.setPosition(invX + PADDING, y);
         slot.icon.setPosition(invX + PADDING + 22, y + (SLOT_H - 8) / 2);
         slot.name.setPosition(invX + PADDING + 46, y + 7);
@@ -403,7 +428,7 @@ export default class PauseMenu {
       this.boxTitle.setPosition(statsX + PADDING, boxY + PADDING);
       this.boxDivider.setPosition(statsX + PADDING, boxY + 42);
       this.rows.forEach((row, i) => {
-        const y = boxY + 56 + i * ROW_H;
+        const y = statRowStart + statsContentPad + i * ROW_H;
         row.icon.setPosition(statsX + PADDING + ROW_ICON / 2, y + 8);
         row.label.setPosition(statsX + PADDING + ROW_ICON + 10, y);
       });

@@ -7,7 +7,7 @@ export class MusicPlayer {
   play(): void {
     if (this._playing) return;
     this._playing = true;
-    this.audio = new Audio('/Starfall Vanguard2.mp3');
+    this.audio = new Audio('./Starfall Vanguard2.mp3');
     this.audio.volume = 0.75;
     this.audio.loop = true;
     this.audio.play().catch(() => {

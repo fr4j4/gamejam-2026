@@ -1029,6 +1029,11 @@ class DeckScene extends Phaser.Scene {
     this.clearModalLayer();
     const m = this.add.container(0, 0).setDepth(500);
     this.modalLayer.add(m);
+
+    const overlay = this.add.rectangle(this.W / 2, this.H / 2, this.W, this.H, 0x000000, 0.001)
+      .setInteractive({ useHandCursor: false });
+    m.add(overlay);
+
     const menuW = 130, menuH = 90;
     let mx = x, my = y;
     if (mx + menuW > this.W) mx = this.W - menuW - 4;
@@ -1045,6 +1050,7 @@ class DeckScene extends Phaser.Scene {
       { label: 'DUPLICAR', color: '#e0e0e0', cb: () => { this.closeModalLayer(); this.duplicateSlot(slotIndex); } },
       { label: 'ELIMINAR', color: '#ff6b6b', cb: () => { this.closeModalLayer(); this.deleteSlot(slotIndex); } }
     ];
+    overlay.on('pointerdown', () => { this.closeModalLayer(); });
     actions.forEach((a, i) => {
       const by = my + 8 + i * 26;
       const bb = this.add.rectangle(mx + menuW / 2, by + 9, menuW - 8, 22, 0x16213e)

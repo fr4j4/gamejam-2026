@@ -4,6 +4,9 @@
 
 import { FONT_SIZE, TEXT, UI } from '../config/theme.js';
 import { WEAPON_KEYS } from '../config/upgrades.js';
+import { isTouchDevice, isIOS } from '../utils/device.js';
+import { toggleFullscreen } from '../utils/fullscreen.js';
+import { lockLandscape, unlockOrientation } from '../utils/orientation.js';
 import { button, divider, icon, panel, setVisible, text } from './widgets.js';
 
 const DEPTH_OVERLAY = 290;
@@ -90,7 +93,13 @@ export default class PauseMenu {
   }
 
   buildButtons(scene, actions) {
+    const touch = isTouchDevice();
+    const fsButton = touch
+      ? button(scene, { label: 'Pantalla completa', width: 210, height: 38, depth: DEPTH + 1, color: TEXT.gold, onClick: () => this.tryFullscreen() })
+      : null;
+
     this.buttons = [
+      ...(fsButton ? [fsButton] : []),
       button(scene, { label: 'Continuar', width: 210, height: 46, depth: DEPTH + 1, onClick: actions.onResume }),
       button(scene, { label: 'Configuración', width: 210, height: 46, depth: DEPTH + 1, color: TEXT.info, onClick: actions.onSettings }),
       button(scene, { label: 'Reiniciar', width: 210, height: 46, depth: DEPTH + 1, color: TEXT.gold, onClick: actions.onRestart }),
@@ -98,6 +107,33 @@ export default class PauseMenu {
     ];
     this.buttonParts = this.buttons.flatMap((b) => b.parts);
     setVisible(this.buttonParts, false);
+  }
+
+  tryFullscreen() {
+    const result = toggleFullscreen(this.scene.scale);
+    if (result === 'on') lockLandscape();
+    else if (result === 'off') unlockOrientation();
+    else if (result === 'failed') this.showFullscreenFallback();
+  }
+
+  showFullscreenFallback() {
+    if (this.fsToast) return;
+    const msg = isIOS()
+      ? 'En iPhone: tocar compartir → Agregar a inicio'
+      : 'Pantalla completa no disponible';
+    const scene = this.scene;
+    this.fsToast = panel(scene, { width: 360, height: 48, depth: DEPTH + 5, border: 0xffaa00, origin: 0.5 });
+    this.fsToastText = text(scene, msg, { size: FONT_SIZE.small, color: 0xffaa00, depth: DEPTH + 6, origin: 0.5 });
+    const w = scene.scale.width;
+    const h = scene.scale.height;
+    this.fsToast.setPosition(w / 2, h - 60);
+    this.fsToastText.setPosition(w / 2, h - 60);
+    scene.time.delayedCall(8000, () => {
+      this.fsToast?.destroy();
+      this.fsToastText?.destroy();
+      this.fsToast = null;
+      this.fsToastText = null;
+    });
   }
 
   layout(w, h) {

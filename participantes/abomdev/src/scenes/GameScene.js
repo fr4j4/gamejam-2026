@@ -26,6 +26,10 @@ import LevelUpMenu from '../ui/LevelUpMenu.js';
 import { showEndScreen } from '../ui/EndScreen.js';
 import { playSfx } from '../audio/sfx.js';
 import { toggleMute, unlockAudio } from '../audio/synth.js';
+import { toggleFullscreen } from '../utils/fullscreen.js';
+import { lockLandscape, unlockOrientation } from '../utils/orientation.js';
+import { isTouchDevice } from '../utils/device.js';
+import { panel, text } from '../ui/widgets.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -52,6 +56,43 @@ export default class GameScene extends Phaser.Scene {
     this.bindInput();
     // Por si se entra directo a esta escena sin pasar por el menú.
     unlockAudio();
+
+    if (isTouchDevice() && this.isPortrait()) {
+      this.showPortraitHint();
+    }
+    this.scale.on('resize', this.onResizePortrait, this);
+  }
+
+  isPortrait() {
+    return window.innerHeight > window.innerWidth;
+  }
+
+  onResizePortrait() {
+    if (this.isPortrait()) {
+      if (!this.portraitHint) this.showPortraitHint();
+    } else {
+      this.hidePortraitHint();
+    }
+  }
+
+  showPortraitHint() {
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+    this.portraitHint = panel(this, {
+      width: 320, height: 56, depth: 500, border: 0xffaa00, origin: 0.5,
+    });
+    this.portraitHintText = text(this, '↻ Rotá el celular para jugar', {
+      size: '16px', color: 0xffaa00, depth: 501, origin: 0.5,
+    });
+    this.portraitHint.setPosition(cx, cy);
+    this.portraitHintText.setPosition(cx, cy);
+  }
+
+  hidePortraitHint() {
+    this.portraitHint?.destroy();
+    this.portraitHintText?.destroy();
+    this.portraitHint = null;
+    this.portraitHintText = null;
   }
 
   initState() {
@@ -183,11 +224,9 @@ export default class GameScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-ESC', () => this.togglePause());
     this.input.keyboard.on('keydown-M', () => toggleMute());
     this.input.keyboard.on('keydown-F', () => {
-      if (this.scale.isFullscreen) {
-        this.scale.stopFullscreen();
-      } else {
-        this.scale.startFullscreen();
-      }
+      const result = toggleFullscreen(this.scale);
+      if (result === 'on') lockLandscape();
+      else if (result === 'off') unlockOrientation();
     });
 
     this.onResize = () => {
@@ -197,6 +236,8 @@ export default class GameScene extends Phaser.Scene {
     };
     this.scale.on('resize', this.onResize);
     this.events.once('shutdown', () => this.scale.off('resize', this.onResize));
+    this.events.once('shutdown', () => this.scale.off('resize', this.onResizePortrait, this));
+    this.events.once('shutdown', () => this.hidePortraitHint());
   }
 
   // Los enemigos y el portal aparecen justo afuera de lo que se ve, sea cual sea la

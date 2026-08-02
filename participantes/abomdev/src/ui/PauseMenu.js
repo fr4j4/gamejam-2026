@@ -1,9 +1,10 @@
-// Menú de pausa en tres columnas: inventario de armas a la izquierda, botones al
-// centro y estadísticas a la derecha. El overlay atenúa el juego de fondo.
+// Menu de pausa en tres columnas: inventario de armas a la izquierda, botones al
+// centro y estadisticas a la derecha. El overlay atenua el juego de fondo.
 // Cada stat y cada arma llevan su icono, con el mismo mapeo que las cards de level-up.
 //
-// En compact: layout en 2 columnas (inventario | stats), cada una scrolleable
-// via mask. Los botones van en una grilla compacta abajo.
+// En compact (mobile): layout en 3 columnas (armas | botones | stats),
+// centradas horizontalmente en el viewport. El contenido de las cajas
+// laterales se centra verticalmente.
 
 import { FONT_SIZE, TEXT, UI } from '../config/theme.js';
 import { WEAPON_KEYS } from '../config/upgrades.js';
@@ -16,6 +17,10 @@ import { button, divider, icon, panel, setVisible, text } from './widgets.js';
 
 const DEPTH_OVERLAY = 290;
 const DEPTH = 300;
+const DEPTH_TITLE = 310;
+const DEPTH_PANEL = 305;
+const DEPTH_CONTENT = 306;
+const DEPTH_TOOLTIP = 320;
 const BOX_H_DESKTOP = 470;
 const BOX_H_COMPACT = 220;
 const STATS_W = 340;
@@ -37,11 +42,16 @@ const COMPACT_BUTTON_W = 96;
 
 // Nombre e icono de cada arma para el inventario. El orden es el de WEAPON_KEYS.
 const WEAPON_INFO = {
-  aura: { name: 'Aura de daño', icon: 'icon-circle-dot', color: 0x66ffcc },
-  orbit: { name: 'Orbe giratorio', icon: 'icon-orbit', color: 0x55ddff },
-  pierce: { name: 'Perforante', icon: 'icon-crosshair', color: 0x66ddff },
-  burst: { name: 'Ráfaga', icon: 'icon-swords', color: 0xffee66 },
-  nova: { name: 'Onda expansiva', icon: 'icon-waves', color: 0xffaa00 },
+  aura: { name: 'Aura de daño', icon: 'icon-circle-dot', color: 0x66ffcc,
+    description: 'Daña a todos los enemigos en un radio a tu alrededor continuamente.' },
+  orbit: { name: 'Orbe giratorio', icon: 'icon-orbit', color: 0x55ddff,
+    description: 'Orbes que giran a tu alrededor y dañan a los enemigos que tocan.' },
+  pierce: { name: 'Perforante', icon: 'icon-crosshair', color: 0x66ddff,
+    description: 'Disparo que atraviesa multiples enemigos sin desaparecer.' },
+  burst: { name: 'Rafaga', icon: 'icon-swords', color: 0xffee66,
+    description: 'Dispara a varios enemigos cercanos al mismo tiempo.' },
+  nova: { name: 'Onda expansiva', icon: 'icon-waves', color: 0xffaa00,
+    description: 'Emite ondas de dano en un radio amplio periodicamente.' },
 };
 
 export default class PauseMenu {
@@ -53,15 +63,15 @@ export default class PauseMenu {
     this.overlay = scene.add.rectangle(0, 0, 10, 10, UI.overlay, UI.overlayAlpha)
       .setOrigin(0).setScrollFactor(0).setDepth(DEPTH_OVERLAY).setVisible(false);
 
-    this.titleBox = panel(scene, { width: TITLE_BOX_W, height: TITLE_BOX_H, depth: DEPTH, border: 0x66ffcc, origin: 0.5, alpha: 0.95 })
+    this.titleBox = panel(scene, { width: TITLE_BOX_W, height: TITLE_BOX_H, depth: DEPTH_TITLE, border: 0x66ffcc, origin: 0.5, alpha: 0.95 })
       .setVisible(false);
-    this.title = text(scene, 'PAUSADO', { size: FONT_SIZE.heading, color: TEXT.primary, depth: DEPTH + 1, origin: 0.5 })
+    this.title = text(scene, 'PAUSADO', { size: '32px', color: TEXT.primary, depth: DEPTH_TITLE + 1, origin: 0.5 })
       .setVisible(false);
 
     // La etapa va bajo el título y no en la lista de estadísticas: es contexto de
     // la partida, no una stat del personaje.
-    this.stageIcon = icon(scene, 'icon-layers', { size: 18, color: 0xaa88ff, depth: DEPTH + 1 }).setVisible(false);
-    this.stageText = text(scene, '', { size: '18px', color: TEXT.stage, depth: DEPTH + 1, origin: [0, 0.5] })
+    this.stageIcon = icon(scene, 'icon-layers', { size: 18, color: 0xaa88ff, depth: DEPTH_TITLE + 1 }).setVisible(false);
+    this.stageText = text(scene, '', { size: '18px', color: TEXT.stage, depth: DEPTH_TITLE + 1, origin: [0, 0.5] })
       .setVisible(false);
 
     this.buildInventory(scene);
@@ -76,35 +86,130 @@ export default class PauseMenu {
 
     this._clipCounts = { inv: Infinity, rows: Infinity };
     this._isCompact = false;
+
+    // Tooltip para mostrar el nombre + descripcion de un arma en hover
+    // (desktop) o long-press (mobile).
+    this._buildTooltip(scene);
+  }
+
+  _buildTooltip(scene) {
+    const w = 260;
+    const h = 80;
+    this.tooltipBox = panel(scene, { width: w, height: h, depth: DEPTH_TOOLTIP, border: 0x66ffcc, alpha: 0.96 })
+      .setVisible(false);
+    this.tooltipName = text(scene, '', { size: '15px', color: 0x66ffcc, depth: DEPTH_TOOLTIP + 1, origin: [0, 0] })
+      .setVisible(false);
+    this.tooltipDesc = text(scene, '', { size: '12px', color: TEXT.primary, depth: DEPTH_TOOLTIP + 1, origin: [0, 0],
+      wordWrapWidth: w - 20 })
+      .setVisible(false);
+    this._tooltipTimer = null;
+    this._tooltipLocked = false;
+    this._tooltipParts = [this.tooltipBox, this.tooltipName, this.tooltipDesc];
+  }
+
+  _showTooltip(slot, screenX, screenY) {
+    const info = WEAPON_INFO[slot.key];
+    this.tooltipName.setText(info.name);
+    this.tooltipName.setColor(`#${info.color.toString(16).padStart(6, '0')}`);
+    this.tooltipDesc.setText(info.description);
+    // El borde del box adopta el color del arma para reforzar la identidad.
+    this.tooltipBox.setStrokeStyle(3, info.color);
+    this.tooltipBox.setVisible(true);
+    this.tooltipName.setVisible(true);
+    this.tooltipDesc.setVisible(true);
+    // Posicionar al lado del slot. Si el slot esta en la mitad izquierda,
+    // el tooltip aparece a la derecha; si no, a la izquierda.
+    const scene = this.scene;
+    const w = scene.scale.width;
+    const h = scene.scale.height;
+    const tw = 260;
+    const th = 80;
+    // Tomamos el slot.x como referencia si esta disponible, sino el pointer.
+    const slotX = slot.frame ? slot.frame.x + slot.frame.width / 2 : screenX;
+    const slotY = slot.frame ? slot.frame.y + slot.frame.height / 2 : screenY;
+    let x = slotX + 16;
+    let y = slotY - th - 8;
+    if (x + tw > w - 8) x = slotX - tw - 16;
+    if (y < 8) y = slotY + 16;
+    if (y + th > h - 8) y = h - th - 8;
+    // tooltipBox: rect con origin top-left (0). Posicionar con (x, y) como top-left.
+    this.tooltipBox.setPosition(x, y);
+    this.tooltipName.setPosition(x + 12, y + 10);
+    this.tooltipDesc.setPosition(x + 12, y + 30);
+  }
+
+  _hideTooltip() {
+    this.tooltipBox.setVisible(false);
+    this.tooltipName.setVisible(false);
+    this.tooltipDesc.setVisible(false);
+    if (this._tooltipTimer) {
+      this._tooltipTimer.remove(false);
+      this._tooltipTimer = null;
+    }
+    this._tooltipLocked = false;
   }
 
   buildInventory(scene) {
-    this.invBox = panel(scene, { width: INVENTORY_W, height: BOX_H_DESKTOP, depth: DEPTH, border: 0xffcc44 }).setVisible(false);
-    this.invTitle = text(scene, 'ARMAS', { size: '17px', color: TEXT.gold, depth: DEPTH + 1 }).setVisible(false);
-    this.invDivider = divider(scene, { width: INVENTORY_W - PADDING * 2, depth: DEPTH + 1 }).setVisible(false);
+    this.invBox = panel(scene, { width: INVENTORY_W, height: BOX_H_DESKTOP, depth: DEPTH_PANEL, border: 0xffcc44 }).setVisible(false);
+    this.invTitle = text(scene, 'ARMAS', { size: '17px', color: TEXT.gold, depth: DEPTH_CONTENT }).setVisible(false);
+    this.invDivider = divider(scene, { width: INVENTORY_W - PADDING * 2, depth: DEPTH_CONTENT }).setVisible(false);
 
     // Un slot por arma del juego: las bloqueadas también se muestran, apagadas, para
     // que se vea qué queda por conseguir.
-    this.slots = WEAPON_KEYS.map((key) => ({
-      key,
-      frame: scene.add.rectangle(0, 0, INVENTORY_W - PADDING * 2, SLOT_H - 8, 0x101024, 0.9)
-        .setOrigin(0).setStrokeStyle(2, 0x333355).setScrollFactor(0).setDepth(DEPTH + 1).setVisible(false),
-      icon: icon(scene, WEAPON_INFO[key].icon, { size: SLOT_ICON, color: 0xffffff, depth: DEPTH + 2 }).setVisible(false),
-      name: text(scene, WEAPON_INFO[key].name, { size: FONT_SIZE.small, color: TEXT.secondary, depth: DEPTH + 2 }).setVisible(false),
-      detail: text(scene, '', { size: FONT_SIZE.tiny, color: TEXT.dim, depth: DEPTH + 2 }).setVisible(false),
-    }));
+    this.slots = WEAPON_KEYS.map((key, i) => {
+      const frame = scene.add.rectangle(0, 0, INVENTORY_W - PADDING * 2, SLOT_H - 8, 0x101024, 0.9)
+        .setOrigin(0).setStrokeStyle(2, 0x333355).setScrollFactor(0).setVisible(false);
+      const slot = {
+        key,
+        frame,
+        icon: icon(scene, WEAPON_INFO[key].icon, { size: SLOT_ICON, color: 0xffffff, depth: DEPTH_CONTENT + 1 }).setVisible(false),
+        name: text(scene, WEAPON_INFO[key].name, { size: FONT_SIZE.small, color: TEXT.secondary, depth: DEPTH_CONTENT + 1 }).setVisible(false),
+        detail: text(scene, '', { size: FONT_SIZE.tiny, color: TEXT.dim, depth: DEPTH_CONTENT + 1 }).setVisible(false),
+      };
+      frame.setDepth(DEPTH_CONTENT);
+      // Tooltip en hover (desktop) o long-press (mobile).
+      frame.setInteractive({ useHandCursor: true });
+      frame.on('pointerover', (p) => {
+        if (this._isCompact) return;
+        if (this._tooltipLocked) return;
+        this._showTooltip(slot, p.x, p.y);
+      });
+      frame.on('pointerout', () => {
+        if (this._isCompact) return;
+        if (this._tooltipLocked) return;
+        this._hideTooltip();
+      });
+      frame.on('pointerdown', (p) => {
+        if (!this._isCompact) return;
+        if (this._tooltipTimer) this._tooltipTimer.remove(false);
+        this._tooltipTimer = scene.time.delayedCall(400, () => {
+          this._tooltipLocked = true;
+          this._showTooltip(slot, p.x, p.y);
+        });
+      });
+      frame.on('pointerup', () => {
+        if (this._tooltipTimer) {
+          this._tooltipTimer.remove(false);
+          this._tooltipTimer = null;
+        }
+        if (this._tooltipLocked) {
+          this._hideTooltip();
+        }
+      });
+      return slot;
+    });
   }
 
   buildStats(scene) {
-    this.box = panel(scene, { width: STATS_W, height: BOX_H_DESKTOP, depth: DEPTH, border: 0x66aaff }).setVisible(false);
-    this.boxTitle = text(scene, 'ESTADÍSTICAS', { size: '17px', color: TEXT.info, depth: DEPTH + 1 }).setVisible(false);
-    this.boxDivider = divider(scene, { width: STATS_W - PADDING * 2, depth: DEPTH + 1 }).setVisible(false);
+    this.box = panel(scene, { width: STATS_W, height: BOX_H_DESKTOP, depth: DEPTH_PANEL, border: 0x66aaff }).setVisible(false);
+    this.boxTitle = text(scene, 'ESTADÍSTICAS', { size: '17px', color: TEXT.info, depth: DEPTH_CONTENT }).setVisible(false);
+    this.boxDivider = divider(scene, { width: STATS_W - PADDING * 2, depth: DEPTH_CONTENT }).setVisible(false);
 
     // Filas reutilizables: se crean una vez y se rellenan al pausar, así no
     // generamos y destruimos objetos cada vez que se abre el menú.
     this.rows = Array.from({ length: MAX_ROWS }, () => ({
-      icon: icon(scene, 'icon-swords', { size: ROW_ICON, color: 0xffffff, depth: DEPTH + 1 }).setVisible(false),
-      label: text(scene, '', { size: FONT_SIZE.small, color: TEXT.secondary, depth: DEPTH + 1 }).setVisible(false),
+      icon: icon(scene, 'icon-swords', { size: ROW_ICON, color: 0xffffff, depth: DEPTH_CONTENT + 1 }).setVisible(false),
+      label: text(scene, '', { size: FONT_SIZE.small, color: TEXT.secondary, depth: DEPTH_CONTENT + 1 }).setVisible(false),
     }));
   }
 
@@ -115,15 +220,15 @@ export default class PauseMenu {
     // en touch y el boton se controla desde el menu principal. Asi la lista
     // de botones queda corta y entra en pantallas de 360h.
     const fsButton = touch && !compact
-      ? button(scene, { label: 'Pantalla completa', width: 210, height: 38, depth: DEPTH + 1, color: TEXT.gold, onClick: () => this.tryFullscreen() })
+      ? button(scene, { label: 'Pantalla completa', width: 210, height: 38, depth: DEPTH_CONTENT, color: TEXT.gold, onClick: () => this.tryFullscreen() })
       : null;
 
     this.buttons = [
       ...(fsButton ? [fsButton] : []),
-      button(scene, { label: 'Continuar', width: 210, height: 46, depth: DEPTH + 1, onClick: actions.onResume }),
-      button(scene, { label: 'Configuración', width: 210, height: 46, depth: DEPTH + 1, color: TEXT.info, onClick: actions.onSettings }),
-      button(scene, { label: 'Reiniciar', width: 210, height: 46, depth: DEPTH + 1, color: TEXT.gold, onClick: actions.onRestart }),
-      button(scene, { label: 'Salir al menú', width: 210, height: 46, depth: DEPTH + 1, color: TEXT.danger, onClick: actions.onQuit }),
+      button(scene, { label: 'Continuar', width: 210, height: 46, depth: DEPTH_CONTENT, onClick: actions.onResume }),
+      button(scene, { label: 'Configuración', width: 210, height: 46, depth: DEPTH_CONTENT, color: TEXT.info, onClick: actions.onSettings }),
+      button(scene, { label: 'Reiniciar', width: 210, height: 46, depth: DEPTH_CONTENT, color: TEXT.gold, onClick: actions.onRestart }),
+      button(scene, { label: 'Salir al menú', width: 210, height: 46, depth: DEPTH_CONTENT, color: TEXT.danger, onClick: actions.onQuit }),
     ];
     this.buttonParts = this.buttons.flatMap((b) => b.parts);
     setVisible(this.buttonParts, false);
@@ -170,6 +275,9 @@ export default class PauseMenu {
     const cx = w / 2;
     this.overlay.width = w;
     this.overlay.height = h;
+    // Backdrop: en compact casi opaco para tapar el HUD del juego que queda
+    // detras; en desktop semitransparente para mantener el contexto visual.
+    this.overlay.setFillStyle(UI.overlay, compact ? 0.92 : UI.overlayAlpha);
 
     const insets = getSafeInsets();
     const topInset = edgePadding('top', 0, insets);
@@ -178,7 +286,7 @@ export default class PauseMenu {
 
     // En compact el titulo va debajo del HUD del juego (que ocupa hasta
     // aprox y=80) para no quedar tapado por las barras de HP/escudo/XP.
-    const titleY = compact ? topInset + 95 : topInset + 55;
+    const titleY = compact ? topInset + 50 : topInset + 55;
     this.titleBox.setPosition(cx, titleY);
     this.title.setPosition(cx, titleY);
     this.stageCenterX = cx;
@@ -210,7 +318,9 @@ export default class PauseMenu {
       const buttonsX = invX + sideColW + colGap;
       const statsX = buttonsX + buttonsColW + colGap;
       const columnsTop = titleY + 40;
-      const totalButtonsH = this.buttons.length * 28 + (this.buttons.length - 1) * 4;
+      const compactButtonH = 36;
+      const buttonGap = 6;
+      const totalButtonsH = this.buttons.length * compactButtonH + (this.buttons.length - 1) * buttonGap;
       // Los botones arrancan debajo del titulo (no verticalmente centrados) para
       // mantener siempre el titlePAUSADO visible arriba.
       const buttonsTop = Math.max(columnsTop, topInset + 110);
@@ -228,8 +338,9 @@ export default class PauseMenu {
         const y = slotsClipY + i * slotStep;
         if (i >= this._clipCounts.inv) return;
         slot.frame.setSize(sideColW - padding * 2, slotH - 4).setPosition(invX + padding, y);
-        slot.icon.setPosition(invX + padding + SLOT_ICON_COMPACT / 2 + 4, y + (slotH - 4) / 2);
-        slot.name.setPosition(invX + padding + SLOT_ICON_COMPACT + 8, y + (slotH - 4) / 2);
+        // Icono a la izquierda, nombre a la derecha (layout horizontal).
+        slot.icon.setDisplaySize(18, 18).setPosition(invX + padding + 14, y + (slotH - 4) / 2);
+        slot.name.setOrigin(0, 0.5).setStyle({ fontSize: '12px' }).setPosition(invX + padding + 28, y + (slotH - 4) / 2);
         // En compact no mostramos el detail del slot: el icono + name alcanzan
         // para identificar el arma y la columna ya es estrecha.
         slot.detail.setVisible(false);
@@ -245,14 +356,18 @@ export default class PauseMenu {
         const y = rowsClipY + i * ROW_H;
         if (i >= this._clipCounts.rows) return;
         row.icon.setPosition(statsX + padding + ROW_ICON / 2, y + 8);
-        row.label.setPosition(statsX + padding + ROW_ICON + 10, y);
+        row.label.setStyle({ fontSize: '13px' }).setPosition(statsX + padding + ROW_ICON + 10, y);
       });
 
-      // Botones en columna central, centrados horizontal y verticalmente.
-      this.buttons.forEach((b) => b.setSize(buttonsColW, 28));
+      // Botones en columna central, mas altos y con texto mas grande.
+      this.buttons.forEach((b) => b.setSize(buttonsColW, compactButtonH));
+      this.buttons.forEach((b) => {
+        // b.parts[1] es el labelText del button widget.
+        if (b.parts[1]) b.parts[1].setStyle({ fontSize: '16px' });
+      });
       const buttonsCx = buttonsX + buttonsColW / 2;
       this.buttons.forEach((b, i) => {
-        const y = buttonsTop + i * 32;
+        const y = buttonsTop + i * (compactButtonH + buttonGap);
         b.setPosition(buttonsCx, y);
       });
     } else {
@@ -347,7 +462,8 @@ export default class PauseMenu {
       }
       // Las armas bloqueadas quedan atenuadas, no ocultas.
       slot.frame.setStrokeStyle(2, state.unlocked ? info.color : 0x333355).setVisible(true);
-      slot.icon.setTint(state.unlocked ? info.color : 0x444455).setVisible(true);
+      const iconSize = this._isCompact ? 22 : SLOT_ICON;
+      slot.icon.setTint(state.unlocked ? info.color : 0x444455).setDisplaySize(iconSize, iconSize).setVisible(true);
       slot.name.setColor(state.unlocked ? TEXT.secondary : TEXT.dim).setVisible(true);
       // En compact el detail no se muestra: el icono y nombre son suficientes
       // y la columna es estrecha. Mantenerlo invisible incluso si el layout
@@ -368,6 +484,7 @@ export default class PauseMenu {
   }
 
   hide() {
+    this._hideTooltip();
     setVisible(this.chrome, false);
     setVisible(this.buttonParts, false);
     this.rows.forEach((row) => setVisible([row.icon, row.label], false));
@@ -377,6 +494,7 @@ export default class PauseMenu {
   // Oculta solo el contenido, dejando el overlay: se usa al abrir configuración
   // desde la pausa, para que el juego siga viéndose atenuado detrás.
   hideContent() {
+    this._hideTooltip();
     setVisible(this.chrome.filter((o) => o !== this.overlay), false);
     setVisible(this.buttonParts, false);
     this.rows.forEach((row) => setVisible([row.icon, row.label], false));

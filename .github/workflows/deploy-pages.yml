@@ -40,7 +40,7 @@ jobs:
           git worktree add /tmp/gh-pages origin/gh-pages
 
           # Replace each staged participant folder in gh-pages.
-          for src in .gh-pages-staging/participantes/*/; do
+          for src in .gh-pages-staging/*/; do
             name="$(basename "$src")"
             dest="/tmp/gh-pages/participantes/$name"
             rm -rf "$dest"

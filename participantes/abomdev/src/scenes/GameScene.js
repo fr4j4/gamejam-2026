@@ -23,6 +23,7 @@ import Minimap from '../ui/Minimap.js';
 import PauseMenu, { buildStatRows, buildWeaponSlots } from '../ui/PauseMenu.js';
 import SettingsPanel from '../ui/SettingsPanel.js';
 import LevelUpMenu from '../ui/LevelUpMenu.js';
+import TouchControls from '../ui/TouchControls.js';
 import { showEndScreen } from '../ui/EndScreen.js';
 import { playSfx } from '../audio/sfx.js';
 import { toggleMute, unlockAudio } from '../audio/synth.js';
@@ -194,6 +195,8 @@ export default class GameScene extends Phaser.Scene {
     this.minimap = new Minimap(this);
     this.levelUpMenu = new LevelUpMenu(this, (i) => this.chooseUpgrade(i));
 
+    this.touchControls = isTouchDevice() ? new TouchControls(this) : null;
+
     this.pauseMenu = new PauseMenu(this, {
       onResume: () => this.resumeGame(),
       onSettings: () => this.openSettings(),
@@ -215,6 +218,10 @@ export default class GameScene extends Phaser.Scene {
     this.pauseMenu.layout(w, h);
     this.levelUpMenu.layout(w, h);
     this.settingsPanel.layout(w, h);
+    if (this.touchControls) {
+      this.touchControls.layout(w, h);
+      this.touchControls.setVisible(!this.isPortrait());
+    }
   }
 
   bindInput() {
@@ -271,6 +278,7 @@ export default class GameScene extends Phaser.Scene {
     this.player.setVelocity(0, 0);
     this.physics.world.pause();
     this.setTimersPaused(true);
+    this.touchControls?.setVisible(false);
     this.showPauseContent();
   }
 
@@ -287,6 +295,7 @@ export default class GameScene extends Phaser.Scene {
     this.physics.world.resume();
     this.setTimersPaused(false);
     this.pauseMenu.hide();
+    this.touchControls?.setVisible(!this.isPortrait());
   }
 
   openSettings() {
@@ -304,6 +313,7 @@ export default class GameScene extends Phaser.Scene {
 
   quitToMenu() {
     this.physics.world.resume();
+    this.touchControls?.setVisible(false);
     this.scene.start('menu');
   }
 
@@ -348,6 +358,16 @@ export default class GameScene extends Phaser.Scene {
     const down = this.cursors.down.isDown || this.wasd.S.isDown;
 
     const dir = new Phaser.Math.Vector2((right ? 1 : 0) - (left ? 1 : 0), (down ? 1 : 0) - (up ? 1 : 0));
+
+    // Touch gana sobre teclado si está activo. Copiamos los componentes (no la
+    // referencia) porque getVector() devuelve un vector compartido que escala
+    // acá mismo cada frame — mutarlo lo corrompería para llamadas siguientes.
+    const touchDir = this.touchControls?.getVector();
+    if (touchDir) {
+      dir.x = touchDir.x;
+      dir.y = touchDir.y;
+    }
+
     if (dir.lengthSq() > 0) {
       dir.normalize().scale(this.stats.moveSpeed);
       this.player.setVelocity(dir.x, dir.y);
@@ -933,6 +953,7 @@ export default class GameScene extends Phaser.Scene {
   onGameOver() {
     this.isGameOver = true;
     this.setTimersPaused(true);
+    this.touchControls?.setVisible(false);
     playSfx('gameOver');
     showEndScreen(this, { title: 'GAME OVER', color: TEXT.danger, elapsed: this.elapsed, level: this.level });
   }
@@ -940,6 +961,7 @@ export default class GameScene extends Phaser.Scene {
   onVictory() {
     this.hasWon = true;
     this.setTimersPaused(true);
+    this.touchControls?.setVisible(false);
     playSfx('victory');
     showEndScreen(this, { title: '¡VICTORIA!', color: TEXT.gold, elapsed: this.elapsed, level: this.level });
   }
@@ -1021,6 +1043,7 @@ export default class GameScene extends Phaser.Scene {
     this.isLevelingUp = true;
     this.player.setVelocity(0, 0);
     this.physics.world.pause();
+    this.touchControls?.setVisible(false);
 
     this.levelUpChoices = this.pickWeighted(this.getAvailableUpgrades(), 4);
     this.levelUpMenu.show(this.levelUpChoices, this.stats);
@@ -1039,6 +1062,7 @@ export default class GameScene extends Phaser.Scene {
     this.levelUpMenu.hide();
     this.isLevelingUp = false;
     this.physics.world.resume();
+    this.touchControls?.setVisible(!this.isPortrait());
     // Respiro de invulnerabilidad al volver, para no comer un golpe al cerrar el menú.
     this.lastHitAt = this.time.now;
 

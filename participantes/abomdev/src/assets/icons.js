@@ -21,6 +21,7 @@ import layersRaw from 'lucide-static/icons/layers.svg?raw';
 import magnetRaw from 'lucide-static/icons/magnet.svg?raw';
 import orbitRaw from 'lucide-static/icons/orbit.svg?raw';
 import packageRaw from 'lucide-static/icons/package.svg?raw';
+import pauseRaw from 'lucide-static/icons/pause.svg?raw';
 import ratRaw from 'lucide-static/icons/rat.svg?raw';
 import shieldRaw from 'lucide-static/icons/shield.svg?raw';
 import skullRaw from 'lucide-static/icons/skull.svg?raw';
@@ -60,6 +61,7 @@ const ICONS = {
   'icon-crosshair': { raw: crosshairRaw, size: UI_SIZE },
   'icon-waves': { raw: wavesRaw, size: UI_SIZE },
   'icon-circle-dot': { raw: circleDotRaw, size: UI_SIZE },
+  'icon-pause': { raw: pauseRaw, size: UI_SIZE },
 };
 
 // btoa() falla con caracteres fuera de latin-1, así que pasamos por TextEncoder.

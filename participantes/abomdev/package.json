@@ -1,0 +1,18 @@
+{
+  "name": "abomdev-gamejam-2026",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "lucide-static": "^1.28.0",
+    "phaser": "^4.2.1"
+  },
+  "devDependencies": {
+    "vite": "^8.2.0"
+  }
+}

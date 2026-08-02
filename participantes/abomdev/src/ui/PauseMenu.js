@@ -1,0 +1,231 @@
+// Menú de pausa en tres columnas: inventario de armas a la izquierda, botones al
+// centro y estadísticas a la derecha. El overlay atenúa el juego de fondo.
+// Cada stat y cada arma llevan su icono, con el mismo mapeo que las cards de level-up.
+
+import { FONT_SIZE, TEXT, UI } from '../config/theme.js';
+import { WEAPON_KEYS } from '../config/upgrades.js';
+import { button, divider, icon, panel, setVisible, text } from './widgets.js';
+
+const DEPTH_OVERLAY = 290;
+const DEPTH = 300;
+const BOX_H = 470;
+const STATS_W = 340;
+const INVENTORY_W = 280;
+const TITLE_BOX_W = 260;
+const TITLE_BOX_H = 60;
+const PADDING = 16;
+const ROW_H = 26;
+const ROW_ICON = 17;
+const MAX_ROWS = 15;
+const SLOT_H = 54;
+const SLOT_ICON = 26;
+
+// Nombre e icono de cada arma para el inventario. El orden es el de WEAPON_KEYS.
+const WEAPON_INFO = {
+  aura: { name: 'Aura de daño', icon: 'icon-circle-dot', color: 0x66ffcc },
+  orbit: { name: 'Orbe giratorio', icon: 'icon-orbit', color: 0x55ddff },
+  pierce: { name: 'Perforante', icon: 'icon-crosshair', color: 0x66ddff },
+  burst: { name: 'Ráfaga', icon: 'icon-swords', color: 0xffee66 },
+  nova: { name: 'Onda expansiva', icon: 'icon-waves', color: 0xffaa00 },
+};
+
+export default class PauseMenu {
+  // actions: { onResume, onSettings, onRestart, onQuit }
+  constructor(scene, actions) {
+    this.scene = scene;
+
+    this.overlay = scene.add.rectangle(0, 0, 10, 10, UI.overlay, UI.overlayAlpha)
+      .setOrigin(0).setScrollFactor(0).setDepth(DEPTH_OVERLAY).setVisible(false);
+
+    this.titleBox = panel(scene, { width: TITLE_BOX_W, height: TITLE_BOX_H, depth: DEPTH, border: 0x66ffcc, origin: 0.5, alpha: 0.95 })
+      .setVisible(false);
+    this.title = text(scene, 'PAUSADO', { size: FONT_SIZE.heading, color: TEXT.primary, depth: DEPTH + 1, origin: 0.5 })
+      .setVisible(false);
+
+    // La etapa va bajo el título y no en la lista de estadísticas: es contexto de
+    // la partida, no una stat del personaje.
+    this.stageIcon = icon(scene, 'icon-layers', { size: 18, color: 0xaa88ff, depth: DEPTH + 1 }).setVisible(false);
+    this.stageText = text(scene, '', { size: '18px', color: TEXT.stage, depth: DEPTH + 1, origin: [0, 0.5] })
+      .setVisible(false);
+
+    this.buildInventory(scene);
+    this.buildStats(scene);
+    this.buildButtons(scene, actions);
+
+    this.chrome = [
+      this.overlay, this.titleBox, this.title, this.stageIcon, this.stageText,
+      this.invBox, this.invTitle, this.invDivider,
+      this.box, this.boxTitle, this.boxDivider,
+    ];
+  }
+
+  buildInventory(scene) {
+    this.invBox = panel(scene, { width: INVENTORY_W, height: BOX_H, depth: DEPTH, border: 0xffcc44 }).setVisible(false);
+    this.invTitle = text(scene, 'ARMAS', { size: '17px', color: TEXT.gold, depth: DEPTH + 1 }).setVisible(false);
+    this.invDivider = divider(scene, { width: INVENTORY_W - PADDING * 2, depth: DEPTH + 1 }).setVisible(false);
+
+    // Un slot por arma del juego: las bloqueadas también se muestran, apagadas, para
+    // que se vea qué queda por conseguir.
+    this.slots = WEAPON_KEYS.map((key) => ({
+      key,
+      frame: scene.add.rectangle(0, 0, INVENTORY_W - PADDING * 2, SLOT_H - 8, 0x101024, 0.9)
+        .setOrigin(0).setStrokeStyle(2, 0x333355).setScrollFactor(0).setDepth(DEPTH + 1).setVisible(false),
+      icon: icon(scene, WEAPON_INFO[key].icon, { size: SLOT_ICON, color: 0xffffff, depth: DEPTH + 2 }).setVisible(false),
+      name: text(scene, WEAPON_INFO[key].name, { size: FONT_SIZE.small, color: TEXT.secondary, depth: DEPTH + 2 }).setVisible(false),
+      detail: text(scene, '', { size: FONT_SIZE.tiny, color: TEXT.dim, depth: DEPTH + 2 }).setVisible(false),
+    }));
+  }
+
+  buildStats(scene) {
+    this.box = panel(scene, { width: STATS_W, height: BOX_H, depth: DEPTH, border: 0x66aaff }).setVisible(false);
+    this.boxTitle = text(scene, 'ESTADÍSTICAS', { size: '17px', color: TEXT.info, depth: DEPTH + 1 }).setVisible(false);
+    this.boxDivider = divider(scene, { width: STATS_W - PADDING * 2, depth: DEPTH + 1 }).setVisible(false);
+
+    // Filas reutilizables: se crean una vez y se rellenan al pausar, así no
+    // generamos y destruimos objetos cada vez que se abre el menú.
+    this.rows = Array.from({ length: MAX_ROWS }, () => ({
+      icon: icon(scene, 'icon-swords', { size: ROW_ICON, color: 0xffffff, depth: DEPTH + 1 }).setVisible(false),
+      label: text(scene, '', { size: FONT_SIZE.small, color: TEXT.secondary, depth: DEPTH + 1 }).setVisible(false),
+    }));
+  }
+
+  buildButtons(scene, actions) {
+    this.buttons = [
+      button(scene, { label: 'Continuar', width: 210, height: 46, depth: DEPTH + 1, onClick: actions.onResume }),
+      button(scene, { label: 'Configuración', width: 210, height: 46, depth: DEPTH + 1, color: TEXT.info, onClick: actions.onSettings }),
+      button(scene, { label: 'Reiniciar', width: 210, height: 46, depth: DEPTH + 1, color: TEXT.gold, onClick: actions.onRestart }),
+      button(scene, { label: 'Salir al menú', width: 210, height: 46, depth: DEPTH + 1, color: TEXT.danger, onClick: actions.onQuit }),
+    ];
+    this.buttonParts = this.buttons.flatMap((b) => b.parts);
+    setVisible(this.buttonParts, false);
+  }
+
+  layout(w, h) {
+    const cx = w / 2;
+    this.overlay.width = w;
+    this.overlay.height = h;
+
+    this.titleBox.setPosition(cx, 55);
+    this.title.setPosition(cx, 55);
+    this.stageCenterX = cx;
+    this.positionStage();
+
+    const boxY = 150;
+
+    // Izquierda: inventario.
+    const invX = 40;
+    this.invBox.setPosition(invX, boxY);
+    this.invTitle.setPosition(invX + PADDING, boxY + PADDING);
+    this.invDivider.setPosition(invX + PADDING, boxY + 42);
+    this.slots.forEach((slot, i) => {
+      const y = boxY + 56 + i * SLOT_H;
+      slot.frame.setPosition(invX + PADDING, y);
+      slot.icon.setPosition(invX + PADDING + 22, y + (SLOT_H - 8) / 2);
+      slot.name.setPosition(invX + PADDING + 46, y + 7);
+      slot.detail.setPosition(invX + PADDING + 46, y + 26);
+    });
+
+    // Centro: botones.
+    const firstButtonY = boxY + 90;
+    this.buttons.forEach((b, i) => b.setPosition(cx, firstButtonY + i * 62));
+
+    // Derecha: estadísticas.
+    const statsX = w - STATS_W - 40;
+    this.box.setPosition(statsX, boxY);
+    this.boxTitle.setPosition(statsX + PADDING, boxY + PADDING);
+    this.boxDivider.setPosition(statsX + PADDING, boxY + 42);
+    this.rows.forEach((row, i) => {
+      const y = boxY + 56 + i * ROW_H;
+      row.icon.setPosition(statsX + PADDING + ROW_ICON / 2, y + 8);
+      row.label.setPosition(statsX + PADDING + ROW_ICON + 10, y);
+    });
+  }
+
+  // El ancho del texto cambia con el número de etapa, así que el grupo icono+texto
+  // se recentra cada vez en lugar de usar posiciones fijas.
+  positionStage() {
+    const gap = 8;
+    const groupW = 18 + gap + this.stageText.width;
+    const left = (this.stageCenterX || 0) - groupW / 2;
+    this.stageIcon.setPosition(left + 9, 104);
+    this.stageText.setPosition(left + 18 + gap, 104);
+  }
+
+  // stats: filas de buildStatRows(). weapons: estado de armas de buildWeaponSlots().
+  // stageLabel: texto de etapa a mostrar bajo el título.
+  show(stats, weapons, stageLabel) {
+    this.rows.forEach((row, i) => {
+      const data = stats[i];
+      if (!data) {
+        setVisible([row.icon, row.label], false);
+        return;
+      }
+      row.icon.setTexture(data.icon).setDisplaySize(ROW_ICON, ROW_ICON).setTint(data.color).setVisible(true);
+      row.label.setText(data.label).setVisible(true);
+    });
+
+    this.slots.forEach((slot) => {
+      const info = WEAPON_INFO[slot.key];
+      const state = weapons[slot.key];
+      // Las armas bloqueadas quedan atenuadas, no ocultas.
+      slot.frame.setStrokeStyle(2, state.unlocked ? info.color : 0x333355).setVisible(true);
+      slot.icon.setTint(state.unlocked ? info.color : 0x444455).setVisible(true);
+      slot.name.setColor(state.unlocked ? TEXT.secondary : TEXT.dim).setVisible(true);
+      slot.detail.setText(state.unlocked ? state.detail : 'Sin desbloquear').setVisible(true);
+    });
+
+    this.stageText.setText(stageLabel);
+    this.positionStage();
+
+    setVisible(this.chrome, true);
+    setVisible(this.buttonParts, true);
+  }
+
+  hide() {
+    setVisible(this.chrome, false);
+    setVisible(this.buttonParts, false);
+    this.rows.forEach((row) => setVisible([row.icon, row.label], false));
+    this.slots.forEach((slot) => setVisible([slot.frame, slot.icon, slot.name, slot.detail], false));
+  }
+
+  // Oculta solo el contenido, dejando el overlay: se usa al abrir configuración
+  // desde la pausa, para que el juego siga viéndose atenuado detrás.
+  hideContent() {
+    setVisible(this.chrome.filter((o) => o !== this.overlay), false);
+    setVisible(this.buttonParts, false);
+    this.rows.forEach((row) => setVisible([row.icon, row.label], false));
+    this.slots.forEach((slot) => setVisible([slot.frame, slot.icon, slot.name, slot.detail], false));
+  }
+}
+
+// Estado de cada arma para el inventario: si está desbloqueada y su resumen.
+export function buildWeaponSlots(s) {
+  return {
+    aura: { unlocked: s.hasAura, detail: s.hasAura ? `${Math.round(s.auraDamage)} dmg · radio ${Math.round(s.auraRadius)}` : '' },
+    orbit: { unlocked: s.hasOrbit, detail: s.hasOrbit ? `${Math.round(s.orbitDamage)} dmg · x${s.orbitCount}` : '' },
+    pierce: { unlocked: s.hasPierce, detail: s.hasPierce ? `${Math.round(s.pierceDamage)} dmg · ${(1000 / s.pierceRate).toFixed(1)}/s` : '' },
+    burst: { unlocked: s.hasBurst, detail: s.hasBurst ? `${Math.round(s.burstDamage)} dmg · x${s.burstCount}` : '' },
+    nova: { unlocked: s.hasNova, detail: s.hasNova ? `${Math.round(s.novaDamage)} dmg · radio ${Math.round(s.novaRadius)}` : '' },
+  };
+}
+
+// Arma las filas de estadísticas a mostrar. Las que arrancan en cero (o dependen de
+// un arma no desbloqueada) se omiten para no llenar el panel de ruido.
+// La etapa no está acá: se muestra bajo el título, como contexto de la partida.
+export function buildStatRows(stats) {
+  const s = stats;
+  const rows = [
+    { icon: 'icon-swords', color: 0xff8866, label: `Daño: ${Math.round(s.damage)}` },
+    { icon: 'icon-gauge', color: 0xffcc44, label: `Cadencia: ${(1000 / s.fireRate).toFixed(1)}/s` },
+    { icon: 'icon-footprints', color: 0x66ffcc, label: `Velocidad: ${Math.round(s.moveSpeed)}` },
+    { icon: 'icon-heart', color: 0xff5566, label: `HP máximo: ${Math.round(s.maxHp)}` },
+    { icon: 'icon-magnet', color: 0xaa88ff, label: `Radio de imán: ${Math.round(s.magnetRadius)}` },
+  ];
+
+  if (s.hpRegen > 0) rows.push({ icon: 'icon-heart-pulse', color: 0xff88aa, label: `Regeneración: ${s.hpRegen.toFixed(1)}/s` });
+  if (s.lifesteal > 0) rows.push({ icon: 'icon-droplet', color: 0xff5566, label: `Robo de vida: ${(s.lifesteal * 100).toFixed(0)}%` });
+  if (s.dodge > 0) rows.push({ icon: 'icon-wind', color: 0x88ddff, label: `Esquivar: ${(s.dodge * 100).toFixed(0)}%` });
+  if (s.shieldMax > 0) rows.push({ icon: 'icon-shield', color: 0x66ddff, label: `Escudo: ${Math.ceil(s.shield)}/${Math.round(s.shieldMax)}` });
+
+  return rows;
+}

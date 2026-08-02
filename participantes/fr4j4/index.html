@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Deckstiny — Juego</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0d0d1a; }
+body { font-family: 'Press Start 2P', monospace; touch-action: manipulation; }
+#game-container { width: 100%; height: 100dvh; }
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  -ms-interpolation-mode: nearest-neighbor;
+  display: block;
+  margin: 0 auto;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+  if (e.target.tagName === 'CANVAS') e.preventDefault();
+});
+</script>
+</head>
+<body>
+<div id="game-container"></div>
+<script src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js"></script>
+<script src="js/phaser-compat.js"></script>
+<script src="js/data/classes.js"></script>
+<script src="js/data/cards.js"></script>
+<script src="js/ui/card.js"></script>
+<script src="js/ui/crt.js"></script>
+<script src="js/ui/vfx.js"></script>
+<script src="js/data/sprites/heroes/mago.js"></script>
+<script src="js/data/sprites/heroes/necromancer.js"></script>
+<script src="js/data/sprites/heroes/guerrero.js"></script>
+<script src="js/data/sprites/heroes/asesino.js"></script>
+<script src="js/data/sprites/heroes/bardo.js"></script>
+<script src="js/data/sprites/heroes/dummy.js"></script>
+<script src="js/engine/HeroSprite.js"></script>
+<script src="js/scenes/BootScene.js"></script>
+<script src="js/scenes/MenuScene.js"></script>
+<script src="js/scenes/DeckScene.js"></script>
+<script src="js/scenes/GameScene.js"></script>
+<script src="js/scenes/GameOverScene.js"></script>
+<script src="js/scenes/DeckPickerScene.js"></script>
+<script src="js/main.js"></script>
+<script>
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const targetStep = parseInt(params.get('step') || '0');
+  const autoFill = params.get('autofill') === '1';
+  const openModal = params.get('modal') === '1';
+  const scrollTo = parseInt(params.get('scroll') || '0');
+  if (!targetStep) return;
+  function start() {
+    if (typeof game === 'undefined') { setTimeout(start, 100); return; }
+    setTimeout(() => {
+      if (autoFill) {
+        const cards = ALL_CARDS.mago || [];
+        const deck = {};
+        cards.forEach(c => deck[c.id] = c.maxCopies);
+        const slots = [{ name: 'TEST DECK', cards: deck }];
+        localStorage.setItem('deckstiny_decks', JSON.stringify({ mago: slots }));
+      }
+      game.scene.start('DeckScene');
+      setTimeout(() => {
+        const scene = game.scene.getScene('DeckScene');
+        if (!scene) return;
+        scene.showStep(targetStep);
+        if (autoFill && targetStep === 3) scene.quickFill();
+        if (openModal && targetStep === 3) {
+          const firstCard = (ALL_CARDS.mago || [])[0];
+          if (firstCard) scene.openCardModal(firstCard);
+        }
+        if (scrollTo > 0 && targetStep === 3) {
+          scene.scrollCardGrid(scrollTo);
+        }
+      }, 200);
+    }, 500);
+  }
+  if (document.readyState === 'complete') start();
+  else window.addEventListener('load', start);
+})();
+</script>
+</body>
+</html>

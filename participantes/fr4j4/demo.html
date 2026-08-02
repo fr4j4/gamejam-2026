@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>HeroSprite Demo v2 — load.spritesheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0d0d1a; font-family: 'Press Start 2P', monospace; }
+body { display: flex; flex-direction: column; }
+.label { padding: 8px 12px; color: #faba72; font-size: 11px; background: #16213e; border-bottom: 1px solid #4a4a6e; }
+.demo-wrap { position: relative; flex: 1 1 0; min-height: 0; }
+#phaser-root { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<div class="label">DEMO v2 — load.spritesheet approach (igual que HeroSprite engine)</div>
+<div class="demo-wrap">
+  <div id="phaser-root"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js"></script>
+<script>
+(function () {
+  const SPRITE_KEY = 'hero_mago';
+  const SPRITE_SRC = 'assets/heroes/mago.png';
+  const FRAME_W = 512;
+  const FRAME_H = 512;
+  const SCALE = 0.25;
+
+  class DemoScene extends Phaser.Scene {
+    constructor() { super('DemoScene'); }
+
+    preload() {
+      this.load.spritesheet(SPRITE_KEY, SPRITE_SRC, { frameWidth: FRAME_W, frameHeight: FRAME_H });
+      this.load.on('loaderror', (file) => console.error('[loaderror]', file.src));
+      this.load.on('filecomplete', (key, type) => console.log('[filecomplete]', key, type));
+    }
+
+    create() {
+      const W = this.scale.width;
+      const H = this.scale.height;
+      this.cameras.main.setBackgroundColor('#0d0d1a');
+
+      const tex = this.textures.get(SPRITE_KEY);
+      const frames = tex ? tex.frames : null;
+      console.log('[tex frames]', frames ? Object.keys(frames).length : 'none');
+
+      const cellW = W / 4;
+      const cellH = H / 4;
+
+      const positions = [
+        { x: cellW * 0.5, y: cellH * 0.5, frame: 0, label: 'frame 0 (x=0,y=0)' },
+        { x: cellW * 1.5, y: cellH * 0.5, frame: 1, label: 'frame 1 (x=512,y=0)' },
+        { x: cellW * 2.5, y: cellH * 0.5, frame: 4, label: 'frame 4 (x=0,y=512)' },
+        { x: cellW * 3.5, y: cellH * 0.5, frame: 5, label: 'frame 5 (x=512,y=512)' }
+      ];
+
+      const colors = [0xff6b6b, 0xfaba72, 0x9fcafd, 0xbdcd9c];
+
+      positions.forEach((p, i) => {
+        const g = this.add.graphics();
+        g.lineStyle(2, colors[i], 1);
+        g.strokeRect(p.x - 60, p.y - 60, 120, 120);
+
+        const img = this.add.image(p.x, p.y, SPRITE_KEY, p.frame).setOrigin(0.5).setScale(SCALE);
+        console.log('[' + p.label + ']', {
+          frame: img.frame,
+          displayWidth: img.displayWidth, displayHeight: img.displayHeight,
+          scaleX: img.scaleX,
+          x: img.x, y: img.y
+        });
+
+        this.add.text(p.x, p.y + 80, p.label, {
+          fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#' + colors[i].toString(16).padStart(6, '0')
+        }).setOrigin(0.5);
+      });
+
+      this.add.text(W / 2, H - 12, '4 frames del grid 4x4, cada uno a 128x128 px', {
+        fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#8892a0'
+      }).setOrigin(0.5);
+    }
+  }
+
+  const game = new Phaser.Game({
+    type: Phaser.AUTO,
+    parent: 'phaser-root',
+    width: 1024,
+    height: 600,
+    backgroundColor: '#0d0d1a',
+    scene: DemoScene
+  });
+})();
+</script>
+</body>
+</html>

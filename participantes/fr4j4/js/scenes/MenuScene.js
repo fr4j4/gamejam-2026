@@ -60,17 +60,8 @@ class MenuScene extends Phaser.Scene {
     });
     this.cameras.main.shake(120, 0.004);
 
-    const subtitle = UI.text(this, W / 2, 138, 'BARAJAS EN DUELO', {
-      fontFamily: '"VT323"', fontSize: '18px', color: '#9fcafd'
-    }).setOrigin(0.5).setAlpha(0);
-    this.uiLayer.add(subtitle);
+    const subtitle = VFX.gamejamEditionBadge(this, this.uiLayer, W / 2, 138, '#faba72');
     this.menuObjects.push(subtitle);
-    this.tweens.add({
-      targets: subtitle, alpha: 1, duration: 500, delay: 600
-    });
-    this.tweens.add({
-      targets: subtitle, alpha: 0.5, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 1100
-    });
   }
 
   showToast(msg, colorHex) {
@@ -92,7 +83,6 @@ class MenuScene extends Phaser.Scene {
   createButtons() {
     const W = 640;
     const btnData = [
-      { label: 'Online', scene: 'DeckPickerScene', mode: 'online', color: '#ff6b6b' },
       { label: 'VS IA', scene: 'DeckPickerScene', mode: 'ai', color: '#faba72' },
       { label: 'Deckbuilder', scene: 'DeckScene', mode: null, color: '#9fcafd' },
       { label: 'Practice', scene: 'DeckPickerScene', mode: 'test', color: '#bdcd9c' }

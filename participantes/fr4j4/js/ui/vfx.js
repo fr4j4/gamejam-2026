@@ -270,6 +270,90 @@ window.VFX = {
     return c;
   },
 
+  gamejamEditionBadge(scene, container, x, y, accentColorHex) {
+    const accent = accentColorHex || '#faba72';
+    const c = scene.add.container(x, y);
+
+    const underlineG = scene.add.graphics();
+    underlineG.lineStyle(1, 0xfaba72, 0.35);
+    underlineG.lineBetween(-78, 11, 78, 11);
+    underlineG.lineStyle(1, 0xfaba72, 0.18);
+    underlineG.lineBetween(-72, 13, 72, 13);
+    c.add(underlineG);
+
+    const shadow = UI.text(scene, 2, 2, 'GAMEJAM EDITION', {
+      fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#050510'
+    }).setOrigin(0.5).setAlpha(0.7);
+    c.add(shadow);
+
+    const ghostCyan = UI.text(scene, -1.5, 0, 'GAMEJAM EDITION', {
+      fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#00e5ff'
+    }).setOrigin(0.5).setAlpha(0.55);
+    if (Phaser.BlendModes && Phaser.BlendModes.SCREEN) ghostCyan.setBlendMode(Phaser.BlendModes.SCREEN);
+
+    const ghostMagenta = UI.text(scene, 1.5, 0, 'GAMEJAM EDITION', {
+      fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#ff4dd2'
+    }).setOrigin(0.5).setAlpha(0.55);
+    if (Phaser.BlendModes && Phaser.BlendModes.SCREEN) ghostMagenta.setBlendMode(Phaser.BlendModes.SCREEN);
+
+    const glow = UI.text(scene, 0, 0, 'GAMEJAM EDITION', {
+      fontFamily: '"Press Start 2P"', fontSize: '9px', color: accent
+    }).setOrigin(0.5).setAlpha(0.45);
+    if (Phaser.BlendModes && Phaser.BlendModes.ADD) glow.setBlendMode(Phaser.BlendModes.ADD);
+
+    const base = UI.text(scene, 0, 0, 'GAMEJAM EDITION', {
+      fontFamily: '"Press Start 2P"', fontSize: '9px', color: '#f5f5ff'
+    }).setOrigin(0.5);
+
+    const sheenRect = scene.add.rectangle(0, 0, 220, 18, 0xffffff, 0.07).setOrigin(0.5);
+
+    c.add([sheenRect, ghostMagenta, ghostCyan, glow, base]);
+
+    scene.tweens.add({
+      targets: ghostCyan, x: -1.5, duration: 1, onComplete: () => {
+        scene.tweens.add({
+          targets: ghostCyan, x: { from: -3, to: 0 }, duration: 1200,
+          yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+        });
+      }
+    });
+    scene.tweens.add({
+      targets: ghostMagenta, duration: 1, onComplete: () => {
+        scene.tweens.add({
+          targets: ghostMagenta, x: { from: 3, to: 0 }, duration: 1200,
+          yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 300
+        });
+      }
+    });
+
+    scene.tweens.add({
+      targets: glow, alpha: { from: 0.25, to: 0.65 }, duration: 1400,
+      yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+    });
+
+    scene.tweens.add({
+      targets: sheenRect, x: { from: -90, to: 90 }, alpha: { from: 0.0, to: 0.12 },
+      duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+    });
+
+    scene.tweens.add({
+      targets: c, scale: { from: 0.94, to: 1 }, alpha: { from: 0, to: 1 },
+      duration: 700, delay: 500, ease: 'Back.easeOut'
+    });
+
+    c.blinkTimer = scene.time.addEvent({
+      delay: 4200, loop: true,
+      callback: () => {
+        scene.tweens.add({
+          targets: base, alpha: 0.2, duration: 80, yoyo: true, repeat: 3
+        });
+      }
+    });
+
+    this._add(container, c);
+    return c;
+  },
+
   glitchTitle(scene, container, x, y, text, accentColorHex) {
     const c = scene.add.container(x, y);
     const measure = UI.text(scene, 0, 0, text, {

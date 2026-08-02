@@ -57,6 +57,25 @@ class GameScene extends Phaser.Scene {
         this.cancelTargeting();
       }
     });
+
+    this.input.on('wheel', (pointer, gameObjects, dx, dy) => {
+      if (!this.logList || !this.logScrollZone) return;
+      const wx = pointer.worldX, wy = pointer.worldY;
+      const zx = this.logScrollZone.x, zy = this.logScrollZone.y;
+      const zw = this.logScrollZone.input ? this.logScrollZone.input.hitArea.width : this.logPanelW;
+      const zh = this.logScrollZone.input ? this.logScrollZone.input.hitArea.height : this.logPanelH;
+      const overPanel = wx >= zx - zw / 2 && wx <= zx + zw / 2
+        && wy >= zy - zh / 2 && wy <= zy + zh / 2;
+      if (!overPanel) return;
+      const wasAtBottom = this.logScrollY >= this.maxLogScroll;
+      const step = Math.max(this.logLineH, Math.abs(dy) * 0.5);
+      if (dy < 0) {
+        this.logScrollY = Math.min(this.maxLogScroll, this.logScrollY + step);
+      } else if (dy > 0) {
+        this.logScrollY = Math.max(0, this.logScrollY - step);
+      }
+      this.reflowLog();
+    });
   }
 
   shutdown() {
@@ -166,6 +185,39 @@ class GameScene extends Phaser.Scene {
     // --- BATTLE LINE ---
     this.pBoardContainer = this.add.container(0, 0);
     this.eBoardContainer = this.add.container(0, 0);
+
+    // --- BATTLE LOG PANEL ---
+    this.logPanelX = Math.floor((W - 264) / 2);
+    this.logPanelY = 218;
+    this.logPanelW = 264;
+    this.logPanelH = 110;
+    this.logLineH = 14;
+    this.logMaxLines = 50;
+
+    const logBg = this.add.rectangle(
+      this.logPanelX + this.logPanelW / 2,
+      this.logPanelY + this.logPanelH / 2,
+      this.logPanelW, this.logPanelH, 0x16213e, 0.6
+    ).setStrokeStyle(1, Phaser.Display.Color.HexStringToColor('#9fcafd').color, 0.5);
+    this.uiLayer.add(logBg);
+    this.logBg = logBg;
+
+    const logTitle = UI.text(this, this.logPanelX + 6, this.logPanelY - 4, 'LOG DE BATALLA', {
+      fontFamily: '"Press Start 2P"', fontSize: '7px', color: '#9fcafd'
+    }).setOrigin(0, 0.5);
+    this.uiLayer.add(logTitle);
+
+    this.logList = this.add.container(this.logPanelX + 4, this.logPanelY);
+    this.uiLayer.add(this.logList);
+
+    this.logScrollY = 0;
+    this.maxLogScroll = 0;
+    this.logScrollZone = this.add.zone(
+      this.logPanelX + this.logPanelW / 2,
+      this.logPanelY + this.logPanelH / 2,
+      this.logPanelW, this.logPanelH
+    ).setInteractive({ useHandCursor: false });
+    this.uiLayer.add(this.logScrollZone);
 
     // --- END TURN ---
     this.endTurnBtn = this.add.rectangle(W - 76, H - 22, 120, 32, 0x16213e)
@@ -1032,17 +1084,22 @@ class GameScene extends Phaser.Scene {
 
   applyDamage(side, amount) {
     const who = side === 'player' ? this.player : this.opponent;
+    let armorAbsorbed = 0;
     if (who.armor > 0) {
-      if (amount <= who.armor) { who.armor -= amount; amount = 0; }
-      else { amount -= who.armor; who.armor = 0; }
+      if (amount <= who.armor) { armorAbsorbed = amount; who.armor -= amount; amount = 0; }
+      else { armorAbsorbed = who.armor; amount -= who.armor; who.armor = 0; }
     }
     who.hp -= amount;
+    const isPlayer = side === 'player';
+    const label = isPlayer ? 'Tú' : 'Oponente';
+    if (armorAbsorbed > 0) {
+      this.addLog(`${label}: -${armorAbsorbed} ARM`, 'sys');
+    }
     if (amount > 0) {
-      const isPlayer = side === 'player';
       this.showFloatingNumber(isPlayer ? 120 : 520, 72, `-${amount}`, '#ff6b6b');
       this.screenFlash('#ff6b6b');
       this.shakeContainer(isPlayer ? this.pInfoContainer : this.eInfoContainer);
-      this.addLog(`${isPlayer ? 'Tú' : 'Oponente'}: -${amount} HP`, 'dmg');
+      this.addLog(`${label}: -${amount} HP`, 'dmg');
     }
   }
 
@@ -1169,17 +1226,57 @@ class GameScene extends Phaser.Scene {
 
   addLog(msg, type) {
     this.state.log.push({ msg, type, turn: this.state.turn });
+    this.pushLogLine(msg, type);
+  }
+
+  pushLogLine(msg, type) {
+    if (!this.logList) return;
     const color = type === 'dmg' ? '#ff6b6b' : type === 'sys' ? '#faba72' : type === 'info' ? '#9fcafd' : '#bdcd9c';
-    const t = UI.text(this, 320, 250, msg, {
-      fontFamily: '"VT323"', fontSize: '13px', color: color,
-      stroke: '#000000', strokeThickness: 2
-    }).setOrigin(0.5).setDepth(1002);
-    this.fxContainer.add(t);
-    this.tweens.add({
-      targets: t, y: 220, alpha: 0,
-      duration: 2200, ease: 'Cubic.easeIn',
-      onComplete: () => t.destroy()
-    });
+
+    const line = UI.text(this, 0, 0, msg, {
+      fontFamily: '"VT323"', fontSize: '12px', color: color,
+      stroke: '#000000', strokeThickness: 1,
+      wordWrap: { width: this.logPanelW - 8 }
+    }).setOrigin(0, 0);
+    this.logList.add(line);
+
+    this.reflowLog();
+  }
+
+  reflowLog() {
+    if (!this.logList) return;
+
+    while (this.state.log.length > this.logMaxLines) {
+      this.state.log.shift();
+      const first = this.logList.list[0];
+      if (first) { first.destroy(); this.logList.remove(first); }
+    }
+
+    const items = this.logList.list.slice();
+    let y = 2;
+    for (const item of items) {
+      item.y = y;
+      y += item.height + 2;
+    }
+    const totalH = y;
+    const visibleH = this.logPanelH - 4;
+    const maxScroll = Math.max(0, totalH - visibleH);
+
+    if (this.logScrollY >= this.maxLogScroll - 0.5) {
+      this.logScrollY = maxScroll;
+    }
+    this.logScrollY = Math.min(this.logScrollY, maxScroll);
+    this.maxLogScroll = maxScroll;
+
+    this.logList.y = this.logPanelY - this.logScrollY;
+
+    const panelTop = this.logPanelY;
+    const panelBottom = this.logPanelY + this.logPanelH;
+    for (const item of items) {
+      const worldY = this.logList.y + item.y;
+      const visible = worldY >= panelTop && worldY < panelBottom;
+      item.setVisible(visible);
+    }
   }
 
   // ===== ANIMATIONS =====

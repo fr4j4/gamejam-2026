@@ -102,13 +102,15 @@ export default class TouchControls {
     if (this.side === 'right') {
       this.hotZone.setPosition(w / 2, h / 3);
       this.hotZone.setSize(w / 2 - rightPad, (2 * h) / 3);
-      this.pauseButton.setPosition(PAUSE_X_OFFSET + leftPad, PAUSE_Y + topPad);
-      this.pauseIcon.setPosition(PAUSE_X_OFFSET + leftPad, PAUSE_Y + topPad);
+      const pauseX = Math.max(PAUSE_X_OFFSET, leftPad + 32);
+      this.pauseButton.setPosition(pauseX, PAUSE_Y + topPad);
+      this.pauseIcon.setPosition(pauseX, PAUSE_Y + topPad);
     } else {
       this.hotZone.setPosition(leftPad, h / 3);
       this.hotZone.setSize(w / 2 - leftPad, (2 * h) / 3);
-      this.pauseButton.setPosition(w - PAUSE_X_OFFSET - rightPad, PAUSE_Y + topPad);
-      this.pauseIcon.setPosition(w - PAUSE_X_OFFSET - rightPad, PAUSE_Y + topPad);
+      const pauseX = Math.min(w - PAUSE_X_OFFSET, w - rightPad - 32);
+      this.pauseButton.setPosition(pauseX, PAUSE_Y + topPad);
+      this.pauseIcon.setPosition(pauseX, PAUSE_Y + topPad);
     }
   }
 

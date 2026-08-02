@@ -16,6 +16,9 @@ const BOSS_BAR_H = 16;
 const ICON_SIZE = 16;
 const ICON_X = 20;
 const ICON_X_COMPACT = 12;
+// En compact reservamos la esquina superior izquierda para el botón de pausa
+// mobile (TouchControls). El HUD arranca a la derecha del botón + un margen.
+const PAUSE_RESERVED_W = 90;
 const BAR_X = ICON_X + ICON_SIZE + 8;
 const TEXT_X = BAR_X + BAR_W_DESKTOP + 8;
 const HEADER_PAD = 18;
@@ -61,11 +64,19 @@ export default class Hud {
     const topInset = edgePadding('top', 0, insets);
     const rightInset = edgePadding('right', 0, insets);
 
+    // En compact, el bloque izquierdo arranca a la derecha del botón de pausa
+    // (TouchControls reserva la esquina superior izquierda). En desktop no hay
+    // botón de pausa mobile, asi que arrancamos pegado al borde.
+    const leftReserved = compact ? Math.max(PAUSE_RESERVED_W, leftInset + 60) : ICON_X + leftInset;
+
     // Ancho de barras: en compact, la barra ocupa una fraccion del ancho total
     // (no mas del 40% del viewport) para que el bloque derecho tenga lugar.
     const barW = compact ? Math.min(BAR_W_DESKTOP, w * 0.4) : BAR_W_DESKTOP;
     const iconX = (compact ? ICON_X_COMPACT : ICON_X) + leftInset;
-    const barX = iconX + ICON_SIZE + 8;
+    // En compact usamos la reserva maxima para que el bloque izquierdo no se
+    // superponga con el boton de pausa.
+    const effectiveIconX = compact ? Math.max(iconX, leftReserved) : iconX;
+    const barX = effectiveIconX + ICON_SIZE + 8;
     const textX = barX + barW + 8;
     const headerPad = (compact ? HEADER_PAD_COMPACT : HEADER_PAD) + topInset;
 
@@ -79,17 +90,17 @@ export default class Hud {
     this.xpBar.fill.width = barW - 2;
     this.xpBar.maxWidth = barW - 2;
 
-    this.shieldIcon.setPosition(iconX + ICON_SIZE / 2, headerPad + 6);
+    this.shieldIcon.setPosition(effectiveIconX + ICON_SIZE / 2, headerPad + 6);
     this.shieldBar.track.setPosition(barX, headerPad + 2);
     this.shieldBar.fill.setPosition(barX + 1, headerPad + 3);
     this.shieldText.setPosition(textX, headerPad);
 
-    this.hpIcon.setPosition(iconX + ICON_SIZE / 2, headerPad + 23);
+    this.hpIcon.setPosition(effectiveIconX + ICON_SIZE / 2, headerPad + 23);
     this.hpBar.track.setPosition(barX, headerPad + 14);
     this.hpBar.fill.setPosition(barX + 2, headerPad + 16);
     this.hpText.setPosition(textX, headerPad + 14);
 
-    this.xpIcon.setPosition(iconX + ICON_SIZE / 2, headerPad + 41);
+    this.xpIcon.setPosition(effectiveIconX + ICON_SIZE / 2, headerPad + 41);
     this.xpBar.track.setPosition(barX, headerPad + 36);
     this.xpBar.fill.setPosition(barX + 1, headerPad + 37);
 
@@ -106,8 +117,10 @@ export default class Hud {
     }
 
     const timerX = w - 20 - rightInset;
-    this.timerIcon.setPosition(timerX - 24, headerPad + 9);
     this.timerText.setPosition(timerX, headerPad);
+    // El ícono se coloca a la izquierda del texto real para no superponerse,
+    // midiendo desde el borde derecho del timerText.
+    this.timerIcon.setPosition(this.timerText.x - this.timerText.width - 8, headerPad + 9);
     this.nextBossText.setPosition(timerX, headerPad + 24);
     this.positionBossCountIcon();
 

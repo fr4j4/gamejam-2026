@@ -117,15 +117,17 @@ export default class SettingsPanel {
     this.divider.setSize(boxW - padding * 2, 2).setPosition(cx - (boxW - padding * 2) / 2, cy - boxH / 2 + 56);
 
     // Los sliders se apilan dejando lugar arriba para su etiqueta.
-    const sliderGap = compact ? 54 : 62;
+    const sliderGap = compact ? 64 : 62;
     const firstY = cy - boxH / 2 + 108;
     this.sliders.forEach(({ ui }, i) => {
       ui.setPosition(cx - sliderW / 2, firstY + i * sliderGap);
     });
 
-    // Toggle de lado: debajo del último slider.
-    const toggleY = firstY + this.sliders.length * sliderGap + 40;
-    this.layoutToggle.label.setPosition(cx - sliderW / 2, toggleY - 26);
+    // Toggle de lado: debajo del último slider. El label va centrado arriba del
+    // par IZQ/DER, no en el borde del slider.
+    const toggleY = firstY + this.sliders.length * sliderGap + 48;
+    this.layoutToggle.label.setOrigin(0.5, 0);
+    this.layoutToggle.label.setPosition(cx, toggleY - 26);
     const toggleTotalW = TOGGLE_W * 2 + TOGGLE_GAP;
     this.layoutToggle.left.btn.setPosition(cx - toggleTotalW / 2 + TOGGLE_W / 2, toggleY);
     this.layoutToggle.right.btn.setPosition(cx + toggleTotalW / 2 - TOGGLE_W / 2, toggleY);

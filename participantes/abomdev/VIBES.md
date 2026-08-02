@@ -22,6 +22,7 @@ Implementación de la idea de fullscreen en mobile (botón en menú y pausa, aut
 - **Touch gana sobre teclado, no suma** — `updatePlayerMovement` consulta primero el vector touch y copia los componentes a un `Vector2` local (no muta la referencia compartida, fix del bug donde el personaje salía a través del mapa).
 - **Solo visible en landscape** — si `isPortrait()`, el overlay entero se oculta (incluyendo el portrait hint del fullscreen sigue funcionando).
 - **Hooks de visibilidad** — el overlay se oculta en level-up, pausa, game over, victory y al volver al menú. Vuelve a aparecer en `resumeGame` y `chooseUpgrade`.
+- **Lado del joystick configurable** (`src/utils/touchLayout.js` + `SettingsPanel` toggle IZQ/DER) — default `right` (diestros). El cambio aplica en vivo a `TouchControls` (hot zone + botón pausa), `Minimap` (esquina) y `PauseMenu` (columnas inventario/stats invierten). `LevelUpMenu` no se invierte (cards simétricas en el centro). Persiste en `localStorage` con clave `survivorsTouchLayout`.
 
 ### Infraestructura
 - **Meta tags PWA + safe-areas en `index.html`** — `apple-mobile-web-app-capable`, `mobile-web-app-capable`, `theme-color`, `viewport-fit=cover`, `body` con `env(safe-area-inset-*)` para el notch.

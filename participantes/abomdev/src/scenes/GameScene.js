@@ -204,7 +204,15 @@ export default class GameScene extends Phaser.Scene {
       onQuit: () => this.quitToMenu(),
     });
     // Al cerrar configuración volvemos a la pausa, que es desde donde se abrió.
-    this.settingsPanel = new SettingsPanel(this, () => this.showPauseContent());
+    this.settingsPanel = new SettingsPanel(
+      this,
+      () => this.showPauseContent(),
+      (value) => {
+        this.touchControls?.setLayout(value);
+        this.minimap?.setLayout(value);
+        this.pauseMenu?.setLayout(value);
+      },
+    );
 
     this.layoutUI();
     this.updateHud();

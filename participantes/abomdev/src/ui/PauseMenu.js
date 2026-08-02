@@ -7,6 +7,7 @@ import { WEAPON_KEYS } from '../config/upgrades.js';
 import { isTouchDevice, isIOS } from '../utils/device.js';
 import { toggleFullscreen } from '../utils/fullscreen.js';
 import { lockLandscape, unlockOrientation } from '../utils/orientation.js';
+import { getTouchLayout } from '../utils/touchLayout.js';
 import { button, divider, icon, panel, setVisible, text } from './widgets.js';
 
 const DEPTH_OVERLAY = 290;
@@ -34,8 +35,9 @@ const WEAPON_INFO = {
 
 export default class PauseMenu {
   // actions: { onResume, onSettings, onRestart, onQuit }
-  constructor(scene, actions) {
+  constructor(scene, actions, side) {
     this.scene = scene;
+    this.side = side || getTouchLayout();
 
     this.overlay = scene.add.rectangle(0, 0, 10, 10, UI.overlay, UI.overlayAlpha)
       .setOrigin(0).setScrollFactor(0).setDepth(DEPTH_OVERLAY).setVisible(false);
@@ -148,8 +150,19 @@ export default class PauseMenu {
 
     const boxY = 150;
 
-    // Izquierda: inventario.
-    const invX = 40;
+    // Las columnas invierten según el lado del joystick: con joystick a la
+    // derecha el inventario va a la derecha y las stats a la izquierda, y al
+    // revés. El centro (botones) no se mueve.
+    let invX;
+    let statsX;
+    if (this.side === 'right') {
+      invX = w - INVENTORY_W - 40;
+      statsX = 40;
+    } else {
+      invX = 40;
+      statsX = w - STATS_W - 40;
+    }
+
     this.invBox.setPosition(invX, boxY);
     this.invTitle.setPosition(invX + PADDING, boxY + PADDING);
     this.invDivider.setPosition(invX + PADDING, boxY + 42);
@@ -161,12 +174,9 @@ export default class PauseMenu {
       slot.detail.setPosition(invX + PADDING + 46, y + 26);
     });
 
-    // Centro: botones.
     const firstButtonY = boxY + 90;
     this.buttons.forEach((b, i) => b.setPosition(cx, firstButtonY + i * 62));
 
-    // Derecha: estadísticas.
-    const statsX = w - STATS_W - 40;
     this.box.setPosition(statsX, boxY);
     this.boxTitle.setPosition(statsX + PADDING, boxY + PADDING);
     this.boxDivider.setPosition(statsX + PADDING, boxY + 42);
@@ -175,6 +185,11 @@ export default class PauseMenu {
       row.icon.setPosition(statsX + PADDING + ROW_ICON / 2, y + 8);
       row.label.setPosition(statsX + PADDING + ROW_ICON + 10, y);
     });
+  }
+
+  setLayout(value) {
+    this.side = value;
+    this.layout(this.scene.scale.width, this.scene.scale.height);
   }
 
   // El ancho del texto cambia con el número de etapa, así que el grupo icono+texto

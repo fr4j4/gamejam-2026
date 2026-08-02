@@ -1,25 +1,39 @@
-// Minimapa de la esquina inferior derecha: se redibuja entero cada frame con un
-// Graphics (son pocos puntos, no compensa mantener sprites vivos por entidad).
+// Minimapa que reposiciona según el lado del joystick: 'right' lo lleva al
+// bottom-left, 'left' al bottom-right (default histórico). Se redibuja entero
+// cada frame con un Graphics (son pocos puntos, no compensa mantener sprites
+// vivos por entidad).
 
 import { MINIMAP } from '../config/theme.js';
 import { ENEMY_TYPES } from '../config/enemies.js';
 import { WORLD_SIZE } from '../config/constants.js';
+import { getTouchLayout } from '../utils/touchLayout.js';
 
 const DEPTH = 150;
 const SIZE = 150;
+const MARGIN = 20;
 
 export default class Minimap {
-  constructor(scene) {
+  constructor(scene, side) {
     this.scene = scene;
     this.size = SIZE;
     this.x = 0;
     this.y = 0;
+    this.side = side || getTouchLayout();
     this.gfx = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH);
   }
 
   layout(w, h) {
-    this.x = w - 20 - this.size;
-    this.y = h - 20 - this.size;
+    if (this.side === 'right') {
+      this.x = MARGIN;
+    } else {
+      this.x = w - MARGIN - this.size;
+    }
+    this.y = h - MARGIN - this.size;
+  }
+
+  setLayout(value) {
+    this.side = value;
+    this.layout(this.scene.scale.width, this.scene.scale.height);
   }
 
   // Escala una posición del mundo a coordenadas dentro del recuadro del minimapa.

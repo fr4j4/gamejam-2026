@@ -1,13 +1,15 @@
 // Overlay táctil para mobile: joystick virtual (estilo hot zone, aparece al
-// tocar la mitad izquierda) y botón de pausa dedicado en la esquina superior
-// derecha. El ataque es automático y no necesita botón. En portrait el overlay
-// entero se oculta — el juego está pensado para landscape.
+// tocar la mitad que matchea el lado configurado) y botón de pausa dedicado en
+// la esquina superior opuesta. El ataque es automático y no necesita botón.
+// En portrait el overlay entero se oculta — el juego está pensado para
+// landscape.
 //
 // Estilo: la base es un Graphics con anillos concéntricos (no un rectángulo)
 // y el thumb es un Arc con un highlight blanco para dar volumen sin gradiente.
 // Botón pausa con el mismo accent cyan que el joystick para matchear el theme.
 
 import Phaser from 'phaser';
+import { getTouchLayout } from '../utils/touchLayout.js';
 import { icon, panel } from './widgets.js';
 
 const DEPTH = 140;
@@ -21,8 +23,9 @@ const PAUSE_Y = 50;
 const ACCENT = 0x66ffcc;
 
 export default class TouchControls {
-  constructor(scene) {
+  constructor(scene, side) {
     this.scene = scene;
+    this.side = side || getTouchLayout();
     this.pointerId = null;
     this.inputVector = new Phaser.Math.Vector2(0, 0);
 
@@ -64,6 +67,12 @@ export default class TouchControls {
     });
   }
 
+  setLayout(value) {
+    this.side = value;
+    this.layout(this.scene.scale.width, this.scene.scale.height);
+    if (this.pointerId !== null) this._hideJoystick();
+  }
+
   _drawBase() {
     const g = this.joystickBase;
     g.clear();
@@ -76,10 +85,17 @@ export default class TouchControls {
   }
 
   layout(w, h) {
-    this.hotZone.setPosition(0, h / 3);
-    this.hotZone.setSize(w / 2, (2 * h) / 3);
-    this.pauseButton.setPosition(w - PAUSE_X_OFFSET, PAUSE_Y);
-    this.pauseIcon.setPosition(w - PAUSE_X_OFFSET, PAUSE_Y);
+    if (this.side === 'right') {
+      this.hotZone.setPosition(w / 2, h / 3);
+      this.hotZone.setSize(w / 2, (2 * h) / 3);
+      this.pauseButton.setPosition(PAUSE_X_OFFSET, PAUSE_Y);
+      this.pauseIcon.setPosition(PAUSE_X_OFFSET, PAUSE_Y);
+    } else {
+      this.hotZone.setPosition(0, h / 3);
+      this.hotZone.setSize(w / 2, (2 * h) / 3);
+      this.pauseButton.setPosition(w - PAUSE_X_OFFSET, PAUSE_Y);
+      this.pauseIcon.setPosition(w - PAUSE_X_OFFSET, PAUSE_Y);
+    }
   }
 
   setVisible(v) {

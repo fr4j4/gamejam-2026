@@ -1,5 +1,6 @@
-// Panel de configuración de audio. La misma clase la usan el menú principal y la
-// pausa, para que no existan dos versiones que se desincronicen.
+// Panel de configuración: volumen de audio (3 sliders) y lado del joystick en
+// mobile. La misma clase la usan el menú principal y la pausa, para que no
+// existan dos versiones que se desincronicen.
 //
 // Las categorías separadas existen porque el combate suena muchas veces por segundo
 // y los hitos (level-up, jefe, victoria) son puntuales: poder bajar uno sin perder
@@ -7,20 +8,26 @@
 
 import { FONT_SIZE, TEXT, UI } from '../config/theme.js';
 import { getAudioSettings, setVolume } from '../audio/synth.js';
+import { getTouchLayout, setTouchLayout } from '../utils/touchLayout.js';
 import { button, divider, panel, setVisible, slider, text } from './widgets.js';
 
 const DEPTH_OVERLAY = 400;
 const DEPTH = 410;
 const BOX_W = 460;
-const BOX_H = 340;
+const BOX_H = 460;
 const PADDING = 28;
 const SLIDER_W = 260;
+const TOGGLE_W = 90;
+const TOGGLE_H = 40;
+const TOGGLE_GAP = 8;
 
 export default class SettingsPanel {
-  // onClose lo provee quien lo abre: el menú vuelve a su pantalla, la pausa a la suya.
-  constructor(scene, onClose) {
+  // onClose: lo provee quien lo abre. onLayoutChange: callback para invertir
+  // joystick/minimap/PauseMenu en vivo (live update).
+  constructor(scene, onClose, onLayoutChange = null) {
     this.scene = scene;
     this.onClose = onClose;
+    this.onLayoutChange = onLayoutChange;
 
     this.overlay = scene.add.rectangle(0, 0, 10, 10, UI.overlay, 0.75)
       .setOrigin(0).setScrollFactor(0).setDepth(DEPTH_OVERLAY).setVisible(false);
@@ -39,6 +46,8 @@ export default class SettingsPanel {
     ];
     this.sliders.forEach(({ key, ui }) => ui.setValue(settings[key]));
 
+    this.layoutToggle = this._buildLayoutToggle(scene);
+
     this.closeButton = button(scene, {
       label: 'Volver', width: 160, height: 40, depth: DEPTH + 1,
       onClick: () => this.hide(),
@@ -47,9 +56,45 @@ export default class SettingsPanel {
     this.parts = [
       this.overlay, this.box, this.title, this.divider,
       ...this.sliders.flatMap(({ ui }) => ui.parts),
+      this.layoutToggle.label,
+      ...this.layoutToggle.options.flatMap((o) => o.parts),
       ...this.closeButton.parts,
     ];
     setVisible(this.parts, false);
+  }
+
+  _buildLayoutToggle(scene) {
+    const label = text(scene, 'Lado del joystick', {
+      size: FONT_SIZE.small, color: TEXT.secondary, depth: DEPTH + 1,
+    });
+    const makeOption = (value, caption) => {
+      const btn = button(scene, {
+        label: caption, width: TOGGLE_W, height: TOGGLE_H, depth: DEPTH + 1,
+        onClick: () => this._selectLayout(value),
+      });
+      return { value, btn, parts: btn.parts };
+    };
+    return {
+      label,
+      left: makeOption('left', 'IZQ'),
+      right: makeOption('right', 'DER'),
+      get options() { return [this.left, this.right]; },
+    };
+  }
+
+  _selectLayout(value) {
+    setTouchLayout(value);
+    this._refreshLayoutHighlight();
+    if (this.onLayoutChange) this.onLayoutChange(value);
+  }
+
+  _refreshLayoutHighlight() {
+    const current = getTouchLayout();
+    [this.layoutToggle.left, this.layoutToggle.right].forEach((opt) => {
+      const active = opt.value === current;
+      opt.btn.parts[0].setStrokeStyle(2, active ? 0x66ffcc : 0x444466);
+      opt.btn.parts[1].setColor(active ? '#66ffcc' : '#cceeff');
+    });
   }
 
   layout(w, h) {
@@ -68,6 +113,13 @@ export default class SettingsPanel {
       ui.setPosition(cx - SLIDER_W / 2, firstY + i * 62);
     });
 
+    // Toggle de lado: debajo del último slider.
+    const toggleY = firstY + this.sliders.length * 62 + 50;
+    this.layoutToggle.label.setPosition(cx - SLIDER_W / 2, toggleY - 26);
+    const toggleTotalW = TOGGLE_W * 2 + TOGGLE_GAP;
+    this.layoutToggle.left.btn.setPosition(cx - toggleTotalW / 2 + TOGGLE_W / 2, toggleY);
+    this.layoutToggle.right.btn.setPosition(cx + toggleTotalW / 2 - TOGGLE_W / 2, toggleY);
+
     this.closeButton.setPosition(cx, cy + BOX_H / 2 - 36);
   }
 
@@ -79,6 +131,7 @@ export default class SettingsPanel {
     // Releemos por si el mute con M cambió algo desde la última vez.
     const settings = getAudioSettings();
     this.sliders.forEach(({ key, ui }) => ui.setValue(settings[key]));
+    this._refreshLayoutHighlight();
     setVisible(this.parts, true);
   }
 

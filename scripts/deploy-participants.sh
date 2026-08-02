@@ -1,28 +1,37 @@
 #!/usr/bin/env bash
-# Build every participant and stage the result for GitHub Pages.
-# - Participants with a package.json + build script: run `npm ci && npm run build`
-#   and stage `dist/`. Vite's config (or the --base flag below) must produce
-#   relative asset URLs so the bundle works from /participantes/<name>/.
-# - Participants without a build (plain HTML/JS): stage the folder as-is and
-#   rewrite any leading-slash asset references in index.html to be relative.
+# Build every participant and assemble the full GitHub Pages site.
+# Result goes into $FINAL (a complete, servable site root):
+#   - homepage + repo assets copied from the repo root (noise excluded)
+#   - participantes/<name>/ replaced with the built output (or static + path rewrite)
 set -euo pipefail
 
-STAGING=".gh-pages-staging"
-rm -rf "$STAGING"
-mkdir -p "$STAGING"
+FINAL=".gh-pages-site"
+rm -rf "$FINAL"
+mkdir -p "$FINAL"
 
+# 1. Copy the repo root: homepage, assets, achievements, certificados, prensa,
+#    README, .gitignore, etc. Exclude VCS, CI infra, and junk.
+rsync -a --exclude='.git' --exclude='.github' --exclude='node_modules' \
+  --exclude='.gh-pages-site' --exclude='participantes' \
+  --exclude='scripts' \
+  --exclude='_p.txt' --exclude='_pos.txt' --exclude='_params.txt' \
+  --exclude='motoko_*' \
+  ./ "$FINAL/"
+
+# 2. Build / stage each participant into $FINAL/participantes/<name>/.
+mkdir -p "$FINAL/participantes"
 for dir in participantes/*/; do
   [ -d "$dir" ] || continue
   name="$(basename "$dir")"
-  out="$STAGING/$name"
+  out="$FINAL/participantes/$name"
   mkdir -p "$out"
 
   if [ -f "$dir/package.json" ] && jq -e '.scripts.build' "$dir/package.json" >/dev/null 2>&1; then
     echo "==> Build: $name"
     pushd "$dir" >/dev/null
     npm ci --no-audit --no-fund --silent
-    # --base=./ keeps asset URLs relative so the bundle works from the
-    # /participantes/<name>/ subpath.
+    # --base=./ keeps asset URLs relative so the bundle works from
+    # /participantes/<name>/ on GitHub Pages.
     npm run build -- --base=./ --outDir=dist 2>/dev/null || npm run build
     popd >/dev/null
     if [ -d "$dir/dist" ]; then
@@ -39,5 +48,5 @@ for dir in participantes/*/; do
   fi
 done
 
-echo "Staged:"
-ls -la "$STAGING"
+echo "Site staged: $FINAL"
+ls "$FINAL"

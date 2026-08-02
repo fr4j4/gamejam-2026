@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: pages
@@ -17,11 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Fetch gh-pages
-        run: git fetch origin gh-pages
 
       - uses: actions/setup-node@v4
         with:
@@ -33,28 +30,21 @@ jobs:
       - name: Build every participant
         run: bash scripts/deploy-participants.sh
 
-      - name: Update gh-pages branch
-        run: |
-          set -euo pipefail
-          mkdir -p /tmp/gh-pages
-          git worktree add /tmp/gh-pages origin/gh-pages
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
 
-          # Replace each staged participant folder in gh-pages.
-          for src in .gh-pages-staging/*/; do
-            name="$(basename "$src")"
-            dest="/tmp/gh-pages/participantes/$name"
-            rm -rf "$dest"
-            cp -r "$src" "$dest"
-          done
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .gh-pages-site
 
-          cd /tmp/gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          if git diff --quiet HEAD -- participantes/; then
-            echo "No participant changes."
-          else
-            git add -A participantes/
-            git commit -m "ci: rebuild Pages from participantes/* (${GITHUB_SHA::7})"
-            git push origin HEAD:gh-pages
-          fi
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

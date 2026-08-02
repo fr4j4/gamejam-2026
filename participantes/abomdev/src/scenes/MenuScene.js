@@ -25,7 +25,7 @@ export default class MenuScene extends Phaser.Scene {
     this.add.grid(0, 0, 4000, 4000, 64, 64, 0x1a1a2e, 1, 0x2a2a4e, 1).setDepth(-1);
 
     this.panel = panel(this, { width: PANEL_W, height: PANEL_H, depth: DEPTH, border: 0x66ffcc, origin: 0.5 });
-    this.title = text(this, 'SURVIVORS', { size: '52px', color: TEXT.accent, depth: DEPTH + 1, origin: 0.5 });
+    this.title = text(this, 'BUGSURVIVOR', { size: '46px', color: TEXT.accent, depth: DEPTH + 1, origin: 0.5 });
     this.subtitle = text(this, 'Sobrevive, sube de nivel y cruza los portales', {
       size: FONT_SIZE.small, color: TEXT.secondary, depth: DEPTH + 1, origin: 0.5,
     });

@@ -9,6 +9,7 @@
 import { FONT_SIZE, TEXT, UI } from '../config/theme.js';
 import { getAudioSettings, setVolume } from '../audio/synth.js';
 import { getTouchLayout, setTouchLayout } from '../utils/touchLayout.js';
+import { edgePadding, getSafeInsets, isCompactMode } from './layout.js';
 import { button, divider, panel, setVisible, slider, text } from './widgets.js';
 
 const DEPTH_OVERLAY = 400;
@@ -16,7 +17,9 @@ const DEPTH = 410;
 const BOX_W = 460;
 const BOX_H = 460;
 const PADDING = 28;
+const PADDING_COMPACT = 16;
 const SLIDER_W = 260;
+const SLIDER_W_COMPACT = 220;
 const TOGGLE_W = 90;
 const TOGGLE_H = 40;
 const TOGGLE_GAP = 8;
@@ -98,29 +101,36 @@ export default class SettingsPanel {
   }
 
   layout(w, h) {
+    const compact = isCompactMode();
     const cx = w / 2;
     const cy = h / 2;
     this.overlay.width = w;
     this.overlay.height = h;
 
-    this.box.setPosition(cx, cy);
-    this.title.setPosition(cx, cy - BOX_H / 2 + 32);
-    this.divider.setPosition(cx - (BOX_W - PADDING * 2) / 2, cy - BOX_H / 2 + 56);
+    const padding = compact ? PADDING_COMPACT : PADDING;
+    const sliderW = compact ? Math.min(SLIDER_W_COMPACT, w - 2 * padding - 20) : SLIDER_W;
+    const boxW = compact ? Math.min(BOX_W, w - 2 * padding) : BOX_W;
+    const boxH = compact ? Math.min(BOX_H, h - 2 * padding) : BOX_H;
+
+    this.box.setSize(boxW, boxH).setPosition(cx, cy);
+    this.title.setPosition(cx, cy - boxH / 2 + 32);
+    this.divider.setSize(boxW - padding * 2, 2).setPosition(cx - (boxW - padding * 2) / 2, cy - boxH / 2 + 56);
 
     // Los sliders se apilan dejando lugar arriba para su etiqueta.
-    const firstY = cy - BOX_H / 2 + 108;
+    const sliderGap = compact ? 54 : 62;
+    const firstY = cy - boxH / 2 + 108;
     this.sliders.forEach(({ ui }, i) => {
-      ui.setPosition(cx - SLIDER_W / 2, firstY + i * 62);
+      ui.setPosition(cx - sliderW / 2, firstY + i * sliderGap);
     });
 
     // Toggle de lado: debajo del último slider.
-    const toggleY = firstY + this.sliders.length * 62 + 50;
-    this.layoutToggle.label.setPosition(cx - SLIDER_W / 2, toggleY - 26);
+    const toggleY = firstY + this.sliders.length * sliderGap + 40;
+    this.layoutToggle.label.setPosition(cx - sliderW / 2, toggleY - 26);
     const toggleTotalW = TOGGLE_W * 2 + TOGGLE_GAP;
     this.layoutToggle.left.btn.setPosition(cx - toggleTotalW / 2 + TOGGLE_W / 2, toggleY);
     this.layoutToggle.right.btn.setPosition(cx + toggleTotalW / 2 - TOGGLE_W / 2, toggleY);
 
-    this.closeButton.setPosition(cx, cy + BOX_H / 2 - 36);
+    this.closeButton.setPosition(cx, cy + boxH / 2 - 36);
   }
 
   get isOpen() {

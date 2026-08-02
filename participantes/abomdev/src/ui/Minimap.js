@@ -7,15 +7,17 @@ import { MINIMAP } from '../config/theme.js';
 import { ENEMY_TYPES } from '../config/enemies.js';
 import { WORLD_SIZE } from '../config/constants.js';
 import { getTouchLayout } from '../utils/touchLayout.js';
+import { edgePadding, getSafeInsets, isCompactMode } from './layout.js';
 
 const DEPTH = 150;
-const SIZE = 150;
+const SIZE_DESKTOP = 150;
+const SIZE_COMPACT = 90;
 const MARGIN = 20;
 
 export default class Minimap {
   constructor(scene, side) {
     this.scene = scene;
-    this.size = SIZE;
+    this.size = isCompactMode() ? SIZE_COMPACT : SIZE_DESKTOP;
     this.x = 0;
     this.y = 0;
     this.side = side || getTouchLayout();
@@ -23,12 +25,18 @@ export default class Minimap {
   }
 
   layout(w, h) {
+    this.size = isCompactMode() ? SIZE_COMPACT : SIZE_DESKTOP;
+    const insets = getSafeInsets();
+    const leftInset = edgePadding('left', 0, insets);
+    const rightInset = edgePadding('right', 0, insets);
+    const bottomInset = edgePadding('bottom', 0, insets);
+    const margin = MARGIN + bottomInset;
     if (this.side === 'right') {
-      this.x = MARGIN;
+      this.x = MARGIN + leftInset;
     } else {
-      this.x = w - MARGIN - this.size;
+      this.x = w - MARGIN - rightInset - this.size;
     }
-    this.y = h - MARGIN - this.size;
+    this.y = h - margin - this.size;
   }
 
   setLayout(value) {
@@ -52,21 +60,26 @@ export default class Minimap {
     gfx.lineStyle(2, MINIMAP.border, 1);
     gfx.strokeRect(this.x, this.y, this.size, this.size);
 
+    const compact = this.size <= SIZE_COMPACT + 1;
+    const enemyR = compact ? 1.5 : 2;
+    const bossR = compact ? 3 : 4;
+    const specialR = compact ? 2 : 3;
+
     enemies.getChildren().forEach((e) => {
       if (!e.active) return;
       const p = this.toMinimap(e.x, e.y);
       gfx.fillStyle(ENEMY_TYPES[e.getData('type')].color, 1);
-      gfx.fillCircle(p.x, p.y, e.getData('isBoss') ? 4 : 2);
+      gfx.fillCircle(p.x, p.y, e.getData('isBoss') ? bossR : enemyR);
     });
 
     if (chest) {
       const cp = this.toMinimap(chest.x, chest.y);
       gfx.fillStyle(MINIMAP.chest, 1);
-      gfx.fillCircle(cp.x, cp.y, 3);
+      gfx.fillCircle(cp.x, cp.y, specialR);
     }
 
     const pp = this.toMinimap(player.x, player.y);
     gfx.fillStyle(MINIMAP.player, 1);
-    gfx.fillCircle(pp.x, pp.y, 3);
+    gfx.fillCircle(pp.x, pp.y, specialR);
   }
 }

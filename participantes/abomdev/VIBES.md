@@ -50,3 +50,35 @@ Implementación de la idea de fullscreen en mobile (botón en menú y pausa, aut
 - **Auditoría de comportamiento de enemigos** — Revisar los tipos de enemigo actuales y sus patrones de movimiento para identificar mejoras y nuevos patrones.
 - **Estética neón con switch clásico/neón** — Agregar una opción para alternar entre el tema visual clásico y un tema neón con colores vibrantes y pulsantes.
 - **Música chiptune durante el gameplay** — Evaluar librerías tipo chiptune o similares para sumar música de fondo que acompañe la partida.
+
+## Fase 2 — fr4j4
+
+### Resumen
+Auditoría completa del layout y refactor responsive para mobile. Se detectó que toda la UI usaba tamaños en píxeles hardcodeados, lo que rompía en viewports chicos (celular landscape): paneles que se salían de pantalla, superposiciones entre HUD/minimap/boss bar, joystick tapando el HUD, y safe-areas del notch ignoradas. Se introdujo un sistema de breakpoints explícitos (`isCompactMode` + `getViewportScale`) y se aplicó a todos los overlays.
+
+### Cambios realizados
+- **Safe areas** (`index.html` + `src/ui/layout.js::getSafeInsets`) — expuesto `env(--sai-*)` como CSS vars y leídos desde JS. Aplicado a `TouchControls` (joystick + botón pausa), `Hud` (timer + barras), `PauseMenu` (título + columnas), `Minimap`. En iPhone landscape el HUD ya no queda bajo el notch.
+- **Breakpoint explícito** (`src/ui/layout.js`) — `isCompactMode()` retorna true si `w < 720 || h < 480`. Una sola fuente de verdad para todos los overlays.
+- **HUD compacto** (`src/ui/Hud.js`) — ancho de barras derivado de `w * 0.4` en compact, nivel/etapa inline al lado de la barra XP, boss bar sube a `h - 28` (antes `h - 48`) para no chocar con el minimap, textos redimensionados.
+- **Pausa vertical en compact** (`src/ui/PauseMenu.js`) — el grid 3-columnas (STATS_W 340 + INVENTORY_W 280 + gaps) no entraba en 640px. En compact pasa a columna única: inventario, botones, stats, todo apilado y centrado respetando safe-areas.
+- **Level-up vertical en compact** (`src/ui/LevelUpMenu.js`) — el grid 2×2 (2×320 + 24 gap = 664px) salía de la pantalla. En compact pasa a 1×4 con cards de `w - 24` de ancho, íconos y labels inline.
+- **Settings responsivo** (`src/ui/SettingsPanel.js`) — caja de 460×460 capada a `w - 32 × h - 32` en compact, sliders más angostos.
+- **Menú principal escalado** (`src/scenes/MenuScene.js`) — panel de 520×380 pasa a 320×340 en compact, títulos más chicos, subtítulo y hint con word-wrap para no salirse.
+- **EndScreen compacto** (`src/ui/EndScreen.js`) — fuentes reducidas, tiempo/personaje en wrapeado para que "Sobreviviste X" no se salga en pantallas angostas.
+- **Minimap reducido** (`src/ui/Minimap.js`) — 150×150 → 90×90 en compact, enemigos del minimap con menor radio para mantener proporción.
+- **Joystick más chico en compact** (`src/ui/TouchControls.js`) — `BASE_R` 60 → 48, hot zone respeta safe-areas y se aleja del HUD.
+- **12 tests nuevos** (`src/ui/layout.test.js`) — `isCompactMode`, `getViewportScale`, `getSafeInsets`, `edgePadding`.
+
+### Lo que quedó frágil
+- **No testeado en device real.** Todos los cambios se verificaron con `npm test` + `npm run build`. La verificación visual es pendiente: alguien con un iPhone y un Android en mano tiene que probar (1) notch en landscape, (2) rotación en pausa, (3) level-up con muchas stats, (4) mobile portrait.
+- **Hot zone del joystick aún puede tapar el HUD.** El HUD vive en `y < 80` y la hot zone arranca en `h/3`; en un viewport 360×640 landscape no se tocan, pero en uno 360×360 (foldable raro) sí. Mitigación parcial: la hot zone NO captura la tira superior (`h/3` desde arriba), pero el HUD está fuera de esa zona.
+- **Compact mode solo dispara en touch.** En `isCompactMode` no se chequea `isTouchDevice`; un usuario de desktop que reduce la ventana a 400px verá layout vertical. Esto es aceptable según el principio "mobile-first", pero si rompe algo, agregar `&& isTouchDevice()` a cada layout.
+- **`setWordWrapWidth` se aplica en `show()` del level-up, no en `layout()`.** Si el jugador toma una mejora en compact y luego rota a desktop, las cards no se re-wrapean hasta el próximo show. Bug visible solo en ese caso raro.
+- **`isCompactMode` lee `window.innerWidth` directamente, no `scale.width`.** En teoría son iguales con `mode: RESIZE`, pero si en el futuro se cambia a `FIT`, los valores divergen. Documentado en el header de `layout.js` para que cualquiera lo cambie al pasar.
+
+### Ideas no implementadas
+- **Verificación visual automatizada** — no hay Playwright/Cypress en el stack. Probar a ojo o instalar uno nuevo (regla "no new deps unless asked").
+- **Adaptive density en HUD** — en compact se podrían fusionar las 3 barras (shield/hp/xp) en una sola tira horizontal para ahorrar 30px de alto. No se hizo porque el patrón actual sigue siendo legible.
+- **Banner publicitado para el notch** — los iPhones con Dynamic Island pueden tapar el bloque del timer. Se podría reemplazar el timerText por uno que se mueva dinámicamente debajo del island. Alto costo, bajo beneficio.
+- **Sonido/vibración al entrar/salir de compact** — feedback háptico para el jugador que rota. Descartado por conservadurismo (no queremos interrumpir la partida).
+- **Tests de integración con un mock de Phaser** — verificaría que `Hud.layout(640, 360)` no tira. Skipeado por la regla del proyecto ("no tests que requieran Phaser").

@@ -3,6 +3,7 @@
 
 import { BEST_TIME_KEY } from '../config/constants.js';
 import { TEXT } from '../config/theme.js';
+import { edgePadding, getSafeInsets, isCompactMode } from './layout.js';
 import { formatTime, text } from './widgets.js';
 
 const DEPTH = 200;
@@ -35,19 +36,25 @@ export function showEndScreen(scene, { title, color, elapsed, level }) {
 
   const cx = scene.scale.width / 2;
   const cy = scene.scale.height / 2;
+  const compact = isCompactMode();
+  const topInset = edgePadding('top', 0, getSafeInsets());
 
-  text(scene, title, { size: '40px', color, depth: DEPTH, origin: 0.5 }).setPosition(cx, cy - 40);
+  text(scene, title, {
+    size: compact ? '28px' : '40px', color, depth: DEPTH, origin: 0.5,
+  }).setPosition(cx, cy - (compact ? 30 : 40) + topInset);
 
   text(scene, `Sobreviviste ${formatTime(elapsed)} - Nivel ${level}`, {
-    size: '18px', color: TEXT.primary, depth: DEPTH, origin: 0.5,
-  }).setPosition(cx, cy + 10);
+    size: compact ? '15px' : '18px', color: TEXT.primary, depth: DEPTH, origin: 0.5,
+  }).setPosition(cx, cy + (compact ? 8 : 10));
 
   const bestLabel = isNewBest ? `¡Nuevo mejor tiempo! ${formatTime(bestTime)}` : `Mejor tiempo: ${formatTime(bestTime)}`;
-  text(scene, bestLabel, { size: '16px', color: TEXT.gold, depth: DEPTH, origin: 0.5 }).setPosition(cx, cy + 40);
+  text(scene, bestLabel, {
+    size: compact ? '14px' : '16px', color: TEXT.gold, depth: DEPTH, origin: 0.5,
+  }).setPosition(cx, cy + (compact ? 32 : 40)).setWordWrapWidth(scene.scale.width - 40);
 
   text(scene, 'Presiona R para reiniciar', {
-    size: '16px', color: TEXT.muted, depth: DEPTH, origin: 0.5,
-  }).setPosition(cx, cy + 75);
+    size: compact ? '14px' : '16px', color: TEXT.muted, depth: DEPTH, origin: 0.5,
+  }).setPosition(cx, cy + (compact ? 60 : 75));
 
   scene.input.keyboard.once('keydown-R', () => scene.scene.restart());
 }

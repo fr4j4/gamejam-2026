@@ -8,20 +8,26 @@ import { isTouchDevice, isIOS } from '../utils/device.js';
 import { toggleFullscreen } from '../utils/fullscreen.js';
 import { lockLandscape, unlockOrientation } from '../utils/orientation.js';
 import { getTouchLayout } from '../utils/touchLayout.js';
+import { edgePadding, getSafeInsets, isCompactMode } from './layout.js';
 import { button, divider, icon, panel, setVisible, text } from './widgets.js';
 
 const DEPTH_OVERLAY = 290;
 const DEPTH = 300;
-const BOX_H = 470;
+const BOX_H_DESKTOP = 470;
+const BOX_H_COMPACT = 220;
 const STATS_W = 340;
+const STATS_W_COMPACT = 280;
 const INVENTORY_W = 280;
+const INVENTORY_W_COMPACT = 240;
 const TITLE_BOX_W = 260;
 const TITLE_BOX_H = 60;
 const PADDING = 16;
+const PADDING_COMPACT = 10;
 const ROW_H = 26;
 const ROW_ICON = 17;
 const MAX_ROWS = 15;
 const SLOT_H = 54;
+const SLOT_H_COMPACT = 36;
 const SLOT_ICON = 26;
 
 // Nombre e icono de cada arma para el inventario. El orden es el de WEAPON_KEYS.
@@ -65,7 +71,7 @@ export default class PauseMenu {
   }
 
   buildInventory(scene) {
-    this.invBox = panel(scene, { width: INVENTORY_W, height: BOX_H, depth: DEPTH, border: 0xffcc44 }).setVisible(false);
+    this.invBox = panel(scene, { width: INVENTORY_W, height: BOX_H_DESKTOP, depth: DEPTH, border: 0xffcc44 }).setVisible(false);
     this.invTitle = text(scene, 'ARMAS', { size: '17px', color: TEXT.gold, depth: DEPTH + 1 }).setVisible(false);
     this.invDivider = divider(scene, { width: INVENTORY_W - PADDING * 2, depth: DEPTH + 1 }).setVisible(false);
 
@@ -82,7 +88,7 @@ export default class PauseMenu {
   }
 
   buildStats(scene) {
-    this.box = panel(scene, { width: STATS_W, height: BOX_H, depth: DEPTH, border: 0x66aaff }).setVisible(false);
+    this.box = panel(scene, { width: STATS_W, height: BOX_H_DESKTOP, depth: DEPTH, border: 0x66aaff }).setVisible(false);
     this.boxTitle = text(scene, 'ESTADÍSTICAS', { size: '17px', color: TEXT.info, depth: DEPTH + 1 }).setVisible(false);
     this.boxDivider = divider(scene, { width: STATS_W - PADDING * 2, depth: DEPTH + 1 }).setVisible(false);
 
@@ -139,52 +145,107 @@ export default class PauseMenu {
   }
 
   layout(w, h) {
+    const compact = isTouchDevice() && isCompactMode();
     const cx = w / 2;
     this.overlay.width = w;
     this.overlay.height = h;
 
-    this.titleBox.setPosition(cx, 55);
-    this.title.setPosition(cx, 55);
+    const insets = getSafeInsets();
+    const topInset = edgePadding('top', 0, insets);
+    const leftInset = edgePadding('left', 0, insets);
+    const rightInset = edgePadding('right', 0, insets);
+
+    const titleY = topInset + 55;
+    this.titleBox.setPosition(cx, titleY);
+    this.title.setPosition(cx, titleY);
     this.stageCenterX = cx;
     this.positionStage();
 
-    const boxY = 150;
+    const padding = compact ? PADDING_COMPACT : PADDING;
+    const statsW = compact ? Math.min(STATS_W_COMPACT, w - 2 * (padding + leftInset)) : STATS_W;
+    const invW = compact ? Math.min(INVENTORY_W_COMPACT, w - 2 * (padding + leftInset)) : INVENTORY_W;
+    const boxH = compact ? BOX_H_COMPACT : BOX_H_DESKTOP;
+    const slotH = compact ? SLOT_H_COMPACT : SLOT_H;
 
-    // Las columnas invierten según el lado del joystick: con joystick a la
-    // derecha el inventario va a la derecha y las stats a la izquierda, y al
-    // revés. El centro (botones) no se mueve.
-    let invX;
-    let statsX;
-    if (this.side === 'right') {
-      invX = w - INVENTORY_W - 40;
-      statsX = 40;
+    // El alto del bloque de pausa debe caber entre el titulo y el borde inferior.
+    const usableTop = titleY + 50;
+    const usableBottom = h - 20 - topInset;
+    const maxBoxH = Math.max(120, usableBottom - usableTop);
+
+    if (compact) {
+      // Layout vertical en columna unica: inventario arriba, stats abajo, botones
+      // en el centro entre ambos. Todo centrado horizontalmente respetando los
+      // safe-area insets.
+      const sideGap = padding + leftInset;
+      const blockGap = 12;
+      const totalH = boxH * 2 + blockGap;
+      const startY = titleY + 60 + (maxBoxH - totalH) / 2;
+      const statsX = cx - statsW / 2;
+      const invX = cx - invW / 2;
+
+      this.invBox.setSize(invW, boxH);
+      this.invBox.setPosition(cx, startY + boxH / 2);
+      this.invTitle.setPosition(invX + padding, startY + padding);
+      this.invDivider.setSize(invW - padding * 2, 2).setPosition(invX + padding, startY + 36);
+      this.slots.forEach((slot, i) => {
+        const y = startY + 46 + i * slotH;
+        slot.frame.setSize(invW - padding * 2, slotH - 8).setPosition(invX + padding, y);
+        slot.icon.setPosition(invX + padding + 18, y + (slotH - 8) / 2);
+        slot.name.setPosition(invX + padding + 38, y + 4);
+        slot.detail.setPosition(invX + padding + 38, y + 20);
+      });
+
+      const buttonsY = startY + boxH + blockGap;
+      this.buttons.forEach((b, i) => b.setPosition(cx, buttonsY + i * 44));
+
+      const statsY = buttonsY + this.buttons.length * 44 + blockGap;
+      this.box.setSize(statsW, boxH);
+      this.box.setPosition(cx, statsY + boxH / 2);
+      this.boxTitle.setPosition(statsX + padding, statsY + padding);
+      this.boxDivider.setSize(statsW - padding * 2, 2).setPosition(statsX + padding, statsY + 36);
+      this.rows.forEach((row, i) => {
+        const y = statsY + 46 + i * ROW_H;
+        row.icon.setPosition(statsX + padding + ROW_ICON / 2, y + 8);
+        row.label.setPosition(statsX + padding + ROW_ICON + 10, y);
+      });
     } else {
-      invX = 40;
-      statsX = w - STATS_W - 40;
+      const boxY = Math.max(150, topInset + 90);
+
+      let invX;
+      let statsX;
+      if (this.side === 'right') {
+        invX = w - INVENTORY_W - 40 - rightInset;
+        statsX = 40 + leftInset;
+      } else {
+        invX = 40 + leftInset;
+        statsX = w - STATS_W - 40 - rightInset;
+      }
+
+      this.invBox.setPosition(invX, boxY);
+      this.invTitle.setPosition(invX + PADDING, boxY + PADDING);
+      this.invDivider.setPosition(invX + PADDING, boxY + 42);
+      this.slots.forEach((slot, i) => {
+        const y = boxY + 56 + i * SLOT_H;
+        slot.frame.setPosition(invX + PADDING, y);
+        slot.icon.setPosition(invX + PADDING + 22, y + (SLOT_H - 8) / 2);
+        slot.name.setPosition(invX + PADDING + 46, y + 7);
+        slot.detail.setPosition(invX + PADDING + 46, y + 26);
+      });
+
+      const firstButtonY = boxY + 90;
+      this.buttons.forEach((b, i) => b.setPosition(cx, firstButtonY + i * 62));
+
+      this.box.setPosition(statsX, boxY);
+      this.boxTitle.setPosition(statsX + PADDING, boxY + PADDING);
+      this.boxDivider.setPosition(statsX + PADDING, boxY + 42);
+      this.rows.forEach((row, i) => {
+        const y = boxY + 56 + i * ROW_H;
+        row.icon.setPosition(statsX + PADDING + ROW_ICON / 2, y + 8);
+        row.label.setPosition(statsX + PADDING + ROW_ICON + 10, y);
+      });
     }
 
-    this.invBox.setPosition(invX, boxY);
-    this.invTitle.setPosition(invX + PADDING, boxY + PADDING);
-    this.invDivider.setPosition(invX + PADDING, boxY + 42);
-    this.slots.forEach((slot, i) => {
-      const y = boxY + 56 + i * SLOT_H;
-      slot.frame.setPosition(invX + PADDING, y);
-      slot.icon.setPosition(invX + PADDING + 22, y + (SLOT_H - 8) / 2);
-      slot.name.setPosition(invX + PADDING + 46, y + 7);
-      slot.detail.setPosition(invX + PADDING + 46, y + 26);
-    });
-
-    const firstButtonY = boxY + 90;
-    this.buttons.forEach((b, i) => b.setPosition(cx, firstButtonY + i * 62));
-
-    this.box.setPosition(statsX, boxY);
-    this.boxTitle.setPosition(statsX + PADDING, boxY + PADDING);
-    this.boxDivider.setPosition(statsX + PADDING, boxY + 42);
-    this.rows.forEach((row, i) => {
-      const y = boxY + 56 + i * ROW_H;
-      row.icon.setPosition(statsX + PADDING + ROW_ICON / 2, y + 8);
-      row.label.setPosition(statsX + PADDING + ROW_ICON + 10, y);
-    });
+    this.positionStage();
   }
 
   setLayout(value) {
@@ -198,8 +259,9 @@ export default class PauseMenu {
     const gap = 8;
     const groupW = 18 + gap + this.stageText.width;
     const left = (this.stageCenterX || 0) - groupW / 2;
-    this.stageIcon.setPosition(left + 9, 104);
-    this.stageText.setPosition(left + 18 + gap, 104);
+    const y = edgePadding('top', 0, getSafeInsets()) + 104;
+    this.stageIcon.setPosition(left + 9, y);
+    this.stageText.setPosition(left + 18 + gap, y);
   }
 
   // stats: filas de buildStatRows(). weapons: estado de armas de buildWeaponSlots().

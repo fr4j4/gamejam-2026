@@ -10,10 +10,12 @@
 
 import Phaser from 'phaser';
 import { getTouchLayout } from '../utils/touchLayout.js';
+import { edgePadding, getSafeInsets, getViewportScale, isCompactMode } from './layout.js';
 import { icon, panel } from './widgets.js';
 
 const DEPTH = 140;
-const BASE_R = 60;
+const BASE_R_DESKTOP = 60;
+const BASE_R_COMPACT = 48;
 const THUMB_R = 24;
 const HIGHLIGHT_R = 7;
 const HIGHLIGHT_OFFSET = 7;
@@ -21,6 +23,10 @@ const PAUSE_R = 28;
 const PAUSE_X_OFFSET = 50;
 const PAUSE_Y = 50;
 const ACCENT = 0x66ffcc;
+
+function getBaseRadius() {
+  return isCompactMode() ? BASE_R_COMPACT : BASE_R_DESKTOP;
+}
 
 export default class TouchControls {
   constructor(scene, side) {
@@ -75,26 +81,34 @@ export default class TouchControls {
 
   _drawBase() {
     const g = this.joystickBase;
+    const r = getBaseRadius();
     g.clear();
     g.lineStyle(2, ACCENT, 0.55);
-    g.strokeCircle(0, 0, BASE_R);
+    g.strokeCircle(0, 0, r);
     g.lineStyle(1, ACCENT, 0.25);
-    g.strokeCircle(0, 0, BASE_R * 0.55);
+    g.strokeCircle(0, 0, r * 0.55);
     g.fillStyle(ACCENT, 0.5);
     g.fillCircle(0, 0, 4);
   }
 
   layout(w, h) {
+    const insets = getSafeInsets();
+    const leftPad = edgePadding('left', 0, insets);
+    const rightPad = edgePadding('right', 0, insets);
+    const topPad = edgePadding('top', 0, insets);
+
+    this._drawBase();
+
     if (this.side === 'right') {
       this.hotZone.setPosition(w / 2, h / 3);
-      this.hotZone.setSize(w / 2, (2 * h) / 3);
-      this.pauseButton.setPosition(PAUSE_X_OFFSET, PAUSE_Y);
-      this.pauseIcon.setPosition(PAUSE_X_OFFSET, PAUSE_Y);
+      this.hotZone.setSize(w / 2 - rightPad, (2 * h) / 3);
+      this.pauseButton.setPosition(PAUSE_X_OFFSET + leftPad, PAUSE_Y + topPad);
+      this.pauseIcon.setPosition(PAUSE_X_OFFSET + leftPad, PAUSE_Y + topPad);
     } else {
-      this.hotZone.setPosition(0, h / 3);
-      this.hotZone.setSize(w / 2, (2 * h) / 3);
-      this.pauseButton.setPosition(w - PAUSE_X_OFFSET, PAUSE_Y);
-      this.pauseIcon.setPosition(w - PAUSE_X_OFFSET, PAUSE_Y);
+      this.hotZone.setPosition(leftPad, h / 3);
+      this.hotZone.setSize(w / 2 - leftPad, (2 * h) / 3);
+      this.pauseButton.setPosition(w - PAUSE_X_OFFSET - rightPad, PAUSE_Y + topPad);
+      this.pauseIcon.setPosition(w - PAUSE_X_OFFSET - rightPad, PAUSE_Y + topPad);
     }
   }
 
@@ -128,7 +142,8 @@ export default class TouchControls {
     const dx = pointer.x - this.joystickBase.x;
     const dy = pointer.y - this.joystickBase.y;
     const dist = Math.hypot(dx, dy);
-    const clampedDist = Math.min(dist, BASE_R);
+    const baseR = getBaseRadius();
+    const clampedDist = Math.min(dist, baseR);
     const angle = Math.atan2(dy, dx);
     const thumbX = this.joystickBase.x + Math.cos(angle) * clampedDist;
     const thumbY = this.joystickBase.y + Math.sin(angle) * clampedDist;

@@ -22,9 +22,24 @@ class DeckPickerScene extends Phaser.Scene {
     this.modalLayer = this.add.layer().setDepth(20);
 
     VFX.stars(this, this.bgLayer);
-    VFX.header(this, this.uiLayer, 'ELIGE BARAJA', '#faba72', { width: W, height: 22 });
+    VFX.header(this, this.uiLayer, 'ELIGE BARAJA', '#faba72', { width: W, height: 22, showFullscreen: true, fullscreenCallback: () => this.toggleFullscreen() });
+    this.input.on('pointerdown', (pointer) => this.handleFullscreenTap(pointer));
     this.renderBody();
     CRT.addScanlines(this);
+  }
+
+  toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      try { document.documentElement.requestFullscreen(); } catch (e) {}
+    } else {
+      try { document.exitFullscreen(); } catch (e) {}
+    }
+  }
+
+  handleFullscreenTap(pointer) {
+    if (pointer.x > this.W - 40 && pointer.y < 24) {
+      this.toggleFullscreen();
+    }
   }
 
   renderBody() {

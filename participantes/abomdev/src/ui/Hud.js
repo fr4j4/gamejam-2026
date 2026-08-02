@@ -118,9 +118,14 @@ export default class Hud {
 
     const timerX = w - 20 - rightInset;
     this.timerText.setPosition(timerX, headerPad);
-    // El ícono se coloca a la izquierda del texto real para no superponerse,
-    // midiendo desde el borde derecho del timerText.
-    this.timerIcon.setPosition(this.timerText.x - this.timerText.width - 8, headerPad + 9);
+    // El timerText tiene originX=1 (borde derecho en timerX). El icono debe
+    // quedar a la izquierda del texto con margen. Para que el icono arranque
+    // x estable independiente del ancho del texto, lo posicionamos a una
+    // distancia fija del borde derecho del texto segun el ancho del texto
+    // actual (Phaser actualiza this.width al renderizar).
+    const iconSize = 18;
+    const textLeft = this.timerText.x - this.timerText.width;
+    this.timerIcon.setPosition(textLeft - 8 - iconSize / 2, headerPad + 9);
     this.nextBossText.setPosition(timerX, headerPad + 24);
     this.positionBossCountIcon();
 
@@ -151,6 +156,16 @@ export default class Hud {
     this.stageText.setText(`Etapa ${stage}`);
 
     this.timerText.setText(formatTime(elapsed));
+    this._repositionTimerIcon();
+  }
+
+  // El timerText tiene originX=1, por lo que su x es el borde derecho. El icono
+  // debe quedar a la izquierda del texto con un margen. Se llama despues de
+  // setText porque this.width se actualiza al renderizar.
+  _repositionTimerIcon() {
+    const iconSize = 18;
+    const textLeft = this.timerText.x - this.timerText.width;
+    this.timerIcon.setPosition(textLeft - 8 - iconSize / 2, this.timerIcon.y);
   }
 
   // El texto está anclado a la derecha y su ancho cambia, así que el icono se

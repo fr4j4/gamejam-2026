@@ -30,8 +30,10 @@ const ROW_H = 26;
 const ROW_ICON = 17;
 const MAX_ROWS = 15;
 const SLOT_H = 54;
-const SLOT_H_COMPACT = 44;
+const SLOT_H_COMPACT = 28;
 const SLOT_ICON = 26;
+const SLOT_ICON_COMPACT = 18;
+const COMPACT_BUTTON_W = 96;
 
 // Nombre e icono de cada arma para el inventario. El orden es el de WEAPON_KEYS.
 const WEAPON_INFO = {
@@ -73,6 +75,7 @@ export default class PauseMenu {
     ];
 
     this._clipCounts = { inv: Infinity, rows: Infinity };
+    this._isCompact = false;
   }
 
   buildInventory(scene) {
@@ -154,7 +157,16 @@ export default class PauseMenu {
   }
 
   layout(w, h) {
-    const compact = isTouchDevice() && isCompactMode();
+    // Compact = el jugador esta en touch. Detectamos touch por heuristica:
+    // o es touch device segun el browser, o el jugador configuro el lado del
+    // joystick en algun momento (persiste en localStorage, lo cual solo
+    // ocurre en touch). Sin importar el tamano del viewport: si el jugador
+    // es touch, queremos el layout optimizado para touch.
+    const touchConfigured = (() => {
+      try { return localStorage.getItem('survivorsTouchLayout') !== null; } catch { return false; }
+    })();
+    const compact = isTouchDevice() || touchConfigured;
+    this._isCompact = compact;
     const cx = w / 2;
     this.overlay.width = w;
     this.overlay.height = h;
@@ -164,7 +176,9 @@ export default class PauseMenu {
     const leftInset = edgePadding('left', 0, insets);
     const rightInset = edgePadding('right', 0, insets);
 
-    const titleY = topInset + 55;
+    // En compact el titulo va debajo del HUD del juego (que ocupa hasta
+    // aprox y=80) para no quedar tapado por las barras de HP/escudo/XP.
+    const titleY = compact ? topInset + 95 : topInset + 55;
     this.titleBox.setPosition(cx, titleY);
     this.title.setPosition(cx, titleY);
     this.stageCenterX = cx;
@@ -182,63 +196,64 @@ export default class PauseMenu {
     const maxBoxH = Math.max(120, usableBottom - usableTop);
 
     if (compact) {
-      // Layout en dos columnas: inventario a la izquierda, stats a la derecha.
-      // En mobile no hay scroll: solo mostramos los items que entran. Los items
-      // que no entran quedan ocultos (setVisible(false) via clipCounts).
-      const colGap = 8;
-      const colW = (w - 2 * (padding + leftInset) - colGap) / 2;
-      const invX = leftInset + padding;
-      const statsX = invX + colW + colGap;
-      const columnsTop = titleY + 60;
-      // 4 botones en compact: 4 x 26 + 3 x 4 = 116. Dejamos 130 para safety.
-      const buttonsArea = 130;
-      const columnsH = Math.max(80, h - columnsTop - buttonsArea);
+      // Layout en 3 columnas: ARMAS a la izquierda, controles en el centro,
+      // ESTADISTICAS a la derecha. Las 3 columnas se calculan centradas
+      // respecto al centro del viewport (cx) para que el balance no cambie
+      // con leftInset vs rightInset. Ademas capeamos sideColW a un ancho
+      // razonable para que las cajas no se estiren en pantallas grandes.
+      const colGap = 10;
+      const usableW = w - 2 * padding - leftInset - rightInset;
+      const sideColW = Math.max(140, Math.min(INVENTORY_W_COMPACT, (usableW - 2 * colGap) * 0.37, 280));
+      const buttonsColW = Math.max(COMPACT_BUTTON_W, usableW - 2 * sideColW - 2 * colGap);
+      const totalRowW = sideColW * 2 + buttonsColW + colGap * 2;
+      const invX = cx - totalRowW / 2;
+      const buttonsX = invX + sideColW + colGap;
+      const statsX = buttonsX + buttonsColW + colGap;
+      const columnsTop = titleY + 40;
+      const totalButtonsH = this.buttons.length * 28 + (this.buttons.length - 1) * 4;
+      // Los botones arrancan debajo del titulo (no verticalmente centrados) para
+      // mantener siempre el titlePAUSADO visible arriba.
+      const buttonsTop = Math.max(columnsTop, topInset + 110);
+      const columnsBottom = h - 8;
+      const columnsH = Math.max(120, columnsBottom - columnsTop);
 
-      this.invBox.setSize(colW, columnsH).setPosition(invX, columnsTop);
+      this.invBox.setSize(sideColW, columnsH).setPosition(invX, columnsTop);
       this.invTitle.setPosition(invX + padding, columnsTop + padding);
-      this.invDivider.setSize(colW - padding * 2, 2).setPosition(invX + padding, columnsTop + 36);
+      this.invDivider.setSize(sideColW - padding * 2, 2).setPosition(invX + padding, columnsTop + 36);
 
-      // Slots: cuanto caben segun columnsH real. Si no entran todos, los que
-      // sobran se ocultan (clipCounts ajusta la visibilidad en show()).
-      const slotsClipY = columnsTop + 46;
-      const slotsVisibleH = columnsH - 46 - padding;
-      const slotsFit = Math.floor(slotsVisibleH / slotH);
-      this._clipCounts.inv = slotsFit;
+      const slotsClipY = columnsTop + 50;
+      this._clipCounts.inv = Math.floor((columnsH - 60) / slotH);
       const slotStep = slotH;
       this.slots.forEach((slot, i) => {
         const y = slotsClipY + i * slotStep;
-        if (i >= slotsFit) return;
-        slot.frame.setSize(colW - padding * 2, slotH - 8).setPosition(invX + padding, y);
-        slot.icon.setPosition(invX + padding + 18, y + (slotH - 8) / 2);
-        slot.name.setPosition(invX + padding + 38, y + 8);
-        slot.detail.setPosition(invX + padding + 38, y + 24);
+        if (i >= this._clipCounts.inv) return;
+        slot.frame.setSize(sideColW - padding * 2, slotH - 4).setPosition(invX + padding, y);
+        slot.icon.setPosition(invX + padding + SLOT_ICON_COMPACT / 2 + 4, y + (slotH - 4) / 2);
+        slot.name.setPosition(invX + padding + SLOT_ICON_COMPACT + 8, y + (slotH - 4) / 2);
+        // En compact no mostramos el detail del slot: el icono + name alcanzan
+        // para identificar el arma y la columna ya es estrecha.
+        slot.detail.setVisible(false);
       });
 
-      this.box.setSize(colW, columnsH).setPosition(statsX, columnsTop);
+      this.box.setSize(sideColW, columnsH).setPosition(statsX, columnsTop);
       this.boxTitle.setPosition(statsX + padding, columnsTop + padding);
-      this.boxDivider.setSize(colW - padding * 2, 2).setPosition(statsX + padding, columnsTop + 36);
+      this.boxDivider.setSize(sideColW - padding * 2, 2).setPosition(statsX + padding, columnsTop + 36);
 
-      const rowsClipY = columnsTop + 46;
-      const rowsVisibleH = columnsH - 46 - padding;
-      const rowsFit = Math.floor(rowsVisibleH / ROW_H);
-      this._clipCounts.rows = rowsFit;
+      const rowsClipY = columnsTop + 50;
+      this._clipCounts.rows = Math.floor((columnsH - 60) / ROW_H);
       this.rows.forEach((row, i) => {
         const y = rowsClipY + i * ROW_H;
-        if (i >= rowsFit) return;
+        if (i >= this._clipCounts.rows) return;
         row.icon.setPosition(statsX + padding + ROW_ICON / 2, y + 8);
         row.label.setPosition(statsX + padding + ROW_ICON + 10, y);
       });
 
-      // Botones en una sola columna centrada, compactos para que entren 4-5.
-      const buttonWidth = Math.min(220, w - 2 * (padding + leftInset));
-      const buttonsY = columnsTop + columnsH + 10;
-      const availForButtons = h - 8 - buttonsY;
-      const buttonHeight = Math.max(22, Math.min(30, Math.floor(availForButtons / Math.max(1, this.buttons.length)) - 4));
-      this.buttons.forEach((b) => b.setSize(buttonWidth, buttonHeight));
-      const rowGap = 3;
+      // Botones en columna central, centrados horizontal y verticalmente.
+      this.buttons.forEach((b) => b.setSize(buttonsColW, 28));
+      const buttonsCx = buttonsX + buttonsColW / 2;
       this.buttons.forEach((b, i) => {
-        const y = buttonsY + i * (buttonHeight + rowGap);
-        if (y + buttonHeight <= h - 4) b.setPosition(cx, y);
+        const y = buttonsTop + i * 32;
+        b.setPosition(buttonsCx, y);
       });
     } else {
       const boxY = Math.max(150, topInset + 90);
@@ -292,11 +307,22 @@ export default class PauseMenu {
   // se recentra cada vez en lugar de usar posiciones fijas.
   positionStage() {
     const gap = 8;
+    const compact = this._isCompact;
+    // En compact el stage label se oculta: ya esta el titulo PAUSADO y los
+    // paneles de armas/stats hablan por si mismos. En desktop se mantiene
+    // la posicion original.
     const groupW = 18 + gap + this.stageText.width;
     const left = (this.stageCenterX || 0) - groupW / 2;
-    const y = edgePadding('top', 0, getSafeInsets()) + 104;
-    this.stageIcon.setPosition(left + 9, y);
-    this.stageText.setPosition(left + 18 + gap, y);
+    const y = compact ? 0 : edgePadding('top', 0, getSafeInsets()) + 104;
+    if (compact) {
+      this.stageIcon.setVisible(false);
+      this.stageText.setVisible(false);
+    } else {
+      this.stageIcon.setVisible(true);
+      this.stageText.setVisible(true);
+      this.stageIcon.setPosition(left + 9, y);
+      this.stageText.setPosition(left + 18 + gap, y);
+    }
   }
 
   // stats: filas de buildStatRows(). weapons: estado de armas de buildWeaponSlots().
@@ -323,14 +349,22 @@ export default class PauseMenu {
       slot.frame.setStrokeStyle(2, state.unlocked ? info.color : 0x333355).setVisible(true);
       slot.icon.setTint(state.unlocked ? info.color : 0x444455).setVisible(true);
       slot.name.setColor(state.unlocked ? TEXT.secondary : TEXT.dim).setVisible(true);
-      slot.detail.setText(state.unlocked ? state.detail : 'Sin desbloquear').setVisible(true);
+      // En compact el detail no se muestra: el icono y nombre son suficientes
+      // y la columna es estrecha. Mantenerlo invisible incluso si el layout
+      // lo dejo visible por una corrida previa.
+      if (this._isCompact) {
+        slot.detail.setVisible(false);
+      } else {
+        slot.detail.setText(state.unlocked ? state.detail : 'Sin desbloquear').setVisible(true);
+      }
     });
 
     this.stageText.setText(stageLabel);
-    this.positionStage();
-
     setVisible(this.chrome, true);
     setVisible(this.buttonParts, true);
+    // positionStage debe correr DESPUES de hacer visible el chrome para que
+    // la ocultacion condicional (compact) no se sobreescriba.
+    this.positionStage();
   }
 
   hide() {

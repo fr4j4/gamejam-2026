@@ -6,6 +6,7 @@ class MenuScene extends Phaser.Scene {
   create() {
     const W = 640;
     const H = 360;
+    this.W = W; this.H = H;
     this.cameras.main.setBackgroundColor('#0d0d1a');
 
     this.bgLayer = this.add.layer().setDepth(0);
@@ -14,12 +15,14 @@ class MenuScene extends Phaser.Scene {
 
     this.menuObjects = [];
     VFX.stars(this, this.bgLayer, 60);
+    VFX.header(this, this.uiLayer, 'DECKSTINY', '#faba72', { width: W, height: 22, showFullscreen: true, fullscreenCallback: () => this.toggleFullscreen() });
     this.createAmbientEffects();
     this.createTitle();
     this.createButtons();
 
     this.menuObjects.push(VFX.terminalFooter(this, this.uiLayer, W - 8, H - 8, 'fr4j4 - 2026'));
 
+    this.input.on('pointerdown', (pointer) => this.handleFullscreenTap(pointer));
     CRT.addScanlines(this);
   }
 
@@ -62,6 +65,20 @@ class MenuScene extends Phaser.Scene {
 
     const subtitle = VFX.gamejamEditionBadge(this, this.uiLayer, W / 2, 138, '#faba72');
     this.menuObjects.push(subtitle);
+  }
+
+  toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      try { document.documentElement.requestFullscreen(); } catch (e) {}
+    } else {
+      try { document.exitFullscreen(); } catch (e) {}
+    }
+  }
+
+  handleFullscreenTap(pointer) {
+    if (pointer.x > this.W - 40 && pointer.y < 24) {
+      this.toggleFullscreen();
+    }
   }
 
   showToast(msg, colorHex) {

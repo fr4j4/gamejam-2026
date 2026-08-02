@@ -6,6 +6,7 @@ class GameOverScene extends Phaser.Scene {
 
   create() {
     const W = 640, H = 360;
+    this.W = W; this.H = H;
     this.cameras.main.setBackgroundColor('#0d0d1a');
 
     this.bgLayer = this.add.layer().setDepth(0);
@@ -17,7 +18,8 @@ class GameOverScene extends Phaser.Scene {
     const title = win ? 'VICTORIA' : 'DERROTA';
 
     VFX.stars(this, this.bgLayer, 30);
-    VFX.header(this, this.uiLayer, 'RESULTADO', color, { width: W, height: 34 });
+    VFX.header(this, this.uiLayer, 'RESULTADO', color, { width: W, height: 34, showFullscreen: true, fullscreenCallback: () => this.toggleFullscreen() });
+    this.input.on('pointerdown', (pointer) => this.handleFullscreenTap(pointer));
 
     const pCls = CLASSES.find(c => c.id === this.result.classId) || CLASSES[0];
     VFX.classSeal(this, this.uiLayer, W / 2, 58, 28, pCls.icon, pCls.colorHex, true);
@@ -54,6 +56,20 @@ class GameOverScene extends Phaser.Scene {
     }
 
     CRT.addScanlines(this);
+  }
+
+  toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      try { document.documentElement.requestFullscreen(); } catch (e) {}
+    } else {
+      try { document.exitFullscreen(); } catch (e) {}
+    }
+  }
+
+  handleFullscreenTap(pointer) {
+    if (pointer.x > this.W - 40 && pointer.y < 34) {
+      this.toggleFullscreen();
+    }
   }
 }
 

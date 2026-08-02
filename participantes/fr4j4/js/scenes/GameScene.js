@@ -21,6 +21,7 @@ class GameScene extends Phaser.Scene {
   create() {
     const W = 640;
     const H = 360;
+    this.W = W; this.H = H;
     this.cameras.main.setBackgroundColor('#0d0d1a');
 
     this.bgLayer = this.add.layer().setDepth(0);
@@ -42,7 +43,6 @@ class GameScene extends Phaser.Scene {
 
     this.cls = CLASSES.find(c => c.id === this.classId);
     this.selectedClass = this.classId;
-    this.selectedAttacker = null;
     this.buildDeck();
     this.initState();
     this.renderLayout();
@@ -57,6 +57,7 @@ class GameScene extends Phaser.Scene {
         this.cancelTargeting();
       }
     });
+    this.input.on('pointerdown', (pointer) => this.handleFullscreenTap(pointer));
 
     this.input.on('wheel', (pointer, gameObjects, dx, dy) => {
       if (!this.logList || !this.logScrollZone) return;
@@ -70,16 +71,37 @@ class GameScene extends Phaser.Scene {
       const wasAtBottom = this.logScrollY >= this.maxLogScroll;
       const step = Math.max(this.logLineH, Math.abs(dy) * 0.5);
       if (dy < 0) {
-        this.logScrollY = Math.min(this.maxLogScroll, this.logScrollY + step);
-      } else if (dy > 0) {
         this.logScrollY = Math.max(0, this.logScrollY - step);
+      } else if (dy > 0) {
+        this.logScrollY = Math.min(this.maxLogScroll, this.logScrollY + step);
       }
       this.reflowLog();
     });
   }
 
   shutdown() {
+    if (this.pHero) { this.pHero.destroy(); this.pHero = null; }
+    if (this.eHero) { this.eHero.destroy(); this.eHero = null; }
     // per-card input listeners are destroyed with their zones
+  }
+
+  toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      try { document.documentElement.requestFullscreen(); } catch (e) {}
+    } else {
+      try { document.exitFullscreen(); } catch (e) {}
+    }
+  }
+
+  handleFullscreenTap(pointer) {
+    if (pointer.x > this.W - 40 && pointer.y < 26) {
+      this.toggleFullscreen();
+    }
+  }
+
+  update(time, delta) {
+    if (this.pHero) this.pHero.update(time, delta);
+    if (this.eHero) this.eHero.update(time, delta);
   }
 
   buildDeck() {
@@ -112,12 +134,39 @@ class GameScene extends Phaser.Scene {
       classId: 'dummy', hp: 100, maxHp: 100, armor: 100, mana: 0, maxMana: 0,
       deck: [], hand: [], board: [], venom: 0, inspiration: 0, discardPile: [],
       heroUsed: false, cardsPlayed: 0, isDummy: true
-    } : {
-      classId: this.cls.id, hp: this.cls.hp, maxHp: this.cls.hp, armor: this.cls.armor,
-      mana: 1, maxMana: 1, deck: [...this.playerDeck].sort(() => Math.random() - 0.5),
-      hand: [], board: [], venom: 0, inspiration: 0, discardPile: [],
-      heroUsed: false, cardsPlayed: 0, costReduction: 0, isDummy: false
-    };
+    } : (() => {
+      const otherClasses = CLASSES.filter(c => c.id !== this.classId);
+      const aiCls = otherClasses[Phaser.Math.Between(0, otherClasses.length - 1)];
+      const aiCards = ALL_CARDS[aiCls.id] || [];
+      const targetTotal = Phaser.Math.Between(20, 30);
+      const maxPossible = aiCards.reduce((s, c) => s + (c.maxCopies || 2), 0);
+      const finalTarget = Math.min(targetTotal, maxPossible);
+      const counts = {};
+      for (const card of aiCards) {
+        if (card.maxCopies >= 1) counts[card.id] = 1;
+      }
+      let total = Object.keys(counts).length;
+      while (total < finalTarget) {
+        const eligible = aiCards.filter(c => (counts[c.id] || 0) < (c.maxCopies || 2));
+        if (eligible.length === 0) break;
+        const pick = eligible[Phaser.Math.Between(0, eligible.length - 1)];
+        counts[pick.id] = (counts[pick.id] || 0) + 1;
+        total++;
+      }
+      const aiDeckList = [];
+      for (const card of aiCards) {
+        const count = counts[card.id] || 0;
+        for (let i = 0; i < count; i++)
+          aiDeckList.push({ ...card, uid: Math.random().toString(36).slice(2, 8) });
+      }
+      this.shuffle(aiDeckList);
+      return {
+        classId: aiCls.id, hp: aiCls.hp, maxHp: aiCls.hp, armor: aiCls.armor,
+        mana: 1, maxMana: 1, deck: aiDeckList,
+        hand: [], board: [], venom: 0, inspiration: 0, discardPile: [],
+        heroUsed: false, cardsPlayed: 0, costReduction: 0, isDummy: false
+      };
+    })();
 
     this.player.hand = this.player.deck.splice(0, 4);
     if (!isTest) this.opponent.hand = this.opponent.deck.splice(0, 4);
@@ -129,7 +178,7 @@ class GameScene extends Phaser.Scene {
     const clsColor = this.cls ? this.cls.colorHex : '#9fcafd';
 
     VFX.stars(this, this.bgLayer, 20);
-    VFX.header(this, this.uiLayer, 'COMBATE', clsColor, { width: W, height: 26 });
+    VFX.header(this, this.uiLayer, 'COMBATE', clsColor, { width: W, height: 26, showFullscreen: true, fullscreenCallback: () => this.toggleFullscreen() });
 
     // --- STATUS BAR ---
     const barY = 15;
@@ -155,32 +204,17 @@ class GameScene extends Phaser.Scene {
     }).setOrigin(0, 0.5);
     this.uiLayer.add(this.timerText);
 
-    // Hero power button (Design D): pill compacto con icono + nombre + coste
+    // Hero power button (movido debajo del heroe del jugador, se crea en renderInfo)
     const heroName = this.cls.heroPower.name.toUpperCase();
     const heroCost = this.cls.heroPower.cost;
     const heroIcon = '⚡';
-    const heroLabel = `${heroIcon} ${heroName} ${heroCost}M`;
-    this.heroPowerBtn = UI.button(this, W - 90, barY, heroLabel, '#faba72',
-      () => this.useHeroPower(), { layer: this.uiLayer, minWidth: 110, height: 22, fontSize: '7px' });
-    this.uiLayer.add(this.heroPowerBtn.container);
-
-    // Hero power tooltip (oculto por defecto)
-    this.heroTooltip = UI.tooltip(this, W - 90, barY + 40,
-      heroName, `${heroCost}M — ${this.cls.heroPower.desc}`,
-      { width: 220, color: '#faba72', fontSize: '7px' });
-    this.heroTooltip.container.setVisible(false);
-    this.uiLayer.add(this.heroTooltip.container);
-
-    this.heroPowerBtn.container.on('pointerover', () => {
-      this.heroTooltip.container.setVisible(true);
-    });
-    this.heroPowerBtn.container.on('pointerout', () => {
-      this.heroTooltip.container.setVisible(false);
-    });
+    this._heroPowerLabel = `${heroIcon} ${heroName} ${heroCost}M`;
+    this._heroPowerDesc = `${heroCost}M — ${this.cls.heroPower.desc}`;
 
     // --- HERO ZONES ---
     this.pInfoContainer = this.add.container(0, 0);
     this.eInfoContainer = this.add.container(0, 0);
+    this._createHeroSprites();
 
     // --- BATTLE LINE ---
     this.pBoardContainer = this.add.container(0, 0);
@@ -188,11 +222,11 @@ class GameScene extends Phaser.Scene {
 
     // --- BATTLE LOG PANEL ---
     this.logPanelX = Math.floor((W - 264) / 2);
-    this.logPanelY = 218;
+    this.logPanelY = 210;
     this.logPanelW = 264;
-    this.logPanelH = 110;
+    this.logPanelH = 66;
     this.logLineH = 14;
-    this.logMaxLines = 50;
+    this.logMaxLines = 30;
 
     const logBg = this.add.rectangle(
       this.logPanelX + this.logPanelW / 2,
@@ -236,39 +270,77 @@ class GameScene extends Phaser.Scene {
   // ===== RENDER =====
   renderAll() { this.renderInfo(); this.renderBoards(); this.renderHand(); }
 
+  _createHeroSprites() {
+    const W = 640;
+    const pClsId = this.player && this.player.classId;
+    const eClsId = this.opponent && this.opponent.classId;
+    const pCls = CLASSES.find(c => c.id === pClsId);
+    const eCls = CLASSES.find(c => c.id === eClsId);
+    const fallbackCls = { id: 'unknown', icon: '?', colorHex: '#8892a0' };
+    const pCfgKey = (pCls ? 'HERO_SPRITE_' + pCls.id.toUpperCase() : (pClsId === 'dummy' ? 'HERO_SPRITE_DUMMY' : null));
+    const eCfgKey = (eCls ? 'HERO_SPRITE_' + eCls.id.toUpperCase() : (eClsId === 'dummy' ? 'HERO_SPRITE_DUMMY' : null));
+    const pCfg = pCfgKey && window[pCfgKey];
+    const eCfg = eCfgKey && window[eCfgKey];
+    const noTextureCfg = { key: '__none__', classId: 'dummy', defaultState: 'idle', states: { idle: [] }, frameSize: { w: 1, h: 1 }, scale: 1 };
+    this.pHero = HeroSprite.create(this, {
+      config: (pCfg && this.textures.exists(pCfg.key)) ? pCfg : noTextureCfg,
+      side: 'left', x: 72, y: 130, icon: pCls ? pCls.icon : fallbackCls.icon
+    });
+    this.eHero = HeroSprite.create(this, {
+      config: (eCfg && this.textures.exists(eCfg.key)) ? eCfg : noTextureCfg,
+      side: 'right', x: W - 72, y: 130, icon: eCls ? eCls.icon : fallbackCls.icon
+    });
+  }
+
   renderInfo() {
     const W = 640;
     const p = this.player, e = this.opponent;
     this.pInfoContainer.removeAll(true);
+    this.eInfoContainer.removeAll(true);
+
     const pCls = CLASSES.find(c => c.id === p.classId) || { name: 'Tu', icon: '🧙', colorHex: '#9fcafd' };
-    VFX.classSeal(this, this.pInfoContainer, 72, 104, 40, pCls.icon, pCls.colorHex, true);
-    this.pInfoContainer.add(UI.text(this, 72, 150, pCls.name.toUpperCase(), {
+    const eCls = CLASSES.find(c => c.id === e.classId) || { name: 'Dummy', icon: '🤖', colorHex: '#8892a0' };
+
+    this.pInfoContainer.add(UI.text(this, 72, 152, pCls.name.toUpperCase(), {
       fontFamily: '"VT323"', fontSize: '12px', color: pCls.colorHex
     }).setOrigin(0.5));
-    this.renderHeroBar(this.pInfoContainer, 72, 162, 80, p.hp, p.maxHp, pCls.colorHex);
-    this.pInfoContainer.add(UI.text(this, 72, 174, `HP ${Math.max(0, p.hp)}/${p.maxHp}  ARM ${p.armor}  MAN ${p.mana}/${p.maxMana}`, {
+    this.renderHeroBar(this.pInfoContainer, 72, 164, 80, p.hp, p.maxHp, pCls.colorHex);
+    this.pInfoContainer.add(UI.text(this, 72, 176, `HP ${Math.max(0, p.hp)}/${p.maxHp}  ARM ${p.armor}  MAN ${p.mana}/${p.maxMana}`, {
       fontFamily: '"VT323"', fontSize: '13px', color: '#e0e0e0'
     }).setOrigin(0.5));
     let pEx = '';
     if (p.venom > 0) pEx += ` VENENO ${p.venom}`;
     if (p.inspiration > 0) pEx += ` INSPIR ${p.inspiration}`;
-    if (pEx) this.pInfoContainer.add(UI.text(this, 72, 186, pEx.trim(), {
+    if (pEx) this.pInfoContainer.add(UI.text(this, 72, 188, pEx.trim(), {
       fontFamily: '"VT323"', fontSize: '10px', color: '#bdcd9c'
     }).setOrigin(0.5));
 
-    this.eInfoContainer.removeAll(true);
-    const eCls = CLASSES.find(c => c.id === e.classId) || { name: 'Dummy', icon: '🤖', colorHex: '#8892a0' };
-    VFX.classSeal(this, this.eInfoContainer, W - 72, 104, 40, eCls.icon, eCls.colorHex, true);
-    this.eInfoContainer.add(UI.text(this, W - 72, 150, eCls.name.toUpperCase(), {
+    this.heroPowerBtn = UI.button(this, 72, 212, this._heroPowerLabel, '#faba72',
+      () => this.useHeroPower(), { layer: this.uiLayer, minWidth: 110, height: 22, fontSize: '7px' });
+    this.uiLayer.add(this.heroPowerBtn.container);
+    this.heroTooltip = UI.tooltip(this, 72, 256,
+      this._heroPowerLabel.replace(/^⚡ /, '').replace(/\s\d+M$/, ''),
+      this._heroPowerDesc,
+      { width: 220, color: '#faba72', fontSize: '7px' });
+    this.heroTooltip.container.setVisible(false);
+    this.uiLayer.add(this.heroTooltip.container);
+    this.heroPowerBtn.container.on('pointerover', () => {
+      this.heroTooltip.container.setVisible(true);
+    });
+    this.heroPowerBtn.container.on('pointerout', () => {
+      this.heroTooltip.container.setVisible(false);
+    });
+
+    this.eInfoContainer.add(UI.text(this, W - 72, 152, eCls.name.toUpperCase(), {
       fontFamily: '"VT323"', fontSize: '12px', color: eCls.colorHex
     }).setOrigin(0.5));
-    this.renderHeroBar(this.eInfoContainer, W - 72, 162, 80, e.hp, e.maxHp, eCls.colorHex);
-    this.eInfoContainer.add(UI.text(this, W - 72, 174, `HP ${Math.max(0, e.hp)}/${e.maxHp}  ARM ${e.armor}  MAN ${e.mana}/${e.maxMana}`, {
+    this.renderHeroBar(this.eInfoContainer, W - 72, 164, 80, e.hp, e.maxHp, eCls.colorHex);
+    this.eInfoContainer.add(UI.text(this, W - 72, 176, `HP ${Math.max(0, e.hp)}/${e.maxHp}  ARM ${e.armor}  MAN ${e.mana}/${e.maxMana}`, {
       fontFamily: '"VT323"', fontSize: '13px', color: '#e0e0e0'
     }).setOrigin(0.5));
     let eEx = '';
     if (e.venom > 0) eEx += ` VENENO ${e.venom}`;
-    if (eEx) this.eInfoContainer.add(UI.text(this, W - 72, 186, eEx.trim(), {
+    if (eEx) this.eInfoContainer.add(UI.text(this, W - 72, 188, eEx.trim(), {
       fontFamily: '"VT323"', fontSize: '10px', color: '#bdcd9c'
     }).setOrigin(0.5));
   }
@@ -328,13 +400,6 @@ class GameScene extends Phaser.Scene {
               bg.removeAllListeners('pointerdown');
             }
           });
-        } else if (!isEnemy && c.canAttack && this.state.phase === 'player') {
-          bg.setFillStyle(0x1a2a4e);
-          bg.on('pointerdown', () => this.selectAttacker(c));
-          container.add(UI.text(this, cx, cy + 18, '⚔️', { fontSize: '7px' }).setOrigin(0.5));
-        } else if (isEnemy && this.selectedAttacker) {
-          bg.setFillStyle(0x4a1a4a);
-          bg.on('pointerdown', () => this.attackCreature(this.selectedAttacker, c));
         }
         container.add([icon, atk, hp]);
       }
@@ -348,7 +413,35 @@ class GameScene extends Phaser.Scene {
   getMaxHp(c) { return (c.maxHpBase || 0) + (c.maxHpBoost || 0); }
   pickCreatureTarget(board) {
     if (!board || board.length === 0) return -1;
-    return board.length - 1;
+    return 0;
+  }
+
+  runAttacks(side) {
+    const board = side === 'player' ? this.player.board : this.opponent.board;
+    const enemyBoard = side === 'player' ? this.opponent.board : this.player.board;
+    const enemySide = side === 'player' ? 'opponent' : 'player';
+
+    for (let i = board.length - 1; i >= 0; i--) {
+      const attacker = board[i];
+      if (!attacker || !attacker.canAttack) continue;
+
+      let target = null;
+      const guards = enemyBoard.filter(c => c.guard);
+      if (guards.length > 0) {
+        target = guards[0];
+      } else if (enemyBoard.length > 0) {
+        target = enemyBoard[0];
+      }
+
+      if (target) {
+        this.combat(attacker, target, side);
+      } else {
+        const atk = this.getAtk(attacker);
+        this.applyDamage(enemySide, atk);
+        this.addLog(`${attacker.name} ataca al héroe: ${atk}`, 'dmg');
+      }
+      attacker.canAttack = false;
+    }
   }
 
   getCreatureCard(creature) {
@@ -536,7 +629,7 @@ class GameScene extends Phaser.Scene {
         return true;
       });
     });
-    p.board.forEach(c => { if (!c.justSummoned) c.canAttack = true; c.justSummoned = false; });
+    p.board.forEach(c => { c.justSummoned = false; c.canAttack = true; });
     this.state.phase = 'player';
     this.turnText.setText(`Turno ${this.state.turn}`);
     this.phaseText.setText('Tu turno');
@@ -582,6 +675,8 @@ class GameScene extends Phaser.Scene {
     this.state.phase = 'opponent';
     this.phaseText.setText('Turno oponente');
     this.updateEndTurnBtn();
+    this.runAttacks('player');
+    if (this.checkGameOver()) return;
     this.renderAll();
     if (this.opponent.isDummy) {
       this.state.turn++;
@@ -615,7 +710,7 @@ class GameScene extends Phaser.Scene {
         return true;
       });
     });
-    e.board.forEach(c => { if (!c.justSummoned) c.canAttack = true; c.justSummoned = false; });
+    e.board.forEach(c => { c.justSummoned = false; c.canAttack = true; });
     if (e.venom > 0) { this.applyDamage('opponent', e.venom); e.venom = Math.max(0, e.venom - 1); }
     if (this.checkGameOver()) return;
 
@@ -637,25 +732,7 @@ class GameScene extends Phaser.Scene {
       this.useHeroPowerFor('opponent');
       this.addLog('Oponente: poder de heroe', 'info');
     }
-    e.board.forEach(c => {
-      if (c.canAttack) {
-        const guards = this.player.board.filter(x => x.guard);
-        let target = null;
-        if (guards.length > 0) {
-          target = guards[guards.length - 1];
-        } else if (this.player.board.length > 0) {
-          target = this.player.board[this.player.board.length - 1];
-        }
-        if (target) {
-          this.combat(c, target, 'opponent');
-        } else {
-          const atk = this.getAtk(c);
-          this.applyDamage('player', atk);
-          this.addLog(`${c.name} ataca: ${atk}`, 'dmg');
-        }
-        c.canAttack = false;
-      }
-    });
+    this.runAttacks('opponent');
     if (this.checkGameOver()) return;
     this.state.turn++;
     this.startPlayerTurn();
@@ -891,14 +968,20 @@ class GameScene extends Phaser.Scene {
     const enemy = side === 'player' ? this.opponent : this.player;
     switch (eff.type) {
       case 'damage':
-        if (eff.target === 'enemy_hero' || eff.target === 'any') this.applyDamage(side === 'player' ? 'opponent' : 'player', eff.amount);
-        else if (eff.target === 'enemy_creature' && enemy.board.length > 0) {
-          const tgtIdx = this.pickCreatureTarget(enemy.board);
-          if (tgtIdx >= 0) {
-            const target = enemy.board[tgtIdx];
-            this.damageCreature(target, eff.amount);
-            if (this.getHp(target) <= 0) this.killCreature(enemy, tgtIdx);
+        if (eff.target === 'enemy_creature' || eff.target === 'any') {
+          if (enemy.board.length > 0) {
+            const tgtIdx = this.pickCreatureTarget(enemy.board);
+            if (tgtIdx >= 0) {
+              const target = enemy.board[tgtIdx];
+              this.damageCreature(target, eff.amount);
+              this.addLog(`${target.name}: -${eff.amount}`, 'dmg');
+              if (this.getHp(target) <= 0) this.killCreature(enemy, tgtIdx);
+              break;
+            }
           }
+          this.applyDamage(side === 'player' ? 'opponent' : 'player', eff.amount);
+        } else if (eff.target === 'enemy_hero') {
+          this.applyDamage(side === 'player' ? 'opponent' : 'player', eff.amount);
         }
         break;
       case 'heal':
@@ -1100,6 +1183,8 @@ class GameScene extends Phaser.Scene {
       this.screenFlash('#ff6b6b');
       this.shakeContainer(isPlayer ? this.pInfoContainer : this.eInfoContainer);
       this.addLog(`${label}: -${amount} HP`, 'dmg');
+      const hero = isPlayer ? this.pHero : this.eHero;
+      if (hero && hero.available) hero.setState('hurt');
     }
   }
 
@@ -1133,33 +1218,6 @@ class GameScene extends Phaser.Scene {
     }
   }
 
-  selectAttacker(creature) {
-    this.selectedAttacker = creature;
-    this.addLog(`Atacas con: ${creature.name}`, 'info');
-    this.renderBoards();
-  }
-
-  attackCreature(attacker, target) {
-    const hasGuard = this.opponent.board.some(c => c.guard);
-    if (hasGuard && !target.guard) {
-      this.addLog('Debe atacar a Guardia', 'sys');
-      this.selectedAttacker = null;
-      this.renderBoards();
-      return;
-    }
-    if (target.evasive && !attacker.evasive) {
-      this.addLog(`${target.name} es evasivo`, 'sys');
-      this.selectedAttacker = null;
-      this.renderBoards();
-      return;
-    }
-    this.combat(attacker, target, 'player');
-    attacker.canAttack = false;
-    this.selectedAttacker = null;
-    if (this.checkGameOver()) return;
-    this.renderAll();
-  }
-
   useHeroPower() {
     if (this.state.phase !== 'player' || this.state.gameOver) return;
     const p = this.player;
@@ -1169,6 +1227,7 @@ class GameScene extends Phaser.Scene {
     p.mana -= this.cls.heroPower.cost; p.heroUsed = true;
     this.useHeroPowerFor('player');
     this.addLog(`Poder de heroe: ${this.cls.heroPower.name}`, 'info');
+    if (this.pHero && this.pHero.available) this.pHero.setState('attack');
     this.renderAll();
   }
 
@@ -1209,11 +1268,14 @@ class GameScene extends Phaser.Scene {
   checkGameOver() {
     if (!this.state) return false;
     if (this.player.hp <= 0 || this.opponent.hp <= 0) {
+      const playerWon = this.opponent.hp <= 0;
       this.state.gameOver = true;
       if (this.state.timerEvent) this.state.timerEvent.remove();
+      if (this.pHero && this.pHero.available) this.pHero.setState(playerWon ? 'victory' : 'defeat');
+      if (this.eHero && this.eHero.available) this.eHero.setState(playerWon ? 'defeat' : 'victory');
       this.time.delayedCall(500, () => {
         this.scene.start('GameOverScene', {
-          win: this.opponent.hp <= 0, turn: this.state.turn,
+          win: playerWon, turn: this.state.turn,
           damageTaken: this.player.maxHp - this.player.hp,
           cardsPlayed: this.player.cardsPlayed, hpLeft: Math.max(0, this.player.hp), mode: this.mode,
           classId: this.selectedClass

@@ -9,7 +9,7 @@ import { Projectile } from './Projectile';
 import { WeaponData, WEAPON_LIST } from './WeaponConfig';
 
 const MAX_BOMBS = 5;
-const BOMB_FUSE = 1.0;
+const BOMB_FUSE = 1.3;
 
 export class WeaponSystem {
   private scene: THREE.Scene;

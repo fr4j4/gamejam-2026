@@ -8,6 +8,20 @@ interface Corvette {
   group: THREE.Group;
   speed: number;
   side: number; // -1 = left, +1 = right
+  // Warp-in state
+  warpIn: boolean;
+  warpTimer: number;
+  warpDuration: number;
+  warpStartZ: number;
+  warpEndZ: number;
+  portal: THREE.Group;
+  portalPulse: number;
+  // Portal fadeout/zoomout after the corvette stops
+  portalFading: boolean;
+  portalFade: number; // 0..1, 1 = fully faded
+  // Hold in place after warp-in before recycling
+  holdTimer: number;
+  holdDuration: number;
 }
 
 export class BackgroundShips {
@@ -143,12 +157,176 @@ export class BackgroundShips {
     group.scale.setScalar(3);
     group.position.set(xOff, yOff, zOff);
 
-    return { group, speed: THREE.MathUtils.randFloat(3, 7), side };
+    // ── Warp portal: a glowing ring + swirling disc the corvette emerges from ──
+    const portal = this.createPortal();
+    portal.position.copy(group.position);
+    this.scene.add(portal);
+
+    return {
+      group,
+      speed: THREE.MathUtils.randFloat(3, 7),
+      side,
+      warpIn: true,
+      warpTimer: 0,
+      warpDuration: 2.2,
+      warpStartZ: zOff,
+      // Stop just in front of the portal (toward the camera) so the corvette's
+      // tail stays near the portal it emerged from. Ship is ~48 units long
+      // (scaled 3x), so center stops ~25 units ahead of the portal.
+      warpEndZ: zOff + 25,
+      portal,
+      portalPulse: 0,
+      portalFading: false,
+      portalFade: 0,
+      holdTimer: 0,
+      holdDuration: THREE.MathUtils.randFloat(6, 10),
+    };
+  }
+
+  // Build a dramatic warp portal: vertical ring facing the camera + swirling
+  // additive disc + a fire ring around the rim with orbiting fire particles.
+  // Sized to match the corvette (~48 units long at 3x scale).
+  private createPortal(): THREE.Group {
+    const portal = new THREE.Group();
+    const R = 22; // portal radius, comparable to the corvette length
+
+    // Outer ring (torus) — cyan/white energy. Default torus lies in the XY
+    // plane (normal along +Z), so it faces the camera. No rotation.
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(R, 1.6, 16, 64),
+      new THREE.MeshBasicMaterial({
+        color: 0x66ccff, transparent: true, opacity: 0.9,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      })
+    );
+    portal.add(ring);
+
+    // Fire ring around the rim — orange/red torus slightly larger.
+    const fire = new THREE.Mesh(
+      new THREE.TorusGeometry(R + 1.2, 1.1, 16, 64),
+      new THREE.MeshBasicMaterial({
+        color: 0xff6622, transparent: true, opacity: 0.85,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      })
+    );
+    portal.add(fire);
+
+    // Fire particles orbiting the rim — a ring of additive points that look
+    // like flames licking the portal edge.
+    const fireCount = 60;
+    const fireGeo = new THREE.BufferGeometry();
+    const firePos = new Float32Array(fireCount * 3);
+    for (let i = 0; i < fireCount; i++) {
+      const a = (i / fireCount) * Math.PI * 2;
+      const r = R + 1.2 + (Math.random() - 0.5) * 2.5;
+      firePos[i * 3] = Math.cos(a) * r;
+      firePos[i * 3 + 1] = Math.sin(a) * r;
+      firePos[i * 3 + 2] = (Math.random() - 0.5) * 1.5;
+    }
+    fireGeo.setAttribute('position', new THREE.BufferAttribute(firePos, 3));
+    const fireMat = new THREE.PointsMaterial({
+      color: 0xff8844,
+      size: 1.6,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const firePoints = new THREE.Points(fireGeo, fireMat);
+    firePoints.userData.basePositions = firePos.slice();
+    portal.add(firePoints);
+
+    portal.visible = false;
+    return portal;
+  }
+
+  // Rotate the orbiting fire particles around the portal rim.
+  private animateFire(portal: THREE.Group, dt: number): void {
+    const firePoints = portal.children.find((c) => c instanceof THREE.Points) as THREE.Points | undefined;
+    if (!firePoints) return;
+    const attr = firePoints.geometry.attributes.position as THREE.BufferAttribute;
+    const pos = attr.array as Float32Array;
+    const base = firePoints.userData.basePositions as Float32Array;
+    const t = performance.now() * 0.001;
+    const R = 22;
+    for (let i = 0; i < pos.length / 3; i++) {
+      const a = (i / (pos.length / 3)) * Math.PI * 2 + t * 1.2;
+      const r = R + 1.2 + Math.sin(t * 3 + i) * 1.2;
+      pos[i * 3] = Math.cos(a) * r;
+      pos[i * 3 + 1] = Math.sin(a) * r;
+      pos[i * 3 + 2] = base[i * 3 + 2] + Math.sin(t * 5 + i) * 0.8;
+    }
+    attr.needsUpdate = true;
   }
 
   update(dt: number, playerPos: THREE.Vector3): void {
     for (let i = 0; i < this.corvettes.length; i++) {
       const c = this.corvettes[i];
+
+      // ── Warp-in sequence: emerge dramatically from a portal at warp speed ──
+      if (c.warpIn) {
+        c.warpTimer += dt;
+        const p = Math.min(1, c.warpTimer / c.warpDuration);
+
+        // Portal visible and pulsing while the corvette emerges. It expands
+        // dramatically from a small point to full size (dramatic arrival).
+        c.portal.visible = true;
+        c.portalPulse += dt * 6;
+        const pulse = 1 + Math.sin(c.portalPulse) * 0.15;
+        const expand = THREE.MathUtils.lerp(0.2, 1, Math.min(1, p * 2.2));
+        c.portal.scale.setScalar(expand * pulse);
+        this.animateFire(c.portal, dt);
+        const ringMat = c.portal.children[0] as THREE.Mesh;
+        (ringMat.material as THREE.MeshBasicMaterial).opacity = 0.9 * (1 - p * 0.6);
+
+        // Corvette flies from the far background toward the camera (Z grows
+        // from very negative to less negative). It scales up uniformly as it
+        // approaches — no Z-stretch (that looked like gum).
+        const warpZ = THREE.MathUtils.lerp(c.warpStartZ, c.warpEndZ, p);
+        c.group.position.z = warpZ;
+        const grow = THREE.MathUtils.lerp(0.4, 3, p);
+        c.group.scale.setScalar(grow);
+
+        if (p >= 1) {
+          c.warpIn = false;
+          c.group.scale.setScalar(3);
+          c.holdTimer = 0;
+          // Start the portal fadeout/zoomout now that the corvette has stopped.
+          c.portalFading = true;
+          c.portalFade = 0;
+        }
+        // Record position for WaveManager to spawn enemies behind
+        this._positions[i].copy(c.group.position);
+        continue;
+      }
+
+      // Portal fadeout + zoomout after the corvette stops.
+      if (c.portalFading) {
+        c.portalFade += dt / 0.8; // fade over 0.8s
+        const f = Math.min(1, c.portalFade);
+        // Zoom out (grow) and fade out simultaneously.
+        c.portal.scale.setScalar(1 + f * 2.5);
+        for (const child of c.portal.children) {
+          if (child instanceof THREE.Points) {
+            (child.material as THREE.PointsMaterial).opacity = Math.max(0, 0.9 - f);
+          } else {
+            const m = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
+            m.opacity = Math.max(0, m.opacity - dt * 1.2);
+          }
+        }
+        if (f >= 1) {
+          c.portalFading = false;
+          c.portal.visible = false;
+        }
+      }
+
+      // Hold in place for a while after warp-in before drifting forward.
+      if (c.holdTimer < c.holdDuration) {
+        c.holdTimer += dt;
+        this._positions[i].copy(c.group.position);
+        continue;
+      }
+
       // Drift slowly toward +Z (toward and past the player)
       c.group.position.z += c.speed * dt;
 
@@ -161,13 +339,21 @@ export class BackgroundShips {
       // Record position for WaveManager to spawn enemies behind
       this._positions[i].copy(c.group.position);
 
-      // Recycle when it passes the player — keep it off to the sides
+      // Recycle when it passes the player — keep it off to the sides.
+      // Re-enter through a warp portal for a dramatic arrival.
       if (c.group.position.z > playerPos.z + 50) {
+        const newZ = playerPos.z - THREE.MathUtils.randFloat(180, 300);
         c.group.position.set(
           c.side * THREE.MathUtils.randFloat(50, 90),
           THREE.MathUtils.randFloat(-20, 30),
-          playerPos.z - THREE.MathUtils.randFloat(180, 300)
+          newZ
         );
+        c.portal.position.copy(c.group.position);
+        c.warpIn = true;
+        c.warpTimer = 0;
+        c.warpStartZ = newZ;
+        c.warpEndZ = newZ + 25;
+        c.holdTimer = 0;
       }
     }
   }
@@ -175,11 +361,20 @@ export class BackgroundShips {
   reset(): void {
     for (let i = 0; i < this.corvettes.length; i++) {
       const c = this.corvettes[i];
+      const zOff = -THREE.MathUtils.randFloat(80, 250) - i * 40;
       c.group.position.set(
         c.side * THREE.MathUtils.randFloat(50, 90),
         THREE.MathUtils.randFloat(-20, 30),
-        -THREE.MathUtils.randFloat(80, 250) - i * 40
+        zOff
       );
+      c.group.scale.setScalar(3);
+      c.portal.position.copy(c.group.position);
+      c.portal.visible = false;
+      c.warpIn = true;
+      c.warpTimer = 0;
+      c.warpStartZ = zOff;
+      c.warpEndZ = zOff + 25;
+      c.holdTimer = 0;
     }
   }
 
@@ -187,6 +382,13 @@ export class BackgroundShips {
     for (const c of this.corvettes) {
       this.scene.remove(c.group);
       c.group.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          (child.material as THREE.Material).dispose();
+        }
+      });
+      this.scene.remove(c.portal);
+      c.portal.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           child.geometry.dispose();
           (child.material as THREE.Material).dispose();

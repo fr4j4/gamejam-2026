@@ -14,7 +14,7 @@ import { lockLandscape } from '../utils/orientation.js';
 import { edgePadding, getSafeInsets, isCompactMode } from '../ui/layout.js';
 
 const DEPTH = 10;
-const PANEL_W = 520;
+const PANEL_W = 640;
 const PANEL_H = 380;
 const PANEL_W_COMPACT = 320;
 const PANEL_H_COMPACT = 340;
@@ -40,7 +40,7 @@ export default class MenuScene extends Phaser.Scene {
     this.panel = panel(this, { width: PANEL_W, height: PANEL_H, depth: DEPTH, border: 0x66ffcc, origin: 0.5 });
     this.title = text(this, 'BUGSURVIVOR', { size: '46px', color: TEXT.accent, depth: DEPTH + 1, origin: 0.5 });
     this.subtitle = text(this, 'Sobrevive, sube de nivel y cruza los portales', {
-      size: FONT_SIZE.small, color: TEXT.secondary, depth: DEPTH + 1, origin: 0.5, wordWrapWidth: PANEL_W - 60,
+      size: FONT_SIZE.small, color: TEXT.secondary, depth: DEPTH + 1, origin: 0.5, wordWrapWidth: PANEL_W - 80,
     });
 
     const bestTime = getBestTime();

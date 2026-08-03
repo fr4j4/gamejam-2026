@@ -29,6 +29,7 @@ import shieldRaw from 'lucide-static/icons/shield.svg?raw';
 import skullRaw from 'lucide-static/icons/skull.svg?raw';
 import swordsRaw from 'lucide-static/icons/swords.svg?raw';
 import timerRaw from 'lucide-static/icons/timer.svg?raw';
+import trophyRaw from 'lucide-static/icons/trophy.svg?raw';
 import wavesRaw from 'lucide-static/icons/waves.svg?raw';
 import windRaw from 'lucide-static/icons/wind.svg?raw';
 import zapRaw from 'lucide-static/icons/zap.svg?raw';
@@ -50,6 +51,7 @@ const ICONS = {
   'icon-shield': { raw: shieldRaw, size: UI_SIZE },
   'icon-zap': { raw: zapRaw, size: UI_SIZE },
   'icon-timer': { raw: timerRaw, size: UI_SIZE },
+  'icon-trophy': { raw: trophyRaw, size: UI_SIZE },
   'icon-skull': { raw: skullRaw, size: UI_SIZE },
   'icon-layers': { raw: layersRaw, size: UI_SIZE },
   'icon-swords': { raw: swordsRaw, size: UI_SIZE },

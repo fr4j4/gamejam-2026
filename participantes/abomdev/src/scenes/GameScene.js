@@ -24,7 +24,7 @@ import PauseMenu, { buildStatRows, buildWeaponSlots } from '../ui/PauseMenu.js';
 import SettingsPanel from '../ui/SettingsPanel.js';
 import LevelUpMenu from '../ui/LevelUpMenu.js';
 import TouchControls from '../ui/TouchControls.js';
-import { showEndScreen } from '../ui/EndScreen.js';
+import EndScreen from '../ui/EndScreen.js';
 import { playSfx } from '../audio/sfx.js';
 import { toggleMute, unlockAudio } from '../audio/synth.js';
 import { toggleFullscreen } from '../utils/fullscreen.js';
@@ -123,6 +123,7 @@ export default class GameScene extends Phaser.Scene {
     this.isGameOver = false;
     this.hasWon = false;
     this.isPaused = false;
+    this.endScreen = null;
     this.lastHitAt = -Infinity;
     this.lastDamageTakenAt = -Infinity;
     this.playerKnockbackUntil = 0;
@@ -241,8 +242,12 @@ export default class GameScene extends Phaser.Scene {
     this.wasd = this.input.keyboard.addKeys('W,A,S,D');
 
     this.input.keyboard.on('keydown-ESC', () => this.togglePause());
-    this.input.keyboard.on('keydown-M', () => toggleMute());
+    this.input.keyboard.on('keydown-M', () => {
+      if (this.endScreen?.isOpen) return;
+      toggleMute();
+    });
     this.input.keyboard.on('keydown-F', () => {
+      if (this.endScreen?.isOpen) return;
       const result = toggleFullscreen(this.scale);
       if (result === 'on') lockLandscape();
       else if (result === 'off') unlockOrientation();
@@ -985,7 +990,14 @@ export default class GameScene extends Phaser.Scene {
     this.setTimersPaused(true);
     this.touchControls?.setVisible(false);
     playSfx('gameOver');
-    showEndScreen(this, { title: 'GAME OVER', color: TEXT.danger, elapsed: this.elapsed, level: this.level });
+    this.endScreen = new EndScreen(this, {
+      title: 'GAME OVER',
+      color: TEXT.danger,
+      elapsed: this.elapsed,
+      level: this.level,
+      onRestart: () => this.restartGame(),
+      onQuit: () => this.quitToMenu(),
+    });
   }
 
   onVictory() {
@@ -993,7 +1005,14 @@ export default class GameScene extends Phaser.Scene {
     this.setTimersPaused(true);
     this.touchControls?.setVisible(false);
     playSfx('victory');
-    showEndScreen(this, { title: '¡VICTORIA!', color: TEXT.gold, elapsed: this.elapsed, level: this.level });
+    this.endScreen = new EndScreen(this, {
+      title: '¡VICTORIA!',
+      color: TEXT.gold,
+      elapsed: this.elapsed,
+      level: this.level,
+      onRestart: () => this.restartGame(),
+      onQuit: () => this.quitToMenu(),
+    });
   }
 
   // Arma el pool de mejoras a ofrecer: las stats no maxeadas, más un slot por arma

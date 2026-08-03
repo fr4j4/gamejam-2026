@@ -86,7 +86,7 @@ Auditoría completa del layout y refactor responsive para mobile. Se detectó qu
 ## Fase 2 — abomdev
 
 ### Resumen
-Mejoras para que el juego sea usable en portrait/tablet, debug más rápido y el panel de Configuración crezca sin romperse en pantallas chicas: hotkey `U` (debug) para abrir/cerrar el menú de level-up con choices reales, heurística `shouldUseCompactLevelUp` que captura portrait de tablet, grilla 2×2 derivada del viewport en compact, atenuación del HUD mientras el menú está abierto, hint mobile en el menú principal, y un `SettingsPanel` scrollable con toggle de pantalla completa ON/OFF, scrollbar y chevrons de overflow pulsantes alineados a la derecha del viewport.
+Tres tandas de cambios para mobile/UX/feedback: (1) menú de level-up mobile con hotkey `U` de debug, heurística de compact para tablet portrait, grilla 2×2 derivada del viewport y atenuación del HUD; (2) `SettingsPanel` scrollable con `Phaser.Filters.Mask` nativo de Phaser 4, toggle de pantalla completa ON/OFF y chevrons de overflow; (3) feedback visual al recoger XP (partículas + texto + pulse del icono) y al subir/bajar HP/shield (pulse de los iconos del HUD).
 
 ### Cambios realizados
 
@@ -96,30 +96,37 @@ Mejoras para que el juego sea usable en portrait/tablet, debug más rápido y el
 - **Grilla 2×2 derivada del viewport** (`src/ui/LevelUpMenu.js`) — `cardW = (w − 24 − 16) / 2`, `cardH = min(140, cardW * 0.48, maxByHeight)` en compact. Las 4 cards se redimensionan para entrar a la vez sin tapar el HUD. Icono compact 20 px, label inline a la derecha con origen `(0, 0.5)`. Bump de depth a `DEPTH_OPEN = 200` en `show()` para quedar sobre Minimap (150) y HUD (150).
 - **Atenuación del HUD durante level-up** (`src/ui/Hud.js::setAlpha`) — nuevo método que aplica alpha a todos los sprites hijos. `GameScene.startLevelUp()` setea 0.4; `chooseUpgrade()` restaura a 1.0.
 - **Hint mobile en menú** (`src/scenes/MenuScene.js`) — `'Joystick para moverte · ESC: pausa'` cuando `isTouchDevice()` es true; `'WASD / Flechas · ESC: pausa · F: pantalla completa'` en teclado.
-- **Iconos chevron-left/right** (`src/assets/icons.js`) — importados de lucide-static y agregados al catálogo para flechas del menú (después retirados cuando el carrusel se reemplazó por grilla 2×2).
 - **5 tests nuevos** (`src/ui/layout.test.js`) — `shouldUseCompactLevelUp` cubre phone portrait (375×667), tablet portrait (768×1024), desktop landscape (1280×720), 1080p y viewport con altura chica.
 
 #### SettingsPanel scrollable
-- **Viewport con geometry mask** — el contenido (3 sliders + 2 toggles) se renderiza dentro de un rectángulo recortado por `scrollMaskShape.createGeometryMask()`. `clearMask` antes de `setMask` en cada layout para evitar叠加 al rotar/redimensionar.
+- **Viewport con `Phaser.Filters.Mask`** — el contenido se agrupa en un `Container` con filter de mask nativo de Phaser 4 (funciona en WebGL; el viejo `setMask` no funciona). RenderTexture blanco como fuente del mask. `Container.enableFilters()` + `filters.internal.addMask(maskTexture, false, camera, 'world')` con `autoUpdate: false` para evitar re-render por frame.
+- **`maskFilter.needsUpdate = true` en `layout()`** — fuerza el filter a tomar el nuevo viewport tras resize.
+- **Container.width/height seteados** — Phaser setea `filtersFocusContext=true` si width/height son 0, lo que rompe la evaluación del mask. Se setea explícito en constructor y layout.
 - **Drag vertical + rueda del mouse** — `_onPointerDown/Move/Up` con threshold de 6 px; `_onWheel` con factor 0.5; `_scrollByDelta(±1)` por click en chevron (`vpH * 0.8` instantáneo).
-- **`_baseY` Map** — guarda el Y base de cada objeto scrollable. `_applyScrollToContent()` mueve `obj.y = baseY + scrollOffset`. Permite que `setPosition` del slider widget (caption, track, fill, flechas, valor) se mueva de forma coherente.
-- **Scrollbar azul info** (`0x66aaff`, ancho 4 px, alpha 0.6) en `vpX + vpW − SCROLLBAR_W − 8`. Alto proporcional al ratio, posición proporcional al progreso.
+- **`scrollContainer.y = -scrollOffset`** — el scroll mueve el container entero, no cada elemento individual.
+- **Scrollbar azul info** (`0x66aaff`, ancho 4 px, alpha 0.6) en el borde derecho del viewport. Alto proporcional al ratio, posición proporcional al progreso.
 - **Toggle fullscreen ON/OFF custom** — wrapper inline (no usa `button()` genérico porque pisa el stroke en `pointerover/out`). Sutil cuando OFF: label `#8888aa`, fill `UI.panelBg` alpha 0.85, borde `0x444466`. Destacado cuando ON: label `#66ffcc`, fill `0x1a3a3a`, borde cyan.
 - **Sincronización fullscreenchange** — listener `document.addEventListener('fullscreenchange', …)` + `webkitfullscreenchange`. Cuando el browser emite el evento (ESC, F11, etc), el toggle se actualiza automáticamente. `delayedCall(150)` cubre la carrera con `requestFullscreen`.
-- **Chevrons de overflow clickeables** — `icon-chevron-up` arriba y `icon-chevron-down` abajo, alineados con la scrollbar, 18 px, color `0x66aaff`. Tween de alpha 0.3 ↔ 0.8 cada 600 ms (yoyo, infinite). Visibilidad independiente según haya contenido arriba/abajo. Click → `_scrollByDelta(±1)`.
-- **Cleanup en hide/shutdown** — `_stopHintTween()`, `removeEventListener`, `destroy` del mask, off de listeners de Phaser.
-- **Iconos chevron-up/down** (`src/assets/icons.js`) — importados de lucide-static para los indicadores.
+- **Chevrons de overflow** — `Graphics` con `lineStyle` dibujando `^` y `v` directamente (no dependemos de SVG para evitar timing issues de carga). Hit-area rectangular de 40×40 px. Tween de alpha 0.3 ↔ 0.8 cada 600 ms (yoyo, infinite). Click → `_scrollByDelta(±1)`.
+- **Layout vertical para toggles** — label arriba, botones IZQ/DER y OFF centrados abajo. Sin solapamiento horizontal.
+- **Reserve del HUD para botón de pausa mobile** — `isTouchDevice()` en vez de `isCompactMode()` (tablets/desktop con touch también reservan). `Hud.layout()` se llama desde el callback `onLayoutChange` para refrescar reserva al cambiar lado del joystick sin esperar a resize/fullscreen.
+- **Cleanup en hide/shutdown** — `_stopHintTween()`, `removeEventListener`, `destroy` del mask y de los chevrons graphics, off de listeners de Phaser.
+
+#### Feedback visual (XP / HP / Shield)
+- **Partículas + texto + pulse al recoger XP** (`GameScene.onPlayerPickupXp`) — `deathEmitter.setParticleTint(0xaa88ff)` + `emitParticleAt(orb.x, orb.y, value >= 5 ? 8 : 4)` para partículas violetas; `showFloatingText(x, y, '+value', '#aa88ff')` con throttle 100ms (`_lastXpTextAt`) para no saturar con aura; `hud.pulseXpIcon()` para el pulse del icono XP.
+- **`Hud._pulseIcon(icon, tweenKey, factor=1.5)`** genérico — tween scale relativo al `baseScale` (importante: la textura 32px se renderiza a 16px vía `setDisplaySize`, lo cual setea `scaleX = 0.5` internamente; usar `setScale(1)` lo dejaba en 32px). Throttle por tweenKey independiente.
+- **Pulse del icono HP/shield al cambiar** (`Hud.update()`) — tracking de `_prevHp`/`_prevShield`; detecta cualquier cambio (`!==`) y dispara pulse via `_pulseIcon`. Throttle independiente (`_hpPulseTween`, `_shieldPulseTween`).
+- **`Hud.pulseXpIcon()`** público — wrapper de `_pulseIcon` para uso externo (GameScene lo llama directo).
 
 ### Lo que quedó frágil
 - **Hotkey `U` es debug, no feature.** Queda activa por ahora para iterar. Cuando se retire, cambiar `LEVEL_UP_DEBUG_KEY = false`.
 - **Tween del chevron** — si el panel se cierra en medio de la animación, `_stopHintTween()` la corta. Si no se llama (caso edge), el tween leak.
-- **Resize durante Config abierto** — el `_maxScroll` se recalcula en `layout()`, pero el `scrollOffset` queda clamped. Puede haber un salto visible si el contenido pasa de overflow a no-overflow mientras está abierto.
 - **Mask叠加 pre-existente** — si en el futuro alguien llama `setMask` desde fuera del panel sin `clearMask`,叠加. El panel ya lo limpia en cada layout.
 - **Toast fullscreen fallback** — el toast naranja dura 3s. Si el usuario abre y cierra el panel rápido mientras el toast sigue, queda visualmente fuera de contexto (depth correcto lo deja encima, pero el panel está cerrado).
+- **Pulse叠加 con HP/shield** — si el HP cambia muy rápido (daño múltiple en un frame), solo el primer pulse se ve; los siguientes se ignoran hasta que termine el tween activo. Aceptable porque es 140ms y el throttle evita spam visual.
+- **Resize durante Config abierto** — el `_maxScroll` se recalcula en `layout()`, pero el `scrollOffset` queda clamped. Puede haber un salto visible si el contenido pasa de overflow a no-overflow mientras está abierto.
 
-### Ideas no implementadas
-- **Dots clickeables** además de las flechas del carrusel — descartado cuando se reemplazó el carrusel por grilla 2×2.
-- **Slide animado entre cards del level-up** — descartado por decisión de diseño (grilla 2×2 en mobile).
+### Ideas no implementadas (de Fase 2)
 - **Persistencia de posición de scroll** entre shows del SettingsPanel.
 - **Scroll inertia / momentum** para trackpad.
 - **Animación de scroll** cuando se hace click en los chevrons (instantáneo a propósito).
@@ -128,7 +135,6 @@ Mejoras para que el juego sea usable en portrait/tablet, debug más rápido y el
 
 ## Ideas para explorar
 - **HUD informativo de armas** — Mostrar las armas activas con su daño y stats relevantes, usando iconos o una presentación que no sature la pantalla.
-- **Feedback al recoger experiencia** — Sumar un efecto visual (halo, brillo, etc.) cuando se recoge XP para reforzar la sensación de progreso.
 - **Auditoría de comportamiento de enemigos** — Revisar los tipos de enemigo actuales y sus patrones de movimiento para identificar mejoras y nuevos patrones.
 - **Estética neón con switch clásico/neón** — Agregar una opción para alternar entre el tema visual clásico y un tema neón con colores vibrantes y pulsantes.
 - **Música chiptune durante el gameplay** — Evaluar librerías tipo chiptune o similares para sumar música de fondo que acompañe la partida.

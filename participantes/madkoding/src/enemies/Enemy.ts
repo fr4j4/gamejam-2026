@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { EventBus } from '../core/EventBus';
 import { GameEvent } from '../types/events';
+import { RAIL } from '../types/config';
 import { EnemyMeshFactory } from './EnemyMeshFactory';
 import { EnemyTrail } from './EnemyTrail';
 import type { Projectile } from '../weapons/Projectile';
@@ -48,6 +49,40 @@ export class Enemy {
   protected trail: EnemyTrail;
   pattern: PatternBase | null = null;
 
+  // ── Emergence from hangar (Homeworld-style launch) ──
+  protected _emerging = false;
+  protected _emergenceStart = new THREE.Vector3();
+  protected _emergenceEnd = new THREE.Vector3();
+  protected _emergenceProgress = 0;
+  protected _emergenceDuration = 2;
+  protected _emergencePhase = 0;
+
+  // ── Fade when outside the firing range (can't tell ahead/behind) ──
+  protected _fadeAlpha = 1;
+  protected _fadeTarget = 1;
+  protected _fadeSpeed = 4;
+
+  // ── Flight state machine: hangar → approach → attack → overfly → return ──
+  protected _hangarPos = new THREE.Vector3();
+  protected _flightState: 'EMERGING' | 'APPROACH' | 'ATTACK' | 'OVERFLY' | 'RETURN' = 'EMERGING';
+  protected _stateTimer = 0;
+  protected _pirouetteAngle = 0;
+  protected _pirouetteDir = 1;
+  protected _loiterCenter = new THREE.Vector3();
+  protected _loiterPhase = 0;
+  protected _overflyDir = new THREE.Vector3(0, 0, 1);
+
+  // The player flies forward along -Z at rail speed. Enemies must fly faster
+  // than the rail to actually reach and pass the player (like a plane).
+  private _forwardDrift = RAIL.RAIL_SPEED;
+  // Constant flight speed for all states — never reduces. Must exceed the rail
+  // speed so enemies can catch up to and overfly the player. Lower multiplier
+  // = slower approach.
+  private _flightSpeed = RAIL.RAIL_SPEED * 1.15;
+  // Random per-enemy aim offset so enemies don't all converge on the exact
+  // same point — each one picks its own approach target.
+  private _approachOffset = new THREE.Vector3();
+
   private static nextId = 0;
 
   constructor(config: EnemyConfig, type: string, scene: THREE.Scene) {
@@ -65,7 +100,7 @@ export class Enemy {
     this.group = new THREE.Group();
     this.body = EnemyMeshFactory.create(type, this._size, this._color);
     this.group.add(this.body);
-    this.trail = new EnemyTrail(scene, this._color);
+    this.trail = new EnemyTrail(scene, 0xff6622, this._size * 2 / 3);
     this.group.visible = false;
   }
 
@@ -126,8 +161,8 @@ export class Enemy {
     }
   }
 
-  init(position: THREE.Vector3, _target: THREE.Vector3): void {
-    this.group.position.copy(position);
+  init(position: THREE.Vector3, _target: THREE.Vector3, origin?: THREE.Vector3): void {
+    this.group.position.copy(origin ? origin.clone() : position);
     this._health = this._maxHealth;
     this._active = true; this._age = 0;
     this._velocity.set(0, 0, 0);
@@ -142,7 +177,36 @@ export class Enemy {
     this._isTelegraphing = false;
     this._burstCount = 0;
     this._burstTimer = 0;
-    this.trail.start(position);
+
+    // Random per-enemy approach offset so each enemy aims at its own point
+    // near the player instead of all converging on the exact same spot.
+    this._approachOffset.set(
+      (Math.random() - 0.5) * 10,
+      (Math.random() - 0.5) * 6,
+      0,
+    );
+
+    // Emergence from hangar: if an origin is given, fly a sweeping curve from
+    // the corvette toward the player, then attack and return to the hangar.
+    if (origin) {
+      this._hangarPos.copy(origin);
+      this._emerging = true;
+      this._flightState = 'EMERGING';
+      this._emergenceStart.copy(origin);
+      this._emergenceEnd.copy(position);
+      this._emergenceProgress = 0;
+      this._emergenceDuration = 2.0 + Math.random() * 1.0;
+      this._emergencePhase = Math.random() * Math.PI * 2;
+      this._stateTimer = 0;
+      this._pirouetteAngle = 0;
+      this._pirouetteDir = Math.random() < 0.5 ? -1 : 1;
+      this.trail.start(origin);
+    } else {
+      this._emerging = false;
+      this._flightState = 'ATTACK';
+      this._stateTimer = 0;
+      this.trail.start(position);
+    }
   }
 
   takeDamage(amount: number): boolean {
@@ -153,13 +217,17 @@ export class Enemy {
 
   destroy(): void {
     this._active = false; this.group.visible = false;
+    this.trail.fadeOut();
     this.eventBus.emit(GameEvent.ENEMY_DESTROYED, {
       type: this._type, score: this._score,
       position: { x: this.group.position.x, y: this.group.position.y, z: this.group.position.z },
     });
   }
 
-  // ── Combat update: telegraph → burst → retreat → pattern, plus evasion ──
+  // ── Combat update: hangar → approach → attack → overfly → return ──
+  // Velocity-based flight: each state sets a constant velocity vector and the
+  // enemy integrates it. No rail-drift hack — the enemy flies like a plane at
+  // its own constant speed, approaching, passing the player, and returning.
   updateCombat(
     dt: number,
     playerPos: THREE.Vector3,
@@ -167,54 +235,179 @@ export class Enemy {
     onShoot?: (shootPos: THREE.Vector3, dir: THREE.Vector3) => void,
   ): void {
     if (!this._active) return;
-    this._shootTimer += dt;
 
-    if (this._isTelegraphing) {
-      this._telegraphTimer -= dt;
-      if (this._telegraphTimer <= 0) {
-        // Telegraph ended → FIRE! 30% chance of burst (3 shots)
-        if (Math.random() < 0.3) {
-          this._burstCount = 3;
-          this._burstTimer = 0;
-          this.fireLaser(playerPos, onShoot);
-          this._burstCount--;
+    this._stateTimer += dt;
+
+    switch (this._flightState) {
+      case 'EMERGING': {
+        // Fly from the hangar toward the player with a sweeping, banking curve.
+        this._emergenceProgress += dt / this._emergenceDuration;
+        if (this._emergenceProgress >= 1) {
+          this._emergenceProgress = 1;
+          this._emerging = false;
+          this._flightState = 'APPROACH';
+          this._stateTimer = 0;
         } else {
-          this.fireLaser(playerPos, onShoot);
+          const p = this._emergenceProgress;
+          const travel = this._emergenceEnd.distanceTo(this._emergenceStart);
+          const amp = Math.min(6, travel * 0.35);
+          const weave = Math.sin(p * Math.PI * 2 * 1.5 + this._emergencePhase) * (1 - p) * amp;
+          const weaveY = Math.cos(p * Math.PI * 2 * 1.2 + this._emergencePhase) * (1 - p) * amp * 0.6;
+          this.group.position.lerpVectors(this._emergenceStart, this._emergenceEnd, p);
+          this.group.position.x += weave;
+          this.group.position.y += weaveY;
+          this.body.rotation.z = Math.sin(p * Math.PI * 2 * 1.5 + this._emergencePhase) * 0.6 * (1 - p);
         }
-        this.stopTelegraph();
-        this.resetShootTimer();
-        this._retreatTimer = 2.0;
+        break;
       }
-      // While telegraphing, drift slightly toward player
-      const drift = this.position.clone().sub(playerPos).normalize();
-      this.position.x -= drift.x * 2 * dt;
-      this.position.y -= drift.y * 2 * dt;
-    } else if (this.tickBurst(playerPos, dt, onShoot)) {
-      // Burst in progress — movement handled below
-    } else if (this._retreatTimer > 0) {
-      this.updateRetreat(dt, playerPos);
-    } else {
-      this.dodgeIncomingLasers(projectiles, dt);
-      if (this.pattern) {
-        this.pattern.update(this, dt, playerPos, projectiles);
-      } else {
-        this.update(dt, playerPos);
+
+      case 'APPROACH': {
+        // Fly toward the player at constant speed with gentle pirouettes.
+        this._pirouetteAngle += this._pirouetteDir * dt * 2.5;
+        this.body.rotation.z = Math.sin(this._pirouetteAngle) * 0.6;
+        this.body.rotation.y = Math.cos(this._pirouetteAngle) * 0.4;
+
+        // Aim at a random offset point near the player, not the exact center.
+        const aim = playerPos.clone().add(this._approachOffset);
+        const dir = aim.sub(this.group.position);
+        const dist = dir.length();
+        if (dist > 0.1) {
+          dir.normalize();
+          // Constant flight speed — always exceeds the rail so the enemy
+          // actually catches up to and passes the player.
+          this._velocity.copy(dir).multiplyScalar(this._flightSpeed);
+        } else {
+          this._velocity.set(0, 0, 0);
+        }
+
+        // Once close enough — or after a max approach time — switch to attack.
+        // Break off from a comfortable distance so the enemy doesn't fly right
+        // on top of the player before starting its dive.
+        if (dist < 45 || this._stateTimer > 3) {
+          this._flightState = 'ATTACK';
+          this._stateTimer = 0;
+        }
+        break;
       }
-      // Check if should start telegraphing (about to attack)
-      const distToPlayer = this.position.distanceTo(playerPos);
-      if (distToPlayer < 45 && distToPlayer > 5 && this.canShoot()) {
-        this.startTelegraph(0.8);
+
+      case 'ATTACK': {
+        // Dive at the player at constant speed, firing. After a short window,
+        // keep flying straight past the player (like a plane) — never stop.
+        const aim = playerPos.clone().add(this._approachOffset);
+        const dir = aim.sub(this.group.position);
+        const dist = dir.length();
+        if (dist > 0.1) {
+          dir.normalize();
+          this._velocity.copy(dir).multiplyScalar(this._flightSpeed * 1.4);
+        } else {
+          this._velocity.set(0, 0, 0);
+        }
+        this.body.rotation.z = Math.sin(this._stateTimer * 4) * 0.4;
+
+        // Fire at the player.
+        this._shootTimer += dt;
+        if (this.canShoot() && dist < 30) {
+          this.fireLaser(playerPos, onShoot);
+          this.resetShootTimer();
+        }
+
+        // After the attack window, keep flying straight past the player.
+        if (this._stateTimer > 2.5 || dist < 6) {
+          this._flightState = 'OVERFLY';
+          this._stateTimer = 0;
+          // Store the current heading so we keep flying straight.
+          this._overflyDir.copy(this._velocity).normalize();
+        }
+        break;
+      }
+
+      case 'OVERFLY': {
+        // Keep flying straight at constant speed — like a plane passing by.
+        this._velocity.copy(this._overflyDir).multiplyScalar(this._flightSpeed);
+        this.body.rotation.z = Math.sin(this._stateTimer * 3) * 0.4;
+
+        // Fire while overflying.
+        this._shootTimer += dt;
+        if (this.canShoot()) {
+          this.fireLaser(playerPos, onShoot);
+          this.resetShootTimer();
+        }
+
+        // After flying past, turn around and return to the hangar.
+        if (this._stateTimer > 3) {
+          this._flightState = 'RETURN';
+          this._stateTimer = 0;
+        }
+        break;
+      }
+
+      case 'RETURN': {
+        // Fly back toward the hangar at constant speed with a gentle weave.
+        const dir = this._hangarPos.clone().sub(this.group.position);
+        const dist = dir.length();
+        if (dist > 0.1) {
+          dir.normalize();
+          this._velocity.copy(dir).multiplyScalar(this._flightSpeed);
+        } else {
+          this._velocity.set(0, 0, 0);
+        }
+        this.body.rotation.z = Math.sin(this._stateTimer * 3) * 0.5;
+
+        // Reached the hangar (or gave up after a while) → recycle.
+        if (dist < 4 || this._stateTimer > 12) {
+          this.reset();
+          return;
+        }
+        break;
       }
     }
+
+    // Integrate the constant velocity. Enemies fly at a constant speed that
+    // exceeds the rail speed, so they catch up to, pass, and return past the
+    // player like planes — never stopping at a fixed point.
+    this.group.position.addScaledVector(this._velocity, dt);
 
     this.performAcrobatics(dt);
     this.trail.update(dt, this.position);
     this.mesh.lookAt(playerPos);
 
+    // Fade out when outside the firing range (can't tell if ahead/behind).
+    this.updateRangeFade(playerPos);
+
     // Safety: deactivate if behind the player (no score — just remove)
     if (this._active && this.position.z > playerPos.z + 8) {
       this.reset();
     }
+  }
+
+  // Fade the enemy's body out when it's outside the reachable firing range,
+  // so the player can't tell if it's ahead or behind the ship.
+  private updateRangeFade(playerPos: THREE.Vector3): void {
+    const dx = this.position.x - playerPos.x;
+    const dy = this.position.y - playerPos.y;
+    const dz = this.position.z - playerPos.z;
+    // Reachable firing box around the player (matches crosshair limits).
+    const inRange =
+      Math.abs(dx) <= 12 && Math.abs(dy) <= 7 && dz > -60 && dz < 8;
+    this._fadeTarget = inRange ? 1 : 0.15;
+
+    // Smoothly move current alpha toward the target.
+    const diff = this._fadeTarget - this._fadeAlpha;
+    if (Math.abs(diff) > 0.001) {
+      this._fadeAlpha += diff * Math.min(1, this._fadeSpeed * 0.016);
+      this.applyFade(this._fadeAlpha);
+    }
+  }
+
+  private applyFade(alpha: number): void {
+    this.body.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        const mat = child.material as THREE.Material;
+        if (mat.transparent) {
+          mat.opacity = alpha;
+        }
+      }
+    });
   }
 
   private tickBurst(playerPos: THREE.Vector3, dt: number, onShoot?: (s: THREE.Vector3, d: THREE.Vector3) => void): boolean {
@@ -285,29 +478,16 @@ export class Enemy {
     this.body.rotation.z += angle;
   }
 
-  // ── Telegraph: glow red before shooting to give player reaction time ──
+  // ── Telegraph: brief pause before shooting to give player reaction time ──
+  // (No color change — enemies keep their grey/line look.)
   startTelegraph(duration: number): void {
     this._isTelegraphing = true;
     this._telegraphTimer = duration;
-    // Make the body glow red
-    this.body.traverse((child) => {
-      if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshPhongMaterial) {
-        (child.material as THREE.MeshPhongMaterial).emissive.setHex(0xff0000);
-        (child.material as THREE.MeshPhongMaterial).emissiveIntensity = 1.5;
-      }
-    });
   }
 
   stopTelegraph(): void {
     this._isTelegraphing = false;
     this._telegraphTimer = 0;
-    // Restore original color
-    this.body.traverse((child) => {
-      if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshPhongMaterial) {
-        (child.material as THREE.MeshPhongMaterial).emissive.setHex(this._color);
-        (child.material as THREE.MeshPhongMaterial).emissiveIntensity = 0.7;
-      }
-    });
   }
 
   get isTelegraphing(): boolean { return this._isTelegraphing; }
@@ -339,8 +519,17 @@ export class Enemy {
     this._health = this._maxHealth;
     this._shootTimer = 0; this._ramTimer = 0;
     this._ramming = false; this._ramVelocity.set(0, 0, 0);
+    this._emerging = false;
+    this._flightState = 'EMERGING';
+    this._stateTimer = 0;
+    this._loiterPhase = 0;
     this.group.visible = false;
     this.trail.stop();
+  }
+
+  // Advance the trail fade for destroyed enemies (called by the manager).
+  updateTrailFade(dt: number): void {
+    this.trail.update(dt, this.position);
   }
 
   dispose(): void {

@@ -1,16 +1,14 @@
-// ─── Sweep Pattern: constant-speed approach toward player center ───────────
+// ─── Sweep Pattern: constant-speed overflight past the player ───────────────
 
 import * as THREE from 'three';
 import type { Enemy } from '../Enemy';
 import type { Projectile } from '../../weapons/Projectile';
 import type { PatternBase } from './PatternBase';
-import { dodgeLasers, moveToward, clampToPlayArea } from './movement';
-
-const STANDOFF_Z = 5;
+import { dodgeLasers, overfly } from './movement';
 
 export class SweepPattern implements PatternBase {
   name = 'SWEEP';
-  private swayAngle = Math.random() * Math.PI * 2;
+  private phase = Math.random() * Math.PI * 2;
 
   update(enemy: Enemy, dt: number, playerPos: THREE.Vector3, playerProjectiles?: Projectile[]): void {
     const pos = enemy.position;
@@ -18,18 +16,7 @@ export class SweepPattern implements PatternBase {
 
     dodgeLasers(pos, playerProjectiles, speed, dt);
 
-    // Approach toward the player's X/Y position (center of screen where
-    // the crosshair can reach). Small sway for visual movement.
-    this.swayAngle += dt * 0.6;
-    const target = new THREE.Vector3(
-      playerPos.x + Math.sin(this.swayAngle) * 2,  // small sway
-      playerPos.y + Math.cos(this.swayAngle * 0.7) * 1.5,
-      playerPos.z - STANDOFF_Z,
-    );
-
-    moveToward(pos, target, speed, dt);
-
-    // Clamp to the play area around the player so enemies stay reachable
-    clampToPlayArea(pos, playerPos);
+    // Overfly the player: constant forward speed with a lateral weave.
+    overfly(pos, playerPos, speed, dt, this.phase);
   }
 }

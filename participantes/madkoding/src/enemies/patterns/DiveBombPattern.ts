@@ -1,19 +1,17 @@
-// ─── Dive Bomb: constant-speed circling, then dive toward player ───────────
+// ─── Dive Bomb: overflight with periodic dives toward the player ────────────
 
 import * as THREE from 'three';
 import type { Enemy } from '../Enemy';
 import type { Projectile } from '../../weapons/Projectile';
 import type { PatternBase } from './PatternBase';
-import { dodgeLasers, moveToward, clampToPlayArea } from './movement';
-
-const STANDOFF_Z = 6;
+import { dodgeLasers, overfly } from './movement';
 
 export class DiveBombPattern implements PatternBase {
   name = 'DIVE_BOMB';
+  private phase = Math.random() * Math.PI * 2;
   private diveTimer = 0;
   private diving = false;
   private diveCooldown = 5.0;
-  private circleAngle = Math.random() * Math.PI * 2;
 
   update(enemy: Enemy, dt: number, playerPos: THREE.Vector3, playerProjectiles?: Projectile[]): void {
     const pos = enemy.position;
@@ -28,24 +26,16 @@ export class DiveBombPattern implements PatternBase {
     }
 
     if (this.diving) {
-      // Dive straight toward the player
-      moveToward(pos, playerPos, speed * 1.5, dt);
+      // Dive toward the player, then resume overflight.
+      const dir = playerPos.clone().sub(pos).normalize();
+      pos.addScaledVector(dir, speed * 1.5 * dt);
       enemy.spinBody(dt * 8);
       if (this.diveTimer > 2.0 || pos.z > playerPos.z - 3) {
         this.diving = false; this.diveTimer = 0;
       }
     } else {
-      // Circle close to the player center
-      this.circleAngle += dt * 0.5;
-      const target = new THREE.Vector3(
-        playerPos.x + Math.cos(this.circleAngle) * 3,  // tight circle
-        playerPos.y + Math.sin(this.circleAngle * 0.6) * 2,
-        playerPos.z - STANDOFF_Z,
-      );
-      moveToward(pos, target, speed, dt);
+      // Overfly with a moderate weave.
+      overfly(pos, playerPos, speed, dt, this.phase, 5, 3);
     }
-
-    // Clamp to play area around the player
-    clampToPlayArea(pos, playerPos);
   }
 }

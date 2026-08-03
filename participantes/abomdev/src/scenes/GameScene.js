@@ -26,7 +26,14 @@ import LevelUpMenu from '../ui/LevelUpMenu.js';
 import TouchControls from '../ui/TouchControls.js';
 import EndScreen from '../ui/EndScreen.js';
 import { playSfx } from '../audio/sfx.js';
-import { toggleMute, unlockAudio } from '../audio/synth.js';
+import { toggleMute, unlockAudio, startBgm, stopBgm, playStinger } from '../audio/synth.js';
+import { createGameTrack, createBossTrack } from '../audio/chip-tracks.js';
+import { generateLevelupStinger, generateGameoverStinger } from '../audio/stingers.js';
+
+const TRACK_GENERATORS = {
+  game: createGameTrack,
+  boss: createBossTrack,
+};
 import { toggleFullscreen } from '../utils/fullscreen.js';
 import { lockLandscape, unlockOrientation } from '../utils/orientation.js';
 import { isTouchDevice } from '../utils/device.js';
@@ -57,11 +64,13 @@ export default class GameScene extends Phaser.Scene {
     this.bindInput();
     // Por si se entra directo a esta escena sin pasar por el menú.
     unlockAudio();
+    startBgm('game', null, TRACK_GENERATORS);
 
     if (isTouchDevice() && this.isPortrait()) {
       this.showPortraitHint();
     }
     this.scale.on('resize', this.onResizePortrait, this);
+    this.events.once('shutdown', () => stopBgm());
   }
 
   isPortrait() {
@@ -600,6 +609,7 @@ export default class GameScene extends Phaser.Scene {
     this.isBossAlive = true;
     this.currentBoss = boss;
     this.bossFightCountdown = BOSS_FIGHT_LIMIT_MS;
+    startBgm('boss', null, TRACK_GENERATORS);
     this.hud.showBossBar();
   }
 
@@ -794,11 +804,16 @@ export default class GameScene extends Phaser.Scene {
     this.bossCountdown = BOSS_COUNTDOWN_MS;
     this.hud.hideBossBar();
 
+    // Volver a la musica del juego cuando muere el boss.
+    startBgm('game', null, TRACK_GENERATORS);
+
     this.stageMultiplier *= STAGE_BOSS_MULTIPLIER;
     this.spawnPortal();
     // El level-up que sigue tapa toda la pantalla con sus cards, así que el aviso
     // del portal se muestra recién al cerrarlo (ver chooseUpgrade), no ahora.
     this.pendingPortalHint = true;
+    // Stinger breve de level-up sobre la musica actual.
+    playStinger(generateLevelupStinger());
     this.levelUp();
   }
 
@@ -990,6 +1005,8 @@ export default class GameScene extends Phaser.Scene {
     this.setTimersPaused(true);
     this.touchControls?.setVisible(false);
     playSfx('gameOver');
+    // Stinger triste de game over sobre la musica actual.
+    playStinger(generateGameoverStinger());
     this.endScreen = new EndScreen(this, {
       title: 'GAME OVER',
       color: TEXT.danger,
@@ -1005,6 +1022,9 @@ export default class GameScene extends Phaser.Scene {
     this.setTimersPaused(true);
     this.touchControls?.setVisible(false);
     playSfx('victory');
+    // Stinger triste de victoria (mismo feeling que gameover, contraste con
+    // la musica agresiva del juego).
+    playStinger(generateGameoverStinger());
     this.endScreen = new EndScreen(this, {
       title: '¡VICTORIA!',
       color: TEXT.gold,

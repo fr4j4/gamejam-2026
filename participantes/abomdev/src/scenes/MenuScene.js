@@ -7,7 +7,12 @@ import { FONT_SIZE, TEXT } from '../config/theme.js';
 import { getBestTime } from '../ui/EndScreen.js';
 import SettingsPanel from '../ui/SettingsPanel.js';
 import { button, formatTime, panel, setVisible, text } from '../ui/widgets.js';
-import { unlockAudio } from '../audio/synth.js';
+import { unlockAudio, startBgm, stopBgm, isAudioReady } from '../audio/synth.js';
+import { createMenuTrack } from '../audio/chip-tracks.js';
+
+const TRACK_GENERATORS = {
+  menu: createMenuTrack,
+};
 import { isTouchDevice, isIOS } from '../utils/device.js';
 import { toggleFullscreen, isBrowserFullscreen } from '../utils/fullscreen.js';
 import { lockLandscape } from '../utils/orientation.js';
@@ -81,12 +86,27 @@ export default class MenuScene extends Phaser.Scene {
 
     this.layout();
     this.scale.on('resize', this.layout, this);
-    this.events.once('shutdown', () => this.scale.off('resize', this.layout, this));
+    this.events.once('shutdown', () => {
+      this.scale.off('resize', this.layout, this);
+      stopBgm();
+    });
 
     // Cualquier interacción sirve para desbloquear el audio: el navegador lo mantiene
-    // bloqueado hasta que el usuario toca algo, y este menú es lo primero que ve.
-    this.input.once('pointerdown', unlockAudio);
-    this.input.keyboard.once('keydown', unlockAudio);
+    // bloqueado hasta que el usuario toca algo. IntroScene ya capturó el primer
+    // gesto, asi que normalmente el audio ya esta running cuando MenuScene
+    // arranca. Pero por si alguien navega directo al menu (refresh dentro del
+    // juego, deep-link, etc.) cubrimos el caso suspended con el listener.
+    const unlockAndStartBgm = () => {
+      unlockAudio();
+      startBgm('menu', null, TRACK_GENERATORS);
+    };
+    this.input.once('pointerdown', unlockAndStartBgm);
+    this.input.keyboard.once('keydown', unlockAndStartBgm);
+    // Si el AudioContext ya esta running (caso normal: IntroScene lo desbloqueo),
+    // arrancamos la musica de inmediato sin esperar otro gesto.
+    if (isAudioReady()) {
+      startBgm('menu', null, TRACK_GENERATORS);
+    }
     this.input.keyboard.on('keydown-ENTER', () => this.startGame());
   }
 
@@ -161,6 +181,7 @@ export default class MenuScene extends Phaser.Scene {
       const result = toggleFullscreen(this.scale);
       if (result === 'on') lockLandscape();
     }
+    stopBgm();
     this.scene.start('game');
   }
 }

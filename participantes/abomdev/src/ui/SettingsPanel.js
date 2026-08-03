@@ -72,6 +72,7 @@ export default class SettingsPanel {
       { key: 'master', ui: slider(scene, { label: 'Volumen general', width: SLIDER_W, depth: DEPTH + 1, onChange: (v) => setVolume('master', v) }) },
       { key: 'combat', ui: slider(scene, { label: 'Combate (disparos, impactos)', width: SLIDER_W, depth: DEPTH + 1, onChange: (v) => setVolume('combat', v) }) },
       { key: 'events', ui: slider(scene, { label: 'Hitos (nivel, jefe, victoria)', width: SLIDER_W, depth: DEPTH + 1, onChange: (v) => setVolume('events', v) }) },
+      { key: 'music', ui: slider(scene, { label: 'Música', width: SLIDER_W, depth: DEPTH + 1, onChange: (v) => setVolume('music', v) }) },
     ];
     this.sliders.forEach(({ key, ui }) => ui.setValue(settings[key]));
 

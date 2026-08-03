@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import IntroScene from './scenes/IntroScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import GameScene from './scenes/GameScene.js';
 
@@ -18,7 +19,7 @@ const game = new Phaser.Game({
       debug: false,
     },
   },
-  scene: [MenuScene, GameScene],
+  scene: [IntroScene, MenuScene, GameScene],
 });
 
 // Expuesto en window para que el smoke test automatizado (puppeteer) pueda

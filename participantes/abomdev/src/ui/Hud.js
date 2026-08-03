@@ -57,6 +57,12 @@ export default class Hud {
     this.bossBar = bar(scene, { width: BOSS_BAR_W_DESKTOP, height: BOSS_BAR_H, color: BAR.boss, depth: DEPTH, inset: 2 });
     this.bossBar.track.setVisible(false);
     this.bossBar.fill.setVisible(false);
+
+    // Tracking de HP/shield previos para detectar subidas y disparar pulse.
+    this._prevHp = null;
+    this._prevShield = null;
+    this._hpPulseTween = null;
+    this._shieldPulseTween = null;
   }
 
   layout(w, h) {
@@ -170,6 +176,18 @@ export default class Hud {
     this.levelText.setText(`Nivel ${level}`);
     this.stageText.setText(`Etapa ${stage}`);
 
+    // Detectar cambios en hp/shield y disparar pulse del icono. Anima tanto
+    // al subir (regen, lifesteal, shield regenerado) como al bajar (daño).
+    // Throttle por icono: si ya hay un pulse activo, ignora.
+    if (this._prevHp !== null && stats.hp !== this._prevHp) {
+      this._pulseIcon(this.hpIcon, '_hpPulseTween');
+    }
+    if (this._prevShield !== null && stats.shield !== this._prevShield) {
+      this._pulseIcon(this.shieldIcon, '_shieldPulseTween');
+    }
+    this._prevHp = stats.hp;
+    this._prevShield = stats.shield;
+
     this.timerText.setText(formatTime(elapsed));
     this._repositionTimerIcon();
   }
@@ -237,5 +255,37 @@ export default class Hud {
       this.bossLabel, this.bossBar.track, this.bossBar.fill,
     ];
     parts.forEach((p) => p.setAlpha(a));
+  }
+
+  // Pulse generico de un icono. Escala relativa al scale actual (que puede
+  // ser 0.5 si la textura es 32px renderizada a 16px via setDisplaySize).
+  // Throttle: si ya hay un pulse activo para este icono, ignora el call.
+  //
+  // tweenKey: nombre del campo en this donde se guarda la referencia al
+  // tween activo (ej: '_xpPulseTween'). Permite varios pulsers simultaneos
+  // en el mismo Hud sin pisarse.
+  _pulseIcon(icon, tweenKey, factor = 1.5) {
+    if (this[tweenKey]) return;
+    const baseScaleX = icon.scaleX;
+    const baseScaleY = icon.scaleY;
+    this[tweenKey] = this.scene.tweens.add({
+      targets: icon,
+      scaleX: baseScaleX * factor,
+      scaleY: baseScaleY * factor,
+      duration: 140,
+      yoyo: true,
+      ease: 'Sine.Out',
+      onComplete: () => {
+        // Restaurar al scale original para que el icono vuelva a su tamaño.
+        icon.scaleX = baseScaleX;
+        icon.scaleY = baseScaleY;
+        this[tweenKey] = null;
+      },
+    });
+  }
+
+  // API publica: pulse del icono XP al recoger un orbe.
+  pulseXpIcon() {
+    this._pulseIcon(this.xpIcon, '_xpPulseTween');
   }
 }

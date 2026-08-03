@@ -900,7 +900,21 @@ export default class GameScene extends Phaser.Scene {
 
   onPlayerPickupXp(player, orb) {
     const value = orb.getData('value') || 1;
+    const { x, y } = orb;
     orb.destroy();
+
+    // Feedback visual: partículas violetas + texto +value + pulse del
+    // icono XP del HUD. Reusamos deathEmitter para las partículas (no
+    // creamos un emiter nuevo). El text tiene throttle 100ms para no saturar
+    // cuando el aura recoge muchos orbes en cadena.
+    this.deathEmitter.setParticleTint(0xaa88ff);
+    this.deathEmitter.emitParticleAt(x, y, value >= 5 ? 8 : 4);
+    if (!this._lastXpTextAt || this.time.now - this._lastXpTextAt > 100) {
+      this.showFloatingText(x, y, `+${value}`, '#aa88ff');
+      this._lastXpTextAt = this.time.now;
+    }
+    this.hud?.pulseXpIcon();
+
     playSfx('xp');
     this.xp += value;
     if (this.xp >= this.xpToNext) {

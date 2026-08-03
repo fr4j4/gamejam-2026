@@ -9,8 +9,8 @@
 // para que el sprite y su cuerpo de físicas coincidan sin ajustes extra.
 
 import bugRaw from 'lucide-static/icons/bug.svg?raw';
-import chevronLeftRaw from 'lucide-static/icons/chevron-left.svg?raw';
-import chevronRightRaw from 'lucide-static/icons/chevron-right.svg?raw';
+import chevronDownRaw from 'lucide-static/icons/chevron-down.svg?raw';
+import chevronUpRaw from 'lucide-static/icons/chevron-up.svg?raw';
 import circleDotRaw from 'lucide-static/icons/circle-dot.svg?raw';
 import crosshairRaw from 'lucide-static/icons/crosshair.svg?raw';
 import dropletRaw from 'lucide-static/icons/droplet.svg?raw';
@@ -64,8 +64,8 @@ const ICONS = {
   'icon-waves': { raw: wavesRaw, size: UI_SIZE },
   'icon-circle-dot': { raw: circleDotRaw, size: UI_SIZE },
   'icon-pause': { raw: pauseRaw, size: UI_SIZE },
-  'icon-arrow-left': { raw: chevronLeftRaw, size: UI_SIZE },
-  'icon-arrow-right': { raw: chevronRightRaw, size: UI_SIZE },
+  'icon-chevron-up': { raw: chevronUpRaw, size: UI_SIZE },
+  'icon-chevron-down': { raw: chevronDownRaw, size: UI_SIZE },
 };
 
 // btoa() falla con caracteres fuera de latin-1, así que pasamos por TextEncoder.

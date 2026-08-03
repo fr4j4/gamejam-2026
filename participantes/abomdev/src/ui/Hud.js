@@ -7,6 +7,7 @@ import { BAR, FONT_SIZE, TEXT } from '../config/theme.js';
 import { edgePadding, getSafeInsets, isCompactMode } from './layout.js';
 import { bar, formatTime, icon, text } from './widgets.js';
 import { getTouchLayout } from '../utils/touchLayout.js';
+import { isTouchDevice } from '../utils/device.js';
 
 const DEPTH = 150;
 const BAR_W_DESKTOP = 200;
@@ -65,14 +66,15 @@ export default class Hud {
     const topInset = edgePadding('top', 0, insets);
     const rightInset = edgePadding('right', 0, insets);
 
-    // En compact el boton de pausa mobile vive en la esquina opuesta al joystick.
-    // Reservamos ese lado para que el HUD no se monte con el boton.
+    // Reservamos espacio para el boton de pausa mobile siempre que el dispositivo
+    // sea touch (no solo en compact): tablets/desktop con touch tambien tienen
+    // joystick virtual + boton de pausa que se monta con el HUD.
     // - joystick 'right' (default) => boton pausa en top-left => reserva izquierda
     // - joystick 'left'           => boton pausa en top-right => reserva derecha
     const touchSide = getTouchLayout();
     let leftReserved = 0;
     let rightReserved = 0;
-    if (compact) {
+    if (isTouchDevice()) {
       if (touchSide === 'left') {
         rightReserved = Math.max(PAUSE_RESERVED_W, rightInset + 60);
       } else {

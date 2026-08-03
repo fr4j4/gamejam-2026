@@ -211,6 +211,10 @@ export default class GameScene extends Phaser.Scene {
         this.touchControls?.setLayout(value);
         this.minimap?.setLayout(value);
         this.pauseMenu?.setLayout(value);
+        // Forzar relayout del HUD: la reserva para el boton de pausa cambia
+        // de lado segun el joystick, y el HUD no escucha el evento de resize
+        // porque el viewport no cambia.
+        this.hud?.layout(this.scale.width, this.scale.height);
       },
     );
 

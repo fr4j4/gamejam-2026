@@ -86,29 +86,45 @@ Auditoría completa del layout y refactor responsive para mobile. Se detectó qu
 ## Fase 2 — abomdev
 
 ### Resumen
-Tres mejoras para que el menú de level-up funcione en mobile y se pueda testear sin farmear XP: hotkey `U` (debug) para abrir/cerrar el menú con choices reales, una heurística `shouldUseCompactLevelUp` que captura portrait de tablet (768×1024) sin tocar `isCompactMode`, y un modo carrusel 1-card con flechas/dots/swipe + atenuación del HUD a 0.4 mientras el menú está abierto. Bonus: el hint del menú principal ya no menciona WASD en touch devices.
+Mejoras para que el juego sea usable en portrait/tablet, debug más rápido y el panel de Configuración crezca sin romperse en pantallas chicas: hotkey `U` (debug) para abrir/cerrar el menú de level-up con choices reales, heurística `shouldUseCompactLevelUp` que captura portrait de tablet, grilla 2×2 derivada del viewport en compact, atenuación del HUD mientras el menú está abierto, hint mobile en el menú principal, y un `SettingsPanel` scrollable con toggle de pantalla completa ON/OFF, scrollbar y chevrons de overflow pulsantes alineados a la derecha del viewport.
 
 ### Cambios realizados
-- **Hotkey `U` (debug temporal)** — `LEVEL_UP_DEBUG_KEY = true` en `src/config/constants.js`. Registra `keydown-U` en `GameScene.create()` que dispara `startLevelUp()` si no está abierto, o cierra eligiendo el índice 0 si ya está abierto por debug (no se interpone con un level-up real en curso). Bloqueado en pause, game over y victory. Apagar el flag en `constants.js` borra la hotkey.
+
+#### Level-up menu en mobile
+- **Hotkey `U` (debug, removible)** — `LEVEL_UP_DEBUG_KEY = true` en `src/config/constants.js`. Registra `keydown-U` en `GameScene.create()` que dispara `startLevelUp()` si no está abierto, o cierra eligiendo el índice 0 si ya está abierto por debug (no se interpone con un level-up real en curso). Bloqueado en pause, game over y victory. Apagar el flag borra la hotkey.
 - **Helper `shouldUseCompactLevelUp(w, h)`** (`src/ui/layout.js`) — `w < 720 || h < 480 || h > w * 1.2`. Más agresivo que `isCompactMode()` para capturar portrait de tablet. Usado solo por `LevelUpMenu`.
-- **Carrusel 1-card en compact** (`src/ui/LevelUpMenu.js`) — modo `grid|carousel` decidido en `layout()`. En carrusel solo se ve la card activa, con flechas izquierda/derecha (chevron-left/right de lucide), dots en el bottom y swipe horizontal (`pointermove` con delta > 60 px). Header `1 / 4` arriba de la card. Las teclas `1‑4` siguen funcionando (en carrusel saltean directo a la N-ésima). El tap en una card no activa salta el cursor; el tap en la card activa la elige.
-- **Atenuación del HUD durante level-up** (`src/ui/Hud.js::setAlpha`) — nuevo método que aplica alpha a todos los sprites hijos. `GameScene.startLevelUp()` setea 0.4; `chooseUpgrade()` restaura a 1.0. Resuelve el bug de la captura donde las cards 2×2 tapaban el texto del HUD.
-- **Hint mobile en menú** (`src/scenes/MenuScene.js`) — el hint de controles ahora es `'Joystick para moverte · ESC: pausa'` cuando `isTouchDevice()` es true, en vez del `'WASD / Flechas ...'` desktop.
-- **Iconos chevron-left/right** (`src/assets/icons.js`) — importados de lucide-static y agregados al catálogo de iconos para las flechas del carrusel.
+- **Grilla 2×2 derivada del viewport** (`src/ui/LevelUpMenu.js`) — `cardW = (w − 24 − 16) / 2`, `cardH = min(140, cardW * 0.48, maxByHeight)` en compact. Las 4 cards se redimensionan para entrar a la vez sin tapar el HUD. Icono compact 20 px, label inline a la derecha con origen `(0, 0.5)`. Bump de depth a `DEPTH_OPEN = 200` en `show()` para quedar sobre Minimap (150) y HUD (150).
+- **Atenuación del HUD durante level-up** (`src/ui/Hud.js::setAlpha`) — nuevo método que aplica alpha a todos los sprites hijos. `GameScene.startLevelUp()` setea 0.4; `chooseUpgrade()` restaura a 1.0.
+- **Hint mobile en menú** (`src/scenes/MenuScene.js`) — `'Joystick para moverte · ESC: pausa'` cuando `isTouchDevice()` es true; `'WASD / Flechas · ESC: pausa · F: pantalla completa'` en teclado.
+- **Iconos chevron-left/right** (`src/assets/icons.js`) — importados de lucide-static y agregados al catálogo para flechas del menú (después retirados cuando el carrusel se reemplazó por grilla 2×2).
 - **5 tests nuevos** (`src/ui/layout.test.js`) — `shouldUseCompactLevelUp` cubre phone portrait (375×667), tablet portrait (768×1024), desktop landscape (1280×720), 1080p y viewport con altura chica.
 
+#### SettingsPanel scrollable
+- **Viewport con geometry mask** — el contenido (3 sliders + 2 toggles) se renderiza dentro de un rectángulo recortado por `scrollMaskShape.createGeometryMask()`. `clearMask` antes de `setMask` en cada layout para evitar叠加 al rotar/redimensionar.
+- **Drag vertical + rueda del mouse** — `_onPointerDown/Move/Up` con threshold de 6 px; `_onWheel` con factor 0.5; `_scrollByDelta(±1)` por click en chevron (`vpH * 0.8` instantáneo).
+- **`_baseY` Map** — guarda el Y base de cada objeto scrollable. `_applyScrollToContent()` mueve `obj.y = baseY + scrollOffset`. Permite que `setPosition` del slider widget (caption, track, fill, flechas, valor) se mueva de forma coherente.
+- **Scrollbar azul info** (`0x66aaff`, ancho 4 px, alpha 0.6) en `vpX + vpW − SCROLLBAR_W − 8`. Alto proporcional al ratio, posición proporcional al progreso.
+- **Toggle fullscreen ON/OFF custom** — wrapper inline (no usa `button()` genérico porque pisa el stroke en `pointerover/out`). Sutil cuando OFF: label `#8888aa`, fill `UI.panelBg` alpha 0.85, borde `0x444466`. Destacado cuando ON: label `#66ffcc`, fill `0x1a3a3a`, borde cyan.
+- **Sincronización fullscreenchange** — listener `document.addEventListener('fullscreenchange', …)` + `webkitfullscreenchange`. Cuando el browser emite el evento (ESC, F11, etc), el toggle se actualiza automáticamente. `delayedCall(150)` cubre la carrera con `requestFullscreen`.
+- **Chevrons de overflow clickeables** — `icon-chevron-up` arriba y `icon-chevron-down` abajo, alineados con la scrollbar, 18 px, color `0x66aaff`. Tween de alpha 0.3 ↔ 0.8 cada 600 ms (yoyo, infinite). Visibilidad independiente según haya contenido arriba/abajo. Click → `_scrollByDelta(±1)`.
+- **Cleanup en hide/shutdown** — `_stopHintTween()`, `removeEventListener`, `destroy` del mask, off de listeners de Phaser.
+- **Iconos chevron-up/down** (`src/assets/icons.js`) — importados de lucide-static para los indicadores.
+
 ### Lo que quedó frágil
-- **Hotkey `U` es debug, no feature.** Queda activa por ahora para iterar. Cuando se retire, cambiar `LEVEL_UP_DEBUG_KEY = false`. La decisión de incluirla en producción la dejé documentada en el spec para que sea reversible en una sola línea.
-- **Swipe horizontal puede chocar con el joystick virtual.** La hot zone del joystick ocupa la mitad izquierda/derecha del viewport; un swipe que arranque dentro se confunde con movimiento del personaje. No hay zona de exclusión todavía.
-- **Resize durante menú abierto** — pasar de compact a desktop con el menú abierto reinicia `activeIndex` a 0 y vuelve a la grilla 2×2. Comportamiento intencional pero no animado (las 4 cards aparecen de golpe).
-- **Animación de slide entre cards del carrusel no incluida.** El cambio de `activeIndex` es instantáneo. Aceptable para esta iteración; se puede sumar después con un `tween` de x.
+- **Hotkey `U` es debug, no feature.** Queda activa por ahora para iterar. Cuando se retire, cambiar `LEVEL_UP_DEBUG_KEY = false`.
+- **Tween del chevron** — si el panel se cierra en medio de la animación, `_stopHintTween()` la corta. Si no se llama (caso edge), el tween leak.
+- **Resize durante Config abierto** — el `_maxScroll` se recalcula en `layout()`, pero el `scrollOffset` queda clamped. Puede haber un salto visible si el contenido pasa de overflow a no-overflow mientras está abierto.
+- **Mask叠加 pre-existente** — si en el futuro alguien llama `setMask` desde fuera del panel sin `clearMask`,叠加. El panel ya lo limpia en cada layout.
+- **Toast fullscreen fallback** — el toast naranja dura 3s. Si el usuario abre y cierra el panel rápido mientras el toast sigue, queda visualmente fuera de contexto (depth correcto lo deja encima, pero el panel está cerrado).
 
 ### Ideas no implementadas
-- **Dots clickeables** además de las flechas — sumar handlers `pointerdown` en los círculos para saltar directo al índice.
-- **Slide animado entre cards** — tween de x de las cards al cambiar de índice. Bajo costo con Phaser tweens.
-- **Excluir hot zone del swipe** — durante el carrusel, detectar si el `pointerdown` original cayó dentro de la hot zone del joystick y descartar el swipe.
-- **Badge `[DEV]` en el hint** cuando la hotkey `U` esté activa — para no olvidarla activa en producción.
-- **Picker aleatorio reproducible** — debug que arme N choices pre-fijadas para validar el layout contra una entrada conocida.
+- **Dots clickeables** además de las flechas del carrusel — descartado cuando se reemplazó el carrusel por grilla 2×2.
+- **Slide animado entre cards del level-up** — descartado por decisión de diseño (grilla 2×2 en mobile).
+- **Persistencia de posición de scroll** entre shows del SettingsPanel.
+- **Scroll inertia / momentum** para trackpad.
+- **Animación de scroll** cuando se hace click en los chevrons (instantáneo a propósito).
+- **Hotkey dedicada para abrir Configuración** — solo se accede desde el menú/pausa.
+- **Más toggles en Configuración** (mute general, reducción de movimiento, etc). La infraestructura ya está lista, solo agregar `_build*Toggle(scene)`.
 
 ## Ideas para explorar
 - **HUD informativo de armas** — Mostrar las armas activas con su daño y stats relevantes, usando iconos o una presentación que no sature la pantalla.

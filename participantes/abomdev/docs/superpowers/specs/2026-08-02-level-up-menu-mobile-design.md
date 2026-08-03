@@ -6,7 +6,7 @@ Estado: propuesta validada con el usuario, pendiente de plan de implementación
 
 ## Resumen
 
-Cuatro cambios al menú de level-up y al HUD para que el juego sea usable en
+Tres cambios al menú de level-up y al HUD para que el juego sea usable en
 portrait/tablet y para que se pueda probar sin farmear XP:
 
 1. **Hotkey `U` (debug temporal)** — abre y cierra el menú simulando un level-up
@@ -16,9 +16,10 @@ portrait/tablet y para que se pueda probar sin farmear XP:
    tablet (ej. 768×1024), por lo que las cards 2×2 gigantes tapan al HUD. El
    branch compact pasa a usar una heurística explícita dentro de `LevelUpMenu`
    que captura portrait independientemente del ancho absoluto.
-3. **Carrusel 1-card en compact** — en lugar de grilla 2×2, se muestra una card
-   grande a la vez con flechas/swipe/teclas 1-4. Además el HUD se atenúa a 0.4
-   mientras el menú está abierto para legibilidad.
+3. **Grilla 2×2 derivada del viewport en compact** — en lugar de los tamaños
+   fijos del desktop (320×150), las cards se redimensionan para que las 4
+   entren en pantalla respetando el ancho del viewport. Además el HUD se
+   atenúa a 0.4 mientras el menú está abierto para legibilidad.
 4. **Esconder pista WASD/Flechas en mobile** — el `hint` del menú principal
    (`MenuScene.js`) menciona controles de teclado que no aplican en táctil.
    Si `isTouchDevice()` es true, se reemplaza por una pista móvil

@@ -1,6 +1,6 @@
-// Menú de subida de nivel: en desktop, grilla 2x2 con borde de color segun rareza.
-// En mobile (portrait o viewport chico), carrusel 1-card con flechas, dots y
-// swipe horizontal. Se elige con clic/tap sobre la card visible o con las teclas 1-4.
+// Menú de subida de nivel: grilla 2x2 con borde de color según rareza. En
+// mobile (portrait o viewport chico) las cards se redimensionan para que las 4
+// entren a la vez. Se elige con tap sobre la card o con las teclas 1-4.
 
 import { FONT_SIZE, RARITY_COLOR, RARITY_COLOR_NUM, RARITY_LABEL, TEXT, UI } from '../config/theme.js';
 import { UPGRADE_ICONS } from '../config/upgrades.js';
@@ -8,44 +8,40 @@ import { edgePadding, getSafeInsets, shouldUseCompactLevelUp } from './layout.js
 import { icon, panel, setVisible, text } from './widgets.js';
 
 const DEPTH = 100;
-const CARD_W = 320;
-const CARD_H = 150;
-const CARD_W_COMPACT = 0; // calculado en layout()
-const CARD_H_COMPACT = 78;
-const CAROUSEL_H = 170;
-const GAP_X = 24;
-const GAP_Y = 20;
+const DEPTH_OPEN = 200;
+const CARD_W_DESKTOP = 320;
+const CARD_H_DESKTOP = 150;
+const GAP_X_DESKTOP = 24;
+const GAP_Y_DESKTOP = 20;
+const GRID_TOP_DESKTOP = 150;
+
+const PAD_COMPACT = 12;
+const GAP_X_COMPACT = 14;
 const GAP_Y_COMPACT = 10;
-const GRID_TOP = 150;
-const GRID_TOP_COMPACT = 80;
+const GRID_TOP_COMPACT = 64;
+const COMPACT_ASPECT = 0.48;
+const COMPACT_MAX_H = 140;
+const COMPACT_MIN_H = 70;
+
 const ICON_SIZE = 34;
-const ICON_SIZE_COMPACT = 22;
-const ARROW_SIZE = 44;
-const SWIPE_THRESHOLD = 60;
+const ICON_SIZE_COMPACT = 20;
 
 export default class LevelUpMenu {
   // onChoose(index) lo provee la escena: aplica la mejora y cierra el menú.
   constructor(scene, onChoose) {
     this.scene = scene;
     this.onChoose = onChoose;
-    this.mode = 'grid';
-    this.activeIndex = 0;
-    this._isOpen = false;
-    this._swipeStartX = null;
+    this.compact = false;
 
     this.title = text(scene, 'SUBISTE DE NIVEL', {
       size: FONT_SIZE.subheading, color: TEXT.primary, depth: DEPTH, origin: 0.5,
     }).setVisible(false);
 
-    this.counterText = text(scene, '', {
-      size: FONT_SIZE.small, color: TEXT.dim, depth: DEPTH, origin: 0.5,
-    }).setVisible(false);
-
     this.cards = [0, 1, 2, 3].map((i) => {
-      const bg = panel(scene, { width: CARD_W, height: CARD_H, depth: DEPTH, border: UI.panelBorder })
+      const bg = panel(scene, { width: CARD_W_DESKTOP, height: CARD_H_DESKTOP, depth: DEPTH, border: UI.panelBorder })
         .setVisible(false)
         .setInteractive({ useHandCursor: true });
-      bg.on('pointerdown', () => this._handleCardTap(i));
+      bg.on('pointerdown', () => this.onChoose(i));
       bg.on('pointerover', () => bg.setStrokeStyle(4, bg.getData('rarityColor') || UI.panelBorder));
       bg.on('pointerout', () => bg.setStrokeStyle(3, bg.getData('rarityColor') || UI.panelBorder));
 
@@ -54,133 +50,59 @@ export default class LevelUpMenu {
       const cardIcon = icon(scene, 'icon-swords', { size: ICON_SIZE, color: 0xffffff, depth: DEPTH + 1 }).setVisible(false);
       const label = text(scene, '', {
         size: FONT_SIZE.body, color: TEXT.accent, depth: DEPTH + 1, origin: 0.5,
-        align: 'center', wordWrapWidth: CARD_W - 36,
+        align: 'center', wordWrapWidth: CARD_W_DESKTOP - 36,
       }).setVisible(false);
 
       return { bg, keyText, rarityText, cardIcon, label };
     });
 
-    this._buildCarouselChrome();
-
     ['ONE', 'TWO', 'THREE', 'FOUR'].forEach((keyName, i) => {
-      scene.input.keyboard.on(`keydown-${keyName}`, () => this._handleKeyboardPick(i));
+      scene.input.keyboard.on(`keydown-${keyName}`, () => this.onChoose(i));
     });
-
-    scene.input.on('pointerdown', this._onSwipeStart, this);
-    scene.input.on('pointermove', this._onSwipeMove, this);
-    scene.input.on('pointerup', this._onSwipeEnd, this);
-    scene.input.on('pointerupoutside', this._onSwipeEnd, this);
-
-    scene.events.once('shutdown', () => {
-      scene.input.off('pointerdown', this._onSwipeStart, this);
-      scene.input.off('pointermove', this._onSwipeMove, this);
-      scene.input.off('pointerup', this._onSwipeEnd, this);
-      scene.input.off('pointerupoutside', this._onSwipeEnd, this);
-    });
-  }
-
-  _buildCarouselChrome() {
-    const scene = this.scene;
-    const arrowOpts = { size: ARROW_SIZE, color: 0x66ffcc, depth: DEPTH + 1 };
-    this.leftArrow = icon(scene, 'icon-arrow-left', arrowOpts)
-      .setVisible(false)
-      .setInteractive({ useHandCursor: true });
-    this.rightArrow = icon(scene, 'icon-arrow-right', arrowOpts)
-      .setVisible(false)
-      .setInteractive({ useHandCursor: true });
-    this.leftArrow.on('pointerdown', () => this._step(-1));
-    this.rightArrow.on('pointerdown', () => this._step(1));
-
-    this.dots = [0, 1, 2, 3].map(() =>
-      scene.add.circle(0, 0, 4, 0xffffff, 0.3)
-        .setScrollFactor(0).setDepth(DEPTH + 1).setVisible(false)
-    );
-
-    this.chrome = [this.leftArrow, this.rightArrow, ...this.dots, this.counterText];
-  }
-
-  _handleCardTap(i) {
-    if (this.mode === 'carousel' && i !== this.activeIndex) {
-      this.activeIndex = i;
-      this._renderCarousel();
-      return;
-    }
-    this.onChoose(i);
-  }
-
-  _handleKeyboardPick(i) {
-    if (this.mode === 'carousel') {
-      this.activeIndex = i;
-      this.onChoose(i);
-    } else {
-      this.onChoose(i);
-    }
-  }
-
-  _step(delta) {
-    this.activeIndex = (this.activeIndex + delta + 4) % 4;
-    this._renderCarousel();
-  }
-
-  _onSwipeStart(pointer) {
-    if (this.mode !== 'carousel' || !this._isOpen) return;
-    this._swipeStartX = pointer.x;
-  }
-
-  _onSwipeMove() {
-    // Solo tracking de fin -> ver _onSwipeEnd.
-  }
-
-  _onSwipeEnd(pointer) {
-    if (this.mode !== 'carousel' || !this._isOpen || this._swipeStartX === null) return;
-    const dx = pointer.x - this._swipeStartX;
-    this._swipeStartX = null;
-    if (Math.abs(dx) < SWIPE_THRESHOLD) return;
-    this._step(dx < 0 ? 1 : -1);
   }
 
   layout(w, h) {
-    const compact = shouldUseCompactLevelUp(w, h);
-    const newMode = compact ? 'carousel' : 'grid';
-    if (newMode !== this.mode) {
-      this.mode = newMode;
-      this.activeIndex = 0;
-    }
+    this.compact = shouldUseCompactLevelUp(w, h);
 
     const cx = w / 2;
     const topInset = edgePadding('top', 0, getSafeInsets());
-    const titleY = topInset + 50;
-    this.title.setPosition(cx, titleY);
+    this.title.setPosition(cx, topInset + 50);
 
-    if (this.mode === 'carousel') {
-      const cardW = w - 24;
-      const cardH = Math.min(CAROUSEL_H, Math.max(120, h * 0.22));
-      const cardX = cx - cardW / 2;
-      const cardY = topInset + 110;
-      this.cards.forEach((card) => {
-        card.bg.setSize(cardW, cardH).setPosition(cardX, cardY);
-      });
-      this._positionCardChrome();
-      this.counterText.setPosition(cx, cardY - cardH / 2 - 14);
+    if (this.compact) {
+      const dims = this._computeCompactDims(w, h);
+      const { cardW, cardH, gridStartX, gridTop } = dims;
 
-      const arrowY = cardY;
-      const arrowPad = Math.max(8, (cardW - ARROW_SIZE) / 2 - 70);
-      this.leftArrow.setPosition(cardX + arrowPad, arrowY);
-      this.rightArrow.setPosition(cardX + cardW - arrowPad, arrowY);
-
-      const dotSpacing = 16;
-      const dotY = cardY + cardH / 2 + 18;
-      const dotsStartX = cx - ((this.dots.length - 1) * dotSpacing) / 2;
-      this.dots.forEach((dot, i) => dot.setPosition(dotsStartX + i * dotSpacing, dotY));
-    } else {
-      const gridStartX = cx - (CARD_W * 2 + GAP_X) / 2;
       this.cards.forEach((card, i) => {
-        const x = gridStartX + (i % 2) * (CARD_W + GAP_X);
-        const y = GRID_TOP + Math.floor(i / 2) * (CARD_H + GAP_Y);
-        card.bg.setSize(CARD_W, CARD_H).setPosition(x, y);
+        const x = gridStartX + (i % 2) * (cardW + GAP_X_COMPACT);
+        const y = gridTop + Math.floor(i / 2) * (cardH + GAP_Y_COMPACT);
+        card.bg.setSize(cardW, cardH).setPosition(x, y);
       });
-      this._positionCardChrome();
+    } else {
+      const gridStartX = cx - (CARD_W_DESKTOP * 2 + GAP_X_DESKTOP) / 2;
+      this.cards.forEach((card, i) => {
+        const x = gridStartX + (i % 2) * (CARD_W_DESKTOP + GAP_X_DESKTOP);
+        const y = GRID_TOP_DESKTOP + Math.floor(i / 2) * (CARD_H_DESKTOP + GAP_Y_DESKTOP);
+        card.bg.setSize(CARD_W_DESKTOP, CARD_H_DESKTOP).setPosition(x, y);
+      });
     }
+
+    this._positionCardChrome();
+  }
+
+  _computeCompactDims(w, h) {
+    const topInset = edgePadding('top', 0, getSafeInsets());
+    const innerW = w - PAD_COMPACT * 2;
+    const cardW = (innerW - GAP_X_COMPACT) / 2;
+    const topBudget = topInset + GRID_TOP_COMPACT;
+    const bottomBudget = 24;
+    const availableH = Math.max(120, h - topBudget - bottomBudget);
+    const maxByHeight = (availableH - GAP_Y_COMPACT) / 2;
+    const aspectH = cardW * COMPACT_ASPECT;
+    const cardH = Math.max(COMPACT_MIN_H, Math.min(COMPACT_MAX_H, aspectH, maxByHeight));
+    const innerH = cardH * 2 + GAP_Y_COMPACT;
+    const gridTop = Math.max(topBudget, Math.min(topBudget, (h - innerH) / 2));
+    const gridStartX = (w - (cardW * 2 + GAP_X_COMPACT)) / 2;
+    return { cardW, cardH, gridStartX, gridTop };
   }
 
   // Posiciona textos/iconos dentro de cada card. Las cards usan origin 0
@@ -192,19 +114,23 @@ export default class LevelUpMenu {
       const y = bg.y;
       const cardW = bg.width;
       const cardH = bg.height;
-      const compact = this.mode === 'carousel';
 
       card.keyText.setPosition(x + 10, y + 8);
       card.rarityText.setPosition(x + cardW - 10, y + 8);
-      if (compact) {
+
+      if (this.compact) {
         const iconSize = ICON_SIZE_COMPACT;
         card.cardIcon.setDisplaySize(iconSize, iconSize);
         card.cardIcon.setPosition(x + 28, y + cardH / 2);
         card.label.setOrigin(0, 0.5).setPosition(x + 28 + iconSize + 12, y + cardH / 2);
+        card.label.setWordWrapWidth(cardW - 28 - iconSize - 24);
+        card.label.setStyle({ fontSize: FONT_SIZE.small });
       } else {
         card.cardIcon.setDisplaySize(ICON_SIZE, ICON_SIZE);
         card.cardIcon.setPosition(x + cardW / 2, y + 52);
         card.label.setOrigin(0.5).setPosition(x + cardW / 2, y + cardH - 42);
+        card.label.setWordWrapWidth(cardW - 36);
+        card.label.setStyle({ fontSize: FONT_SIZE.body });
       }
     });
   }
@@ -212,65 +138,71 @@ export default class LevelUpMenu {
   // choices: las 4 mejoras sorteadas. stats: las stats actuales, para que cada card
   // pueda mostrar el antes→después sin que la escena arme los textos.
   show(choices, stats) {
-    this._isOpen = true;
-    this.activeIndex = 0;
+    const compact = shouldUseCompactLevelUp(this.scene.scale.width, this.scene.scale.height);
+    const iconSize = compact ? ICON_SIZE_COMPACT : ICON_SIZE;
     choices.forEach((choice, i) => {
       const after = { ...stats };
       choice.apply(after);
 
       const rarity = choice.rarity || 'common';
       const card = this.cards[i];
-      card.bg.setData('rarityColor', RARITY_COLOR_NUM[rarity]).setStrokeStyle(3, RARITY_COLOR_NUM[rarity]);
-      card.rarityText.setText(RARITY_LABEL[rarity]).setColor(RARITY_COLOR[rarity]);
+      card.bg.setData('rarityColor', RARITY_COLOR_NUM[rarity]).setStrokeStyle(3, RARITY_COLOR_NUM[rarity]).setVisible(true);
+      card.keyText.setVisible(true);
+      card.rarityText.setText(RARITY_LABEL[rarity]).setColor(RARITY_COLOR[rarity]).setVisible(true);
       card.cardIcon.setTexture(UPGRADE_ICONS[choice.key] || 'icon-swords')
-        .setTint(RARITY_COLOR_NUM[rarity]);
-      card.label.setText(choice.describe(stats, after)).setColor(RARITY_COLOR[rarity]);
+        .setDisplaySize(iconSize, iconSize)
+        .setTint(RARITY_COLOR_NUM[rarity])
+        .setVisible(true);
+      card.label.setText(choice.describe(stats, after)).setColor(RARITY_COLOR[rarity]).setVisible(true);
     });
+    this._refreshSizes();
+    this._positionCardChrome();
+    this._setDepth(DEPTH_OPEN);
+    this.title.setVisible(true);
+  }
 
-    if (this.mode === 'carousel') {
-      this._renderCarousel();
-      this.title.setVisible(true);
+  // Bump depth en show/hide para que las cards queden sobre Minimap (150) y
+  // HUD (150); el minimapa es dibujado con depth 150 igual que el HUD, así que
+  // sin bump compite con el menú y se ve a través.
+  _setDepth(depth) {
+    this.title.setDepth(depth);
+    this.cards.forEach((card) => {
+      card.bg.setDepth(depth);
+      card.keyText.setDepth(depth + 1);
+      card.rarityText.setDepth(depth + 1);
+      card.cardIcon.setDepth(depth + 1);
+      card.label.setDepth(depth + 1);
+    });
+  }
+
+  // Garantiza que cada card tenga el tamaño correcto segun el modo actual antes
+  // de reposicionar hijos. Necesario porque setSize se aplica en layout() y un
+  // show() que corre sin layout previo (ej. primer level-up) vería tamaños del
+  // constructor.
+  _refreshSizes() {
+    const w = this.scene.scale.width;
+    const h = this.scene.scale.height;
+    const compact = shouldUseCompactLevelUp(w, h);
+    if (compact) {
+      const { cardW, cardH, gridStartX, gridTop } = this._computeCompactDims(w, h);
+      this.cards.forEach((card, i) => {
+        const x = gridStartX + (i % 2) * (cardW + GAP_X_COMPACT);
+        const y = gridTop + Math.floor(i / 2) * (cardH + GAP_Y_COMPACT);
+        card.bg.setSize(cardW, cardH).setPosition(x, y);
+      });
     } else {
-      this._renderGrid();
-      this.title.setVisible(true);
+      const gridStartX = (w - (CARD_W_DESKTOP * 2 + GAP_X_DESKTOP)) / 2;
+      this.cards.forEach((card, i) => {
+        const x = gridStartX + (i % 2) * (CARD_W_DESKTOP + GAP_X_DESKTOP);
+        const y = GRID_TOP_DESKTOP + Math.floor(i / 2) * (CARD_H_DESKTOP + GAP_Y_DESKTOP);
+        card.bg.setSize(CARD_W_DESKTOP, CARD_H_DESKTOP).setPosition(x, y);
+      });
     }
   }
 
-  _renderGrid() {
-    this.cards.forEach((card) => {
-      card.bg.setVisible(true);
-      card.keyText.setVisible(true);
-      card.rarityText.setVisible(true);
-      card.cardIcon.setVisible(true);
-      card.label.setVisible(true);
-      card.label.setWordWrapWidth(CARD_W - 36);
-    });
-    this._positionCardChrome();
-    setVisible(this.chrome, false);
-  }
-
-  _renderCarousel() {
-    this.cards.forEach((card, i) => {
-      const isActive = i === this.activeIndex;
-      setVisible([card.bg, card.keyText, card.rarityText, card.cardIcon, card.label], isActive);
-      if (isActive) {
-        card.label.setWordWrapWidth(card.bg.width - 80);
-      }
-    });
-    this._positionCardChrome();
-    this.counterText.setText(`${this.activeIndex + 1} / 4`).setVisible(true);
-    this.leftArrow.setVisible(true);
-    this.rightArrow.setVisible(true);
-    this.dots.forEach((dot, i) => {
-      const active = i === this.activeIndex;
-      dot.setFillStyle(0xffffff, active ? 0.95 : 0.3).setVisible(true);
-    });
-  }
-
   hide() {
-    this._isOpen = false;
     this.title.setVisible(false);
     this.cards.forEach((card) => setVisible([card.bg, card.keyText, card.rarityText, card.cardIcon, card.label], false));
-    setVisible(this.chrome, false);
+    this._setDepth(DEPTH);
   }
 }

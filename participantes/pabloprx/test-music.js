@@ -643,7 +643,10 @@ console.log(`flip: ${f1.t.toFixed(3)}s -> techo, ${f2.t.toFixed(3)}s -> piso (${
   // DECOR: la lista blanca no se escribe a mano, se saca del renderer (`this.dec("...")` en
   // `draw()`), asi que un nivel no puede pedir una capa que nadie dibuja ni aunque se agregue
   // una capa nueva y se olvide actualizar el test.
-  const src = readFileSync("./AIRunnerGame.js", "utf8");
+  // Fase 1 del desacople: los `dec("...")` viven en los modulos mixin (render.js/decor.js),
+  // no en el orquestador AIRunnerGame.js. Se escanean todos para armar la lista blanca.
+  const src = ["AIRunnerGame.js", "core.js", "render.js", "decor.js", "entities.js"]
+    .map((f) => readFileSync(f, "utf8")).join("\n");
   const DECOR = [...new Set([...src.matchAll(/\bdec\("([a-z]+)"\)/g)].map((m) => m[1]))];
   assert(DECOR.length >= 8, `el renderer solo declara ${DECOR.length} capas de decorado`);
   for (const d of lv2.decor) assert(DECOR.includes(d), `decor "${d}" no existe en el renderer`);
@@ -856,7 +859,7 @@ console.log(`flip: ${f1.t.toFixed(3)}s -> techo, ${f2.t.toFixed(3)}s -> piso (${
     // deja de ser el 82.7% de cualquier division: se lee del renderer para que subir `BEAM_T` o
     // acortar el periodo lo diga aca y no una captura. Medido hoy: 16.5% y 33.0%.
     {
-      const rsrc = readFileSync("./AIRunnerGame.js", "utf8");
+      const rsrc = readFileSync("./config.js", "utf8");
       const bt = Number(rsrc.match(/BEAM_T = ([\d.]+)/)[1]);
       const vis = 1 - Math.sqrt(0.03);            // el corte de alpha de `drawBeam`
       for (const b of beams) {
@@ -974,7 +977,7 @@ console.log(`flip: ${f1.t.toFixed(3)}s -> techo, ${f2.t.toFixed(3)}s -> piso (${
     // unico que mata: si el dorado se acercara al rosa, el fondo se pareceria a lo que mata, que
     // es la regla que ya vale para el `NEON`. Se mide el valle, la cresta y el MEDIO (que es el
     // color que mas superficie tiene, ver la gamma de `tono`), en RGB y en tono.
-    const KILL = parseInt(src.match(/const KILL = 0x([0-9a-f]{6})/)[1], 16);
+    const KILL = parseInt(readFileSync("./config.js", "utf8").match(/const KILL = 0x([0-9a-f]{6})/)[1], 16);
     const rgb = (n) => [(n >> 16) & 255, (n >> 8) & 255, n & 255];
     const tono = ([r, gr, b]) => {
       const mx = Math.max(r, gr, b), d = mx - Math.min(r, gr, b);
@@ -1163,8 +1166,10 @@ console.log(`flip: ${f1.t.toFixed(3)}s -> techo, ${f2.t.toFixed(3)}s -> piso (${
   assert.equal(lv3.sectors.at(-1).to, ultima3, "los sectores no llegan justo a la ultima fila");
 
   // DECOR: la lista blanca se saca del renderer (`this.dec("...")`), igual que los otros dos.
+  // Fase 1: los `dec("...")` viven en los modulos mixin, no en el orquestador.
   {
-    const src3 = readFileSync("./AIRunnerGame.js", "utf8");
+    const src3 = ["AIRunnerGame.js", "core.js", "render.js", "decor.js", "entities.js"]
+      .map((f) => readFileSync(f, "utf8")).join("\n");
     const DECOR3 = [...new Set([...src3.matchAll(/\bdec\("([a-z]+)"\)/g)].map((m) => m[1]))];
     for (const d of lv3.decor) assert(DECOR3.includes(d), `decor "${d}" no existe en el renderer`);
   }

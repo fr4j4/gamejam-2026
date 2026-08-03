@@ -76,7 +76,11 @@ assert.equal(context.evaluateMoveRisk(safeState, safeMoves[0]), 0);
 const dangerState = stateWithOwners({ 'h-0-0': 0, 'h-1-0': 0 });
 assert.ok(!context.findSafeMoves(dangerState).includes('v-0-0'));
 assert.ok(!context.findSafeMoves(dangerState).includes('v-0-1'));
-assert.notEqual(context.chooseMove(dangerState, 'medium'), 'v-0-0');
+// 0.99 queda por encima de blunderRate: MEDIUM juega seguro y esquiva v-0-0.
+assert.notEqual(context.chooseMove(dangerState, 'medium', { random: () => 0.99 }), 'v-0-0');
+// 0.1 queda por debajo: con el fallo deliberado sí entrega la cadena que antes esquivaba.
+// Sin esta rama MEDIUM nunca abría y la partida se decidía sola.
+assert.equal(context.chooseMove(dangerState, 'medium', { random: () => 0.1 }), 'v-0-0');
 
 const allDangerousState = stateWithOwners({
   'h-0-0': 0,

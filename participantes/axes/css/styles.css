@@ -29,7 +29,8 @@ body::before {
   z-index: var(--layer-background, 0);
   pointer-events: none;
   content: '';
-  opacity: 0.18;
+  /* La escena escribe --grid-opacity por frame; sin audio queda el valor base. */
+  opacity: var(--grid-opacity, 0.18);
   background-image: linear-gradient(var(--grid-border, rgba(0, 245, 255, 0.08)) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-border, rgba(0, 245, 255, 0.08)) 1px, transparent 1px);
   background-size: 42px 42px;
@@ -90,26 +91,71 @@ body::before {
   filter: drop-shadow(0 0 5px currentColor);
 }
 
+/* Las cajas reclamadas respiran con la música. Única fuente de su opacidad. */
+#board-svg .board-box-fill[data-owner] {
+  fill-opacity: var(--box-owner-opacity, 0.28);
+}
+
 #board-svg .box-filled {
   animation: box-filled var(--box-reveal-duration, 220ms) cubic-bezier(0.22, 0.8, 0.3, 1) both;
   transform-box: fill-box;
   transform-origin: center;
 }
 
+/* ---------------------------------------------------------------------------
+   Contrato de propiedades personalizadas. Cada una tiene UN solo escritor.
+
+   --box-owner-opacity  board.svg   HUD, por frame        0.28 .. 0.40
+   --grid-opacity       :root       HUD, por frame        opacidad de la rejilla de fondo
+   --grid-border        :root       GameScene, por jugada tinte de la arena hacia quien lidera
+   --hot-period         board.svg   Board, por jugada     periodo del latido de caja caliente
+   --hot-peak           board.svg   Board, por jugada     opacidad alta del latido
+   --hot-rest           board.svg   Board, por jugada     opacidad baja del latido
+   --hot-delay          rect .board-box-hot   Box, una vez al construir
+
+   Nada de esto se escribe dentro de un rAF salvo las dos marcadas "por frame",
+   que ya existían y solo tocan variables leídas por opacity/fill-opacity.
+   --------------------------------------------------------------------------- */
+
+/* Marca de caja caliente: 3 de 4 lados trazados. Solo trazo dorado, nunca relleno:
+   un relleno la haría parecer reclamada y rompería la lectura de dueño. */
+#board-svg .board-box-hot { pointer-events: none; opacity: 0; }
+
+/* La marca late; su 100% es el estado legible estático. Con movimiento reducido la
+   regla global recorta la animación a 0.01ms y una iteración: queda exactamente ese
+   fotograma, así que la información sobrevive y solo se pierde el latido. */
+#board-svg .board-box-hot.box-hot {
+  animation: box-hot var(--hot-period, 1400ms) ease-in-out infinite;
+  animation-delay: var(--hot-delay, 0ms);
+  animation-fill-mode: both;
+}
+
+/* animation-fill-mode: both es OBLIGATORIO. Sin él, el recorte por movimiento
+   reducido termina la animación y el elemento vuelve a su opacity 0 en línea:
+   la telegrafía desaparecería justo para quien más la necesita estática. */
+@keyframes box-hot {
+  0%   { opacity: var(--hot-peak, 0.55); }
+  50%  { opacity: var(--hot-rest, 0.12); }
+  100% { opacity: var(--hot-peak, 0.55); }
+}
+
+/* Una línea bajo el cursor era MÁS apagada que una trazada: el drop-shadow solo
+   vivía en .line-reveal-segment. Line.js pone is-hovered y escribe segment.style.color. */
+#board-svg .line-visible.is-hovered .line-segment { filter: drop-shadow(0 0 8px currentColor); }
+
 @keyframes line-reveal-from-center {
   from { stroke-dashoffset: var(--line-segment-length); }
   to { stroke-dashoffset: 0; }
 }
 
+/* Pico, rebote y asiento. El 100% es idéntico al estado de reposo de siempre:
+   esa es la garantía de legibilidad, la caja termina exactamente donde termina hoy. */
 @keyframes box-filled {
-  from {
-    fill-opacity: 0;
-    transform: scale(var(--box-reveal-initial-scale, 0.02));
-  }
-  to {
-    fill-opacity: var(--box-owner-opacity, 0.28);
-    transform: scale(1);
-  }
+  0%   { fill-opacity: 0;    transform: scale(var(--box-reveal-initial-scale, 0.55)); }
+  16%  { fill-opacity: 0.95; transform: scale(1.13); }
+  38%  { fill-opacity: 0.58; transform: scale(0.965); }
+  62%  { transform: scale(1.035); }
+  100% { fill-opacity: var(--box-owner-opacity, 0.28); transform: scale(1); }
 }
 
 .site-footer {
@@ -141,7 +187,9 @@ body::before {
 }
 
 @media (max-width: 600px) {
-  body { gap: 4px; }
+  /* #game ocupa el ancho completo: la sacudida lo desplaza fuera y aparecerían
+     barras de scroll, empujando la página unos píxeles a cada caja reclamada. */
+  body { gap: 4px; overflow-x: clip; }
   #game { width: 100vw; height: calc(100svh - 28px); }
   #game canvas { border: 0; border-radius: 0; }
   .site-footer { font-size: 10px; }

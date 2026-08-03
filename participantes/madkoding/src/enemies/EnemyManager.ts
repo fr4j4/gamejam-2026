@@ -62,7 +62,8 @@ export class EnemyManager {
     type: string,
     position: THREE.Vector3,
     targetPosition: THREE.Vector3,
-    patternName = 'SWEEP'
+    patternName = 'SWEEP',
+    origin?: THREE.Vector3
   ): Enemy | null {
     // Find an inactive enemy of the same type, then any inactive one
     let enemy =
@@ -79,7 +80,7 @@ export class EnemyManager {
     const config = ENEMY_CONFIGS[type] || ENEMIES.DRONE;
     enemy.configure(config, type);
     enemy.pattern = this.patterns.get(patternName) ?? null;
-    enemy.init(position, targetPosition);
+    enemy.init(position, targetPosition, origin);
     this._activeEnemies.push(enemy);
     return enemy;
   }
@@ -89,7 +90,11 @@ export class EnemyManager {
     this._pendingProjectiles = [];
 
     for (const enemy of this.enemies) {
-      if (!enemy.active) continue;
+      if (!enemy.active) {
+        // Keep fading the trail of destroyed enemies.
+        enemy.updateTrailFade(dt);
+        continue;
+      }
       enemy.updateCombat(dt, playerPos, playerProjectiles, this.onEnemyShoot);
       if (enemy.active) this._activeEnemies.push(enemy);
     }

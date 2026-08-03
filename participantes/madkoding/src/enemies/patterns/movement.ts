@@ -16,13 +16,23 @@ export function dodgeLasers(pos: THREE.Vector3, projectiles: Projectile[] | unde
   }
 }
 
-export function moveToward(pos: THREE.Vector3, target: THREE.Vector3, speed: number, dt: number): void {
-  const dir = target.clone().sub(pos);
-  const dist = dir.length();
-  if (dist > 0.1) {
-    dir.normalize();
-    pos.addScaledVector(dir, Math.min(speed * dt, dist));
-  }
+// Fly forward (toward +Z, past the player) at constant speed with a lateral
+// weave. Enemies overfly the player instead of hovering at a standoff point.
+export function overfly(
+  pos: THREE.Vector3,
+  playerPos: THREE.Vector3,
+  speed: number,
+  dt: number,
+  phase: number,
+  weaveAmpX = 4,
+  weaveAmpY = 2.5,
+): void {
+  // Constant forward speed toward the player (increasing Z).
+  pos.z += speed * dt;
+  // Lateral sinusoidal weave so they don't fly in a straight boring line.
+  const t = pos.z * 0.05 + phase;
+  pos.x = playerPos.x + Math.sin(t) * weaveAmpX;
+  pos.y = playerPos.y + Math.cos(t * 0.7) * weaveAmpY;
 }
 
 export function clampToPlayArea(pos: THREE.Vector3, playerPos: THREE.Vector3): void {

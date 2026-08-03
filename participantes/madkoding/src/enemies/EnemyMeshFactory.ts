@@ -16,29 +16,36 @@ export class EnemyMeshFactory {
     }
   }
 
-  private static hullMat(color: number): THREE.MeshPhongMaterial {
-    return new THREE.MeshPhongMaterial({ color, emissive: color, emissiveIntensity: 0.7, shininess: 60 });
+  private static hullMat(_color: number): THREE.MeshPhongMaterial {
+    // All enemy hulls are grey with red accent lines.
+    return new THREE.MeshPhongMaterial({ color: 0x8a8f98, emissive: 0x33363c, emissiveIntensity: 0.3, shininess: 60, transparent: true });
   }
 
   private static darkMat(): THREE.MeshPhongMaterial {
-    return new THREE.MeshPhongMaterial({ color: 0x223344, emissive: 0x112233, emissiveIntensity: 0.3, shininess: 40 });
+    return new THREE.MeshPhongMaterial({ color: 0x5a5f66, emissive: 0x22252a, emissiveIntensity: 0.25, shininess: 40, transparent: true });
   }
 
   private static accentMat(color: number): THREE.MeshPhongMaterial {
-    return new THREE.MeshPhongMaterial({ color, emissive: color, emissiveIntensity: 0.9, shininess: 80 });
+    // Distinct accent line color per enemy type.
+    return new THREE.MeshPhongMaterial({ color, emissive: color, emissiveIntensity: 0.9, shininess: 80, transparent: true });
   }
 
   private static glow(color: number, opacity = 0.8): THREE.MeshBasicMaterial {
     return new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false });
   }
 
-  private static addEngineGlow(g: THREE.Group, x: number, y: number, z: number, color: number, r: number): void {
-    const glow = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 8), this.glow(color));
+  private static addEngineGlow(g: THREE.Group, x: number, y: number, z: number, _color: number, r: number): void {
+    // Fire-colored engine glow with a soft light crown (corona).
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 8), this.glow(0xff6622));
     glow.position.set(x, y, z);
     g.add(glow);
-    const halo = new THREE.Mesh(new THREE.SphereGeometry(r * 2, 8, 8), this.glow(color, 0.3));
+    const halo = new THREE.Mesh(new THREE.SphereGeometry(r * 2, 8, 8), this.glow(0xff6622, 0.3));
     halo.position.set(x, y, z);
     g.add(halo);
+    // Wide, faint corona around the thruster.
+    const corona = new THREE.Mesh(new THREE.SphereGeometry(r * 3.2, 10, 10), this.glow(0xff8844, 0.12));
+    corona.position.set(x, y, z);
+    g.add(corona);
   }
 
   // ── DRONE: octahedron core with rotating ring + 3 prongs ──
@@ -64,8 +71,8 @@ export class EnemyMeshFactory {
     ring.rotation.x = Math.PI / 2;
     g.add(ring);
 
-    // Bright center glow
-    g.add(new THREE.Mesh(new THREE.SphereGeometry(size * 0.3, 10, 10), this.glow(color)));
+    // Bright center glow (fire)
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(size * 0.3, 10, 10), this.glow(0xff6622)));
     return g;
   }
 
@@ -99,9 +106,9 @@ export class EnemyMeshFactory {
       g.add(w);
     }
 
-    // Bright engine glows
-    this.addEngineGlow(g, -size * 0.3, 0, size * 0.8, 0x00ffaa, size * 0.15);
-    this.addEngineGlow(g, size * 0.3, 0, size * 0.8, 0x00ffaa, size * 0.15);
+    // Bright engine glows (fire)
+    this.addEngineGlow(g, -size * 0.3, 0, size * 0.8, 0xff6622, size * 0.15);
+    this.addEngineGlow(g, size * 0.3, 0, size * 0.8, 0xff6622, size * 0.15);
     return g;
   }
 
@@ -110,7 +117,7 @@ export class EnemyMeshFactory {
     const g = new THREE.Group();
     const m = this.hullMat(color);
     const dark = this.darkMat();
-    const accent = this.accentMat(0xffcc00);
+    const accent = this.accentMat(color);
 
     // Fuselage
     const body = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.3, size * 0.4, size * 1.5, 6), m);
@@ -138,13 +145,13 @@ export class EnemyMeshFactory {
       g.add(tip);
     }
 
-    // Cockpit
-    const cockpit = new THREE.Mesh(new THREE.SphereGeometry(size * 0.2, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), this.accentMat(0x44ddff));
+    // Cockpit (accent)
+    const cockpit = new THREE.Mesh(new THREE.SphereGeometry(size * 0.2, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), this.accentMat(color));
     cockpit.position.set(0, size * 0.2, -size * 0.3);
     g.add(cockpit);
 
-    // Engine glow
-    this.addEngineGlow(g, 0, 0, size * 0.9, 0xff8800, size * 0.18);
+    // Engine glow (fire)
+    this.addEngineGlow(g, 0, 0, size * 0.9, 0xff6622, size * 0.18);
     return g;
   }
 
@@ -153,7 +160,7 @@ export class EnemyMeshFactory {
     const g = new THREE.Group();
     const m = this.hullMat(color);
     const dark = this.darkMat();
-    const accent = this.accentMat(0x00ffff);
+    const accent = this.accentMat(color);
 
     // Central bridging wing
     const wing = new THREE.Mesh(new THREE.BoxGeometry(size * 1.4, 0.08, size * 0.6), m);
@@ -178,8 +185,8 @@ export class EnemyMeshFactory {
       winglet.rotation.z = x * 0.3;
       g.add(winglet);
 
-      // Engine glow
-      this.addEngineGlow(g, x * size * 0.5, 0, size * 0.8, 0x00ccff, size * 0.14);
+      // Engine glow (fire)
+      this.addEngineGlow(g, x * size * 0.5, 0, size * 0.8, 0xff6622, size * 0.14);
     }
 
     // Central sensor pod
@@ -194,7 +201,7 @@ export class EnemyMeshFactory {
     const g = new THREE.Group();
     const m = this.hullMat(color);
     const dark = this.darkMat();
-    const accent = this.accentMat(0xff00ff);
+    const accent = this.accentMat(color);
 
     // Wide rectangular hull
     const hull = new THREE.Mesh(new THREE.BoxGeometry(size * 1.0, size * 0.5, size * 1.6), m);
@@ -238,7 +245,7 @@ export class EnemyMeshFactory {
       eng.rotation.x = Math.PI / 2;
       eng.position.set(x * size, -size * 0.1, size * 1.0);
       g.add(eng);
-      this.addEngineGlow(g, x * size, -size * 0.1, size * 1.4, 0xcc00ff, size * 0.16);
+      this.addEngineGlow(g, x * size, -size * 0.1, size * 1.4, 0xff6622, size * 0.16);
     }
     return g;
   }

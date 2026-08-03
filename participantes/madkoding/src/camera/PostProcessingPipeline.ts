@@ -10,7 +10,7 @@ import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 const VignetteChromaticAberrationShader = {
   uniforms: {
     tDiffuse: { value: null },
-    offset: { value: new THREE.Vector2(0.001, 0.0005) },
+    offset: { value: new THREE.Vector2(0.0015, 0.0008) },
     darkness: { value: 0.6 },
     radius: { value: 0.75 },
   },

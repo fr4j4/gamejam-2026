@@ -97,7 +97,7 @@ export class Game {
     this.enemyManager = new EnemyManager(this.scene, 40);
     this.waveManager = new WaveManager(this.scene, this.enemyManager);
 
-    this.explosionSystem = new ExplosionSystem(this.scene);
+    this.explosionSystem = new ExplosionSystem(this.scene, this.cameraRig.camera3D);
     this.particleManager = new ParticleManager(this.scene);
     this.hitSpark = new HitSpark(this.scene);
     this.screenEffects = new ScreenEffects();
@@ -123,9 +123,9 @@ export class Game {
     );
     this.enemyProjectileMgr = new EnemyProjectileManager(this.audioManager, this.scene);
 
-    // Bomb auto-explosion: AOE damage + epic explosion
+    // Bomb auto-explosion: AOE damage + nuclear explosion
     this.weaponSystem.onBombExplode = (pos: THREE.Vector3) => {
-      this.explosionSystem.spawnEpic(pos, 0xff6600);
+      this.explosionSystem.spawnNuclear(pos, 0xffaa33);
       this.audioManager.playExplosion();
       this.cameraRig.shake(1.0, 0.6);
       const blast = 50;

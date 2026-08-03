@@ -211,18 +211,18 @@ export class WaveManager {
   }
 
   private spawnFormationEnemy(e: FormationEnemy, playerPos: THREE.Vector3): void {
-    // All enemies spawn from behind a corvette. Pick the nearest corvette
-    // that's ahead of the player.
+    // The formation position is near the center of the play field (on screen).
     let baseZ = playerPos.z - THREE.MathUtils.randFloat(50, 70);
     let centerX = THREE.MathUtils.randFloat(-5, 5);
     let centerY = THREE.MathUtils.randFloat(-3, 3);
+    let origin: THREE.Vector3 | undefined;
 
+    // Emerge from a corvette's hangar (off to the side) and fly to the
+    // formation position near the center of the screen.
     const validCorvettes = this.corvettePositions.filter(c => c.z < playerPos.z - 30);
     if (validCorvettes.length > 0) {
       const corvette = validCorvettes[Math.floor(Math.random() * validCorvettes.length)];
-      centerX = corvette.x;
-      centerY = corvette.y;
-      baseZ = corvette.z - THREE.MathUtils.randFloat(8, 20);
+      origin = corvette.clone();
     }
 
     const spawnPos = new THREE.Vector3(
@@ -231,7 +231,7 @@ export class WaveManager {
       baseZ + e.offsetZ
     );
 
-    this.enemyManager.spawn(e.type, spawnPos, playerPos, e.pattern);
+    this.enemyManager.spawn(e.type, spawnPos, playerPos, e.pattern, origin);
   }
 
   private startBoss(): void {

@@ -18,6 +18,9 @@ export interface InputState {
 }
 
 const AIM_SPEED = 0.6; // how fast crosshair drifts from center
+// Margin (in px) from the window edge where the mouse is ignored as an aim
+// source — at the very edge we can't tell if the pointer is still inside.
+const MOUSE_EDGE_MARGIN = 2;
 
 export class InputMapper {
   private keys: Set<string> = new Set();
@@ -33,12 +36,25 @@ export class InputMapper {
   private _aimX = 0;
   private _aimY = 0;
   private _lastTime = 0;
+  // Mouse aim: only used while the pointer is inside the window (not at edge).
+  private _mouseInside = false;
+  private _mouseX = 0;
+  private _mouseY = 0;
+  private _mouseDown = false;
 
   constructor() {
     this.onKeyDown = this.onKeyDown.bind(this);
     this.onKeyUp = this.onKeyUp.bind(this);
+    this.onMouseMove = this.onMouseMove.bind(this);
+    this.onMouseLeave = this.onMouseLeave.bind(this);
+    this.onMouseDown = this.onMouseDown.bind(this);
+    this.onMouseUp = this.onMouseUp.bind(this);
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
+    window.addEventListener('mousemove', this.onMouseMove);
+    window.addEventListener('mouseleave', this.onMouseLeave);
+    window.addEventListener('mousedown', this.onMouseDown);
+    window.addEventListener('mouseup', this.onMouseUp);
   }
 
   private onKeyDown(e: KeyboardEvent): void {
@@ -50,6 +66,33 @@ export class InputMapper {
   private onKeyUp(e: KeyboardEvent): void { this.keys.delete(e.code); }
   private getKey(key: string): boolean { return this.keys.has(key); }
 
+  private onMouseMove(e: MouseEvent): void {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    // Only treat the mouse as an aim source while it's clearly inside the
+    // window. At the edge (or outside) we ignore it.
+    this._mouseInside =
+      e.clientX > MOUSE_EDGE_MARGIN && e.clientX < w - MOUSE_EDGE_MARGIN &&
+      e.clientY > MOUSE_EDGE_MARGIN && e.clientY < h - MOUSE_EDGE_MARGIN;
+    if (this._mouseInside) {
+      // NDC: -1..1 (x right, y up).
+      this._mouseX = (e.clientX / w) * 2 - 1;
+      this._mouseY = -((e.clientY / h) * 2 - 1);
+    }
+  }
+
+  private onMouseLeave(): void {
+    this._mouseInside = false;
+  }
+
+  private onMouseDown(e: MouseEvent): void {
+    if (e.button === 0) this._mouseDown = true;
+  }
+
+  private onMouseUp(e: MouseEvent): void {
+    if (e.button === 0) this._mouseDown = false;
+  }
+
   update(): InputState {
     // Ship movement: both WASD and Arrow keys control the ship
     const left = this.getKey('KeyA') || this.getKey('ArrowLeft');
@@ -57,7 +100,7 @@ export class InputMapper {
     const up = this.getKey('KeyW') || this.getKey('ArrowUp');
     const down = this.getKey('KeyS') || this.getKey('ArrowDown');
 
-    const fire = this.getKey('Space');
+    const fire = this.getKey('Space') || this._mouseDown;
     const pause = this.getKey('Escape') && !this.pauseConsumed;
     const bomb = this.getKey('KeyZ') && !this.bombConsumed;
 
@@ -71,28 +114,34 @@ export class InputMapper {
     if (up) verticalAxis -= 1;
     if (down) verticalAxis += 1;
 
-    // Crosshair aim: arrow keys also drift the crosshair away from center.
-    // When arrows are released, crosshair slowly returns to center (0,0).
+    // Crosshair aim: mouse takes priority while inside the window; otherwise
+    // arrow keys drift the crosshair away from center and it returns slowly.
     const now = performance.now();
     const dt = this._lastTime ? Math.min((now - this._lastTime) / 1000, 0.05) : 0.016;
     this._lastTime = now;
 
-    let aimDx = 0, aimDy = 0;
-    if (this.getKey('ArrowLeft')) aimDx -= 1;
-    if (this.getKey('ArrowRight')) aimDx += 1;
-    if (this.getKey('ArrowUp')) aimDy += 1;
-    if (this.getKey('ArrowDown')) aimDy -= 1;
-
-    // Move aim with arrows, drift back to center when released
-    if (aimDx !== 0 || aimDy !== 0) {
-      this._aimX += aimDx * AIM_SPEED * dt;
-      this._aimY += aimDy * AIM_SPEED * dt;
+    if (this._mouseInside) {
+      // Mouse is inside the window → aim directly at the pointer.
+      this._aimX = this._mouseX;
+      this._aimY = this._mouseY;
     } else {
-      // Return to center slowly
-      this._aimX *= 0.92;
-      this._aimY *= 0.92;
-      if (Math.abs(this._aimX) < 0.01) this._aimX = 0;
-      if (Math.abs(this._aimY) < 0.01) this._aimY = 0;
+      let aimDx = 0, aimDy = 0;
+      if (this.getKey('ArrowLeft')) aimDx -= 1;
+      if (this.getKey('ArrowRight')) aimDx += 1;
+      if (this.getKey('ArrowUp')) aimDy += 1;
+      if (this.getKey('ArrowDown')) aimDy -= 1;
+
+      // Move aim with arrows, drift back to center when released
+      if (aimDx !== 0 || aimDy !== 0) {
+        this._aimX += aimDx * AIM_SPEED * dt;
+        this._aimY += aimDy * AIM_SPEED * dt;
+      } else {
+        // Return to center slowly
+        this._aimX *= 0.92;
+        this._aimY *= 0.92;
+        if (Math.abs(this._aimX) < 0.01) this._aimX = 0;
+        if (Math.abs(this._aimY) < 0.01) this._aimY = 0;
+      }
     }
     this._aimX = Math.max(-0.85, Math.min(0.85, this._aimX));
     this._aimY = Math.max(-0.6, Math.min(0.6, this._aimY));
@@ -126,5 +175,9 @@ export class InputMapper {
   dispose(): void {
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    window.removeEventListener('mousemove', this.onMouseMove);
+    window.removeEventListener('mouseleave', this.onMouseLeave);
+    window.removeEventListener('mousedown', this.onMouseDown);
+    window.removeEventListener('mouseup', this.onMouseUp);
   }
 }
